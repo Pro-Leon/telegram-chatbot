@@ -6,17 +6,17 @@ services:
     startCommand: python -m ingestion.main --mode polling
     envVars:
       - key: TELEGRAM_TOKEN
-        valueFromSecret: TELEGRAM_TOKEN
+        sync: false
       - key: OPERATOR_BOT_TOKEN
-        valueFromSecret: OPERATOR_BOT_TOKEN
+        sync: false
       - key: OPERATOR_TELEGRAM_IDS
         value: "6125780974"
       - key: OPENAI_API_KEY
-        valueFromSecret: OPENAI_API_KEY
+        sync: false
       - key: POSTGRES_DSN
-        valueFromSecret: POSTGRES_DSN
+        sync: false
       - key: REDIS_URL
-        valueFromSecret: REDIS_URL
+        sync: false
       - key: WEBHOOK_URL
         value: "https://chatbot-ingestion.onrender.com"
       - key: WEBHOOK_SECRET
@@ -51,17 +51,17 @@ services:
     startCommand: python -m workers.llm_worker --worker-id worker_1
     envVars:
       - key: TELEGRAM_TOKEN
-        valueFromSecret: TELEGRAM_TOKEN
+        sync: false
       - key: OPERATOR_BOT_TOKEN
-        valueFromSecret: OPERATOR_BOT_TOKEN
+        sync: false
       - key: OPERATOR_TELEGRAM_IDS
         value: "6125780974"
       - key: OPENAI_API_KEY
-        valueFromSecret: OPENAI_API_KEY
+        sync: false
       - key: POSTGRES_DSN
-        valueFromSecret: POSTGRES_DSN
+        sync: false
       - key: REDIS_URL
-        valueFromSecret: REDIS_URL
+        sync: false
       - key: MODEL_NAME
         value: "meta-llama/llama-4-scout-17b-16e-instruct"
       - key: CHEAP_MODEL
@@ -74,15 +74,15 @@ services:
     startCommand: python -m workers.send_worker --worker-id sender_1
     envVars:
       - key: TELEGRAM_TOKEN
-        valueFromSecret: TELEGRAM_TOKEN
+        sync: false
       - key: OPERATOR_BOT_TOKEN
-        valueFromSecret: OPERATOR_BOT_TOKEN
+        sync: false
       - key: OPENAI_API_KEY
-        valueFromSecret: OPENAI_API_KEY
+        sync: false
       - key: POSTGRES_DSN
-        valueFromSecret: POSTGRES_DSN
+        sync: false
       - key: REDIS_URL
-        valueFromSecret: REDIS_URL
+        sync: false
 
   - type: web
     name: chatbot-web-dashboard
@@ -91,13 +91,13 @@ services:
     startCommand: python -m operator_dashboard.dashboard_worker --mode web --port 8080
     envVars:
       - key: POSTGRES_DSN
-        valueFromSecret: POSTGRES_DSN
+        sync: false
       - key: REDIS_URL
-        valueFromSecret: REDIS_URL
+        sync: false
       - key: TELEGRAM_TOKEN
-        valueFromSecret: TELEGRAM_TOKEN
+        sync: false
       - key: OPENAI_API_KEY
-        valueFromSecret: OPENAI_API_KEY
+        sync: false
 
   - type: worker
     name: chatbot-operator-dashboard
@@ -106,22 +106,19 @@ services:
     startCommand: python -m operator_dashboard.dashboard_worker --mode bot
     envVars:
       - key: TELEGRAM_TOKEN
-        valueFromSecret: TELEGRAM_TOKEN
+        sync: false
       - key: OPERATOR_BOT_TOKEN
-        valueFromSecret: OPERATOR_BOT_TOKEN
+        sync: false
       - key: OPERATOR_TELEGRAM_IDS
         value: "6125780974"
       - key: OPENAI_API_KEY
-        valueFromSecret: OPENAI_API_KEY
+        sync: false
       - key: POSTGRES_DSN
-        valueFromSecret: POSTGRES_DSN
+        sync: false
       - key: REDIS_URL
-        valueFromSecret: REDIS_URL
+        sync: false
 
 databases:
   - name: chatbot-postgres
-    region: oregon
-    plan: free
-  - name: chatbot-redis
     region: oregon
     plan: free
