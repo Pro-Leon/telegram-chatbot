@@ -122,8 +122,6 @@ databases:
   - name: chatbot-postgres
     region: oregon
     plan: free
-
-redis:
   - name: chatbot-redis
     region: oregon
     plan: free
