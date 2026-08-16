@@ -1,0 +1,37 @@
+[project]
+name = "telegram-chatbot"
+version = "1.0.0"
+description = "Human-in-the-loop Telegram chat system"
+requires-python = ">=3.11"
+dependencies = [
+    "aiogram>=3.0",
+    "fastapi>=0.100",
+    "uvicorn>=0.22",
+    "asyncpg>=0.27",
+    "redis>=4.5",
+    "openai>=1.0",
+    "groq>=0.9",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "tiktoken>=0.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["core", "db", "ingestion", "memory", "workers", "operator_dashboard"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint.isort]
+known-first-party = ["ingestion", "workers", "memory", "operator_dashboard", "db", "core"]

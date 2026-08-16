@@ -1,0 +1,109 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: chatbot-postgres
+    environment:
+      POSTGRES_DB: chatbot
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-user} -d $${POSTGRES_DB:-chatbot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: chatbot-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  ingestion:
+    build: .
+    container_name: chatbot-ingestion
+    command: python -m ingestion.main --mode polling
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  llm_worker_1:
+    build: .
+    container_name: chatbot-llm-worker-1
+    command: python -m workers.llm_worker --worker-id worker_1
+    env_file: .env
+    depends_on:
+      - ingestion
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  llm_worker_2:
+    build: .
+    container_name: chatbot-llm-worker-2
+    command: python -m workers.llm_worker --worker-id worker_2
+    env_file: .env
+    depends_on:
+      - ingestion
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  send_worker:
+    build: .
+    container_name: chatbot-send-worker
+    command: python -m workers.send_worker --worker-id sender_1
+    env_file: .env
+    depends_on:
+      - ingestion
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  operator_dashboard:
+    build: .
+    container_name: chatbot-operator
+    command: python -m operator_dashboard.dashboard_worker
+    env_file: .env
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chatbot-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    depends_on:
+      - ingestion
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
