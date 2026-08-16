@@ -122,10 +122,8 @@ databases:
   - name: chatbot-postgres
     region: oregon
     plan: free
-    postgresVersion: "16"
 
 redis:
   - name: chatbot-redis
     region: oregon
     plan: free
-    maxmemoryPolicy: allkeys-lru
