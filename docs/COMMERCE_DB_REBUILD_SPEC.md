@@ -117,3 +117,32 @@ pending-guarded). DropFans reserve/check SQL stays inline at
 commerce/post_purchase.py + chatbotv2/main.py gateway (pinned by
 test_p32_safety_foundation + deliver_product_media assertions — do not
 migrate without updating those pins).
+
+## Phase 3c (implemented 2026-09-28): db/segments.py (9 functions)
+
+Creator-scoped CRUD over `fan_segments` (DDL re-declared in
+`db/migrations/20260917030000_p33_segments.sql`; live table verified:
+BIGSERIAL id PK, creator_id BIGINT FK→creators, name/description TEXT,
+rules JSONB DEFAULT '{}', enabled DEFAULT TRUE, member_count DEFAULT 0,
+last_evaluated_at NULL, created/updated DEFAULT NOW(),
+UNIQUE(creator_id, LOWER(name))).
+
+`create_segment(cid, name, description="", rules?=None)->row`
+(INSERT … ON CONFLICT (creator_id, LOWER(name)) DO UPDATE
+description/rules refresh, RETURNING) /
+`list_segments(cid, enabled_only=False)->[rows]`
+(`enabled = TRUE` filter when set, created_at DESC) /
+`get_segment(cid, sid)->row|None` /
+`update_segment(cid, sid, **{name,description,rules})->row|None`
+(dynamic SET + updated_at, ::jsonb for rules; empty→None) /
+`delete_segment(cid, sid)->bool` (execute parse) /
+`toggle_segment(cid, sid, enabled)->row|None` /
+`duplicate_segment(cid, sid, new_name)->row|None`
+(INSERT…SELECT creator/description/rules/enabled, counts reset by
+defaults, name-conflict DO NOTHING→None) /
+`update_member_count(cid, sid, count)->bool` /
+`update_last_evaluated(cid, sid)->bool`.
+Reads decode jsonb `rules` str→dict (no global asyncpg codec; precedent
+db/postgres.py). Callers: dashboard routes (users/search/dialogs/bulk_ops/
+analytics/segments), segments/evaluator.py, context_engine/gatherer.py,
+commerce/state.py, memory/context_assembler.py.
