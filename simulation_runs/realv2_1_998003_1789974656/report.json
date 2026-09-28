@@ -1,0 +1,24 @@
+{
+  "fan_id": 998003,
+  "creator_id": 1,
+  "started_at": "2026-09-21T07:10:40.348038+00:00",
+  "ended_at": "2026-09-21T07:10:56.056968+00:00",
+  "stopped_reason": "breakage at turn 1: breakage: LLM timeout 12s (llamacpp hang)",
+  "breakage_count": 1,
+  "turns": [
+    {
+      "turn": 1,
+      "fan_message": "hi",
+      "system_stage": "llm",
+      "system_response": "",
+      "breakage": "breakage: LLM timeout 12s (llamacpp hang)",
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1903
+      },
+      "ts": "2026-09-21T07:10:41.308795+00:00"
+    }
+  ]
+}

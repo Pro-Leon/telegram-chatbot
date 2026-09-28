@@ -1,0 +1,1688 @@
+{% extends "dashboard.html" %}
+{% block nav_analytics %}active{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.x.x/dist/chart.umd.min.js"></script>
+<script src="/static/js/analytics-utils.js"></script>
+<script src="/static/js/analytics-api.js"></script>
+<style>
+    .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 1024px) { .analytics-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .analytics-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .stat-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px;
+        width: 80px; height: 80px; border-radius: 50%;
+        filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .stat-card.purple::after { background: var(--accent-purple); }
+    .stat-card.green::after  { background: var(--accent-green); }
+    .stat-card.orange::after { background: var(--accent-orange); }
+    .stat-card.red::after    { background: var(--accent-red); }
+
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); }
+    .stat-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .stat-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .stat-icon.green  { background: rgba(74,222,128,0.15);  color: var(--accent-green); }
+    .stat-icon.orange { background: rgba(251,146,60,0.15);  color: var(--accent-orange); }
+    .stat-icon.red    { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .stat-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .chart-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden;
+    }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .chart-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .filter-row {
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        padding: 16px 20px; background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; margin-bottom: 16px;
+    }
+    .filter-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+    .filter-input {
+        padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color);
+        border-radius: 8px; color: var(--text-primary); font-size: 13px;
+    }
+    .filter-input:focus { outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 2px rgba(108,99,255,0.3); }
+    .filter-btn {
+        padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: all 0.15s; border: none;
+    }
+    .filter-btn.primary { background: var(--accent-purple); color: white; }
+    .filter-btn.primary:hover { background: var(--accent-purple-light); }
+    .filter-btn.secondary {
+        background: transparent; color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+    .filter-btn.secondary:hover { background: rgba(0,0,0,0.04); color: var(--text-primary); }
+
+    .breakdown-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+    .breakdown-row:not(:last-child) { border-bottom: 1px solid rgba(0,0,0,0.04); }
+    .breakdown-bar { flex: 1; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; }
+    .breakdown-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+    .breakdown-label { font-size: 13px; color: var(--text-secondary); min-width: 100px; }
+    .breakdown-value { font-size: 13px; font-weight: 600; color: var(--text-primary); min-width: 40px; text-align: right; }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .error-state {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+        color: var(--accent-red); padding: 12px 16px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px;
+    }
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+
+    /* Search */
+    .search-section {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    }
+    .search-bar {
+        display: flex; align-items: center; gap: 12px;
+    }
+    .search-input-wrap {
+        flex: 1; position: relative;
+    }
+    .search-input-wrap i {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--text-tertiary); font-size: 13px; pointer-events: none;
+    }
+    .search-input {
+        width: 100%; padding: 10px 12px 10px 36px;
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        border-radius: 8px; color: var(--text-primary); font-size: 13px;
+    }
+    .search-input:focus {
+        outline: none; border-color: var(--accent-purple);
+        box-shadow: 0 0 0 2px rgba(108,99,255,0.3);
+    }
+    .search-input::placeholder { color: var(--text-tertiary); }
+    .search-results {
+        margin-top: 12px; max-height: 400px; overflow-y: auto;
+    }
+    .search-result-item {
+        padding: 12px; border: 1px solid var(--border-color);
+        border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+        transition: background 0.15s;
+    }
+    .search-result-item:hover { background: rgba(0,0,0,0.02); }
+    .search-result-type {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 10px; font-weight: 600; text-transform: uppercase;
+        margin-bottom: 6px;
+    }
+    .search-result-type.message { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .search-result-type.note { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .search-result-type.user { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .search-result-content {
+        font-size: 13px; color: var(--text-secondary); line-height: 1.5;
+        word-break: break-word;
+    }
+    .search-result-meta {
+        font-size: 11px; color: var(--text-tertiary); margin-top: 4px;
+    }
+    .search-result-meta mark {
+        background: rgba(108,99,255,0.2); color: var(--text-primary);
+        padding: 0 2px; border-radius: 2px;
+    }
+
+    /* Bulk selection */
+    .bulk-toolbar {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 20px; background: rgba(108,99,255,0.08);
+        border: 1px solid rgba(108,99,255,0.2); border-radius: 8px;
+        margin-bottom: 12px; font-size: 13px;
+    }
+    .bulk-toolbar .bulk-count { font-weight: 600; color: var(--accent-purple); }
+    .bulk-toolbar .bulk-btn {
+        padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--bg-card); color: var(--text-primary); transition: all 0.15s;
+    }
+    .bulk-toolbar .bulk-btn:hover { background: rgba(0,0,0,0.04); }
+    .bulk-toolbar .bulk-btn.danger { color: var(--accent-red); border-color: rgba(239,68,68,0.3); }
+    .row-checkbox {
+        width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer;
+    }
+
+    /* Activity timeline */
+    .activity-item {
+        display: flex; gap: 10px; padding: 10px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon {
+        width: 28px; height: 28px; min-width: 28px; border-radius: 6px;
+        display: flex; align-items: center; justify-content: center; font-size: 12px;
+    }
+    .activity-icon.message { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .activity-icon.note { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .activity-icon.attention { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .activity-icon.tag { background: rgba(236,72,153,0.15); color: #EC4899; }
+    .activity-body { flex: 1; min-width: 0; }
+    .activity-desc { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+    .activity-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+    /* Bulk modal */
+    .bulk-modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+        z-index: 60; display: flex; align-items: center; justify-content: center;
+    }
+    .bulk-modal {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; width: 90%; max-width: 400px;
+    }
+    .bulk-modal h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="analyticsApp()" x-init="init()" data-current-user="{{ current_user }}">
+    <!-- Filters -->
+    <div class="filter-row">
+        <span class="filter-label">Date Range:</span>
+        <input type="date" x-model="startDate" class="filter-input">
+        <span class="filter-label">to</span>
+        <input type="date" x-model="endDate" class="filter-input">
+        <span class="filter-label" style="margin-left: 12px;">Segment:</span>
+        <select x-model="segmentFilter" @change="load(); loadConversations()" class="filter-input" style="width: auto;">
+            <option value="">All Segments</option>
+            <template x-for="seg in allSegments" :key="seg.id">
+                <option :value="seg.id" x-text="seg.name"></option>
+            </template>
+        </select>
+        <button @click="load()" class="filter-btn primary">
+            <i class="fas fa-search" style="margin-right: 4px;"></i> Apply
+        </button>
+        <button @click="clearDates()" class="filter-btn secondary">All Time</button>
+        <span x-show="periodLabel" style="font-size: 12px; color: var(--text-tertiary); margin-left: auto;" x-text="periodLabel"></span>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="search-bar">
+            <div class="search-input-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input"
+                       placeholder="Search messages, notes, users... (min 2 chars)"
+                       x-model="searchQuery"
+                       @input.debounce.400ms="performSearch()"
+                       @keydown.escape="clearSearch()">
+            </div>
+            <select x-model="searchScope" @change="performSearch()" class="filter-input" style="width: auto;">
+                <option value="all">All</option>
+                <option value="messages">Messages</option>
+                <option value="notes">Notes</option>
+                <option value="users">Users</option>
+            </select>
+            <select x-model="searchSegmentFilter" @change="performSearch()" class="filter-input" style="width: auto;">
+                <option value="">All Segments</option>
+                <template x-for="seg in allSegments" :key="seg.id">
+                    <option :value="seg.id" x-text="seg.name"></option>
+                </template>
+            </select>
+            <button @click="clearSearch()" class="filter-btn secondary" x-show="searchQuery.length > 0">
+                <i class="fas fa-times" style="margin-right: 4px;"></i> Clear
+            </button>
+        </div>
+        <div x-show="searchError" class="error-state" x-text="searchError" style="margin-top: 8px;"></div>
+        <div x-show="searchLoading" class="loading-text" style="padding: 12px 0;">
+            <i class="fas fa-spinner fa-spin"></i> Searching...
+        </div>
+        <div x-show="searchResults.length > 0" class="search-results">
+            <template x-for="(result, idx) in searchResults" :key="idx">
+                <div class="search-result-item" @click="handleSearchResultClick(result)">
+                    <span class="search-result-type" :class="result.type" x-text="result.type"></span>
+                    <template x-if="result.type === 'user'">
+                        <div>
+                            <div class="search-result-content" x-text="(result.username || result.first_name || 'Unknown')"></div>
+                            <div class="search-result-meta">
+                                <span x-text="result.message_count + ' messages'"></span>
+                                <span x-show="result.last_seen"> &middot; Last seen <span x-text="formatDate(result.last_seen)"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="result.type === 'message'">
+                        <div>
+                            <div class="search-result-content" x-text="result.content?.substring(0, 200)"></div>
+                            <div class="search-result-meta">
+                                <span x-text="result.direction"></span>
+                                <span> &middot; </span>
+                                <span x-text="(result.username || 'user_' + result.user_id)"></span>
+                                <span> &middot; </span>
+                                <span x-text="formatDate(result.created_at)"></span>
+                                <span x-show="result.similarity"> &middot; <span x-text="Math.round(result.similarity * 100) + '% match'"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="result.type === 'note'">
+                        <div>
+                            <div class="search-result-content" x-text="result.content?.substring(0, 200)"></div>
+                            <div class="search-result-meta">
+                                <span>Note by </span><span x-text="result.created_by || 'unknown'"></span>
+                                <span> &middot; </span>
+                                <span x-text="formatDate(result.created_at)"></span>
+                                <span x-show="result.similarity"> &middot; <span x-text="Math.round(result.similarity * 100) + '% match'"></span></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <div x-show="searchTotal > searchResults.length" style="text-align: center; padding: 8px; font-size: 12px; color: var(--text-tertiary);">
+                <span x-text="'Showing ' + searchResults.length + ' of ' + searchTotal + ' results'"></span>
+            </div>
+        </div>
+        <div x-show="!searchLoading && searchQuery.length >= 2 && searchResults.length === 0 && !searchError" style="text-align: center; padding: 16px; color: var(--text-tertiary); font-size: 13px;">
+            No results found
+        </div>
+    </div>
+
+    <!-- Error -->
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <!-- Loading -->
+    <div x-show="loading" class="loading-text">
+        <i class="fas fa-spinner fa-spin"></i> Loading analytics...
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && !error && data && data.summary.inbound_messages === 0 && data.summary.outbound_messages === 0">
+        <div class="empty-state">
+            <i class="fas fa-chart-bar"></i>
+            <p style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No data yet</p>
+            <p style="font-size: 13px;">Analytics will appear once messages are processed.</p>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div x-show="!loading && !error && data && (data.summary.inbound_messages > 0 || data.summary.outbound_messages > 0)">
+        <!-- KPI Cards -->
+        <div class="analytics-grid" style="margin-bottom: 20px;">
+            <div class="stat-card purple">
+                <div class="stat-top">
+                    <span class="stat-label">Inbound</span>
+                    <div class="stat-icon purple"><i class="fas fa-arrow-down"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.inbound_messages ?? '--'"></div>
+                <div class="stat-sub">messages received</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-top">
+                    <span class="stat-label">Outbound</span>
+                    <div class="stat-icon green"><i class="fas fa-arrow-up"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.outbound_messages ?? '--'"></div>
+                <div class="stat-sub">messages sent</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-top">
+                    <span class="stat-label">Auto-Approval Rate</span>
+                    <div class="stat-icon orange"><i class="fas fa-check-double"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.auto_approval_rate != null ? data.summary.auto_approval_rate + '%' : 'N/A'"></div>
+                <div class="stat-sub">AI confidence pass rate</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-top">
+                    <span class="stat-label">Failed Sends</span>
+                    <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.failed_sends ?? '--'"></div>
+                <div class="stat-sub">DLQ entries</div>
+            </div>
+        </div>
+
+        <!-- Second Row -->
+        <div class="analytics-grid" style="margin-bottom: 20px;">
+            <div class="stat-card purple">
+                <div class="stat-top">
+                    <span class="stat-label">AI Generated</span>
+                    <div class="stat-icon purple"><i class="fas fa-robot"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.ai_generated ?? '--'"></div>
+                <div class="stat-sub">total AI replies</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-top">
+                    <span class="stat-label">AI Auto-Approved</span>
+                    <div class="stat-icon green"><i class="fas fa-bolt"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.ai_auto_approved ?? '--'"></div>
+                <div class="stat-sub">sent without review</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-top">
+                    <span class="stat-label">Operator Approved</span>
+                    <div class="stat-icon orange"><i class="fas fa-user-check"></i></div>
+                </div>
+                <div class="stat-value" x-text="data?.summary?.operator_approved ?? '--'"></div>
+                <div class="stat-sub">manual review sent</div>
+            </div>
+            <div class="stat-card purple">
+                <div class="stat-top">
+                    <span class="stat-label">Avg Response Time</span>
+                    <div class="stat-icon purple"><i class="fas fa-clock"></i></div>
+                </div>
+                <div class="stat-value" x-text="formatResponseTime(data?.summary?.average_response_time_seconds)"></div>
+                <div class="stat-sub">inbound to outbound</div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <!-- Timeline Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h2>Messages Over Time</h2>
+                </div>
+                <canvas id="timelineChart" height="200"></canvas>
+            </div>
+
+            <!-- Handling Breakdown -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h2>Handling Breakdown</h2>
+                </div>
+                <div style="padding: 8px 0;">
+                    <div class="breakdown-row">
+                        <span class="breakdown-label"><i class="fas fa-robot" style="color: var(--accent-purple); margin-right: 6px;"></i> AI</span>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-bar-fill" :style="'width:' + aiPercent + '%; background: var(--accent-purple);'"></div>
+                        </div>
+                        <span class="breakdown-value" x-text="data?.handling_breakdown?.ai ?? 0"></span>
+                    </div>
+                    <div class="breakdown-row">
+                        <span class="breakdown-label"><i class="fas fa-user" style="color: var(--accent-orange); margin-right: 6px;"></i> Operator</span>
+                        <div class="breakdown-bar">
+                            <div class="breakdown-bar-fill" :style="'width:' + operatorPercent + '%; background: var(--accent-orange);'"></div>
+                        </div>
+                        <span class="breakdown-value" x-text="data?.handling_breakdown?.operator ?? 0"></span>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="font-size: 13px; color: var(--text-secondary);">Total handled</span>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--text-primary);" x-text="totalHandled"></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="font-size: 13px; color: var(--text-secondary);">AI ratio</span>
+                        <span style="font-size: 13px; font-weight: 600; color: var(--accent-purple);" x-text="aiPercent + '%'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversation Performance Section -->
+        <div class="chart-card" style="margin-bottom: 20px;">
+                <div class="chart-header">
+                    <h2>Conversation Performance</h2>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <select x-model="convTagFilter" @change="loadConversations()" class="filter-input" style="width: auto;">
+                            <option value="">All Tags</option>
+                            <template x-for="tag in allTags" :key="tag.id">
+                                <option :value="tag.id" x-text="tag.name"></option>
+                            </template>
+                        </select>
+                        <select x-model="convAttention" @change="loadConversations()" class="filter-input" style="width: auto;">
+                            <option value="">All Conversations</option>
+                            <option value="needs_attention">Needs Attention</option>
+                            <option value="quiet">Quiet Users</option>
+                        </select>
+                        <select x-model="convOperatorFilter" @change="loadConversations()" class="filter-input" style="width: auto;">
+                            <option value="">All Operators</option>
+                            <option value="0">Unassigned</option>
+                            <template x-for="op in operators" :key="op.id">
+                                <option :value="op.id" x-text="op.username || op.name || 'Op #' + op.id"></option>
+                            </template>
+                        </select>
+                        <select x-model="convSegmentFilter" @change="loadConversations()" class="filter-input" style="width: auto;">
+                            <option value="">All Segments</option>
+                            <template x-for="seg in allSegments" :key="seg.id">
+                                <option :value="seg.id" x-text="seg.name"></option>
+                            </template>
+                        </select>
+                        <button @click="exportConversationsCSV()" class="filter-btn secondary" style="white-space: nowrap;">
+                            <i class="fas fa-download" style="margin-right: 4px;"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+            <!-- Report Summary -->
+            <div x-show="!convLoading && convData && convData.items.length > 0"
+                 style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; padding: 12px 0 16px; border-bottom: 1px solid var(--border-color);">
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-blue);" x-text="convData?.pagination?.total || 0"></div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Conversations</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-green);"
+                         x-text="convData?.items ? convData.items.reduce((s, i) => s + i.inbound_count, 0) : 0"></div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Inbound Msgs</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-purple);"
+                         x-text="convData?.items ? convData.items.reduce((s, i) => s + i.outbound_count, 0) : 0"></div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Outbound Msgs</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--accent-yellow);"
+                         x-text="convData?.items ? convData.items.filter(i => i.attention_reasons && i.attention_reasons.length > 0).length : 0"></div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Needs Attention</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: 700; color: var(--text-secondary);"
+                         x-text="convData?.items ? (() => { const vals = convData.items.map(i => i.avg_response_seconds).filter(v => v != null); return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) + 's' : '—'; })()"></div>
+                    <div style="font-size: 11px; color: var(--text-tertiary);">Avg Response</div>
+                </div>
+            </div>
+
+            <!-- Bulk Action Toolbar -->
+            <div x-show="selectedConvs.length > 0" class="bulk-toolbar">
+                <span class="bulk-count" x-text="'Selected: ' + selectedConvs.length"></span>
+                <button @click="openBulkAssignModal()" class="bulk-btn"><i class="fas fa-user" style="margin-right:4px;"></i> Assign</button>
+                <button @click="openBulkTagModal()" class="bulk-btn"><i class="fas fa-tags" style="margin-right:4px;"></i> Tag</button>
+                <button @click="openBulkAttentionModal()" class="bulk-btn"><i class="fas fa-eye" style="margin-right:4px;"></i> Set Attention</button>
+                <button @click="clearSelection()" class="bulk-btn danger"><i class="fas fa-times" style="margin-right:4px;"></i> Clear</button>
+            </div>
+
+            <!-- Loading -->
+            <div x-show="convLoading" class="loading-text" style="padding: 16px 0;">
+                <i class="fas fa-spinner fa-spin"></i> Loading conversations...
+            </div>
+
+            <!-- Empty -->
+            <div x-show="!convLoading && convData && convData.items.length === 0" class="empty-state" style="padding: 24px 0;">
+                <i class="fas fa-comments" style="font-size: 24px;"></i>
+                <p style="font-size: 14px;">No conversations found</p>
+            </div>
+
+            <!-- Table -->
+            <div x-show="!convLoading && convData && convData.items.length > 0" style="overflow-x: auto;">
+                <table class="app-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" class="row-checkbox"
+                                       :checked="selectedConvs.length > 0 && selectedConvs.length === convData.items.length"
+                                       @change="toggleSelectAll($event)">
+                            </th>
+                            <th style="cursor: pointer;" @click="sortConversations('user_id')">
+                                User
+                                <i class="fas" :class="convSortBy === 'user_id' ? (convSortOrder === 'desc' ? 'fa-sort-down' : 'fa-sort-up') : 'fa-sort'" style="margin-left: 4px; font-size: 10px;"></i>
+                            </th>
+                            <th style="cursor: pointer;" @click="sortConversations('message_count')">
+                                Messages
+                                <i class="fas" :class="convSortBy === 'message_count' ? (convSortOrder === 'desc' ? 'fa-sort-down' : 'fa-sort-up') : 'fa-sort'" style="margin-left: 4px; font-size: 10px;"></i>
+                            </th>
+                            <th style="cursor: pointer;" @click="sortConversations('response_time')">
+                                Avg Response
+                                <i class="fas" :class="convSortBy === 'response_time' ? (convSortOrder === 'desc' ? 'fa-sort-down' : 'fa-sort-up') : 'fa-sort'" style="margin-left: 4px; font-size: 10px;"></i>
+                            </th>
+                            <th>AI / Operator</th>
+                            <th style="cursor: pointer;" @click="sortConversations('queue_count')">
+                                Queue
+                                <i class="fas" :class="convSortBy === 'queue_count' ? (convSortOrder === 'desc' ? 'fa-sort-down' : 'fa-sort-up') : 'fa-sort'" style="margin-left: 4px; font-size: 10px;"></i>
+                            </th>
+                            <th style="cursor: pointer;" @click="sortConversations('confidence')">
+                                Confidence
+                                <i class="fas" :class="convSortBy === 'confidence' ? (convSortOrder === 'desc' ? 'fa-sort-down' : 'fa-sort-up') : 'fa-sort'" style="margin-left: 4px; font-size: 10px;"></i>
+                            </th>
+                            <th>Attention</th>
+                            <th>Status</th>
+                            <th>Last Activity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="item in convData.items" :key="item.user_id">
+                            <tr style="cursor: pointer;" @click="showConversationDetail(item.user_id)">
+                                <td @click.stop style="text-align: center;">
+                                    <input type="checkbox" class="row-checkbox"
+                                           :checked="selectedConvs.includes(item.user_id)"
+                                           @change="toggleSelect(item.user_id)">
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;" x-text="(item.first_name || '?')[0].toUpperCase()"></div>
+                                        <div>
+                                            <div style="font-size: 13px; font-weight: 500; color: var(--text-primary);" x-text="item.first_name || 'Unknown'"></div>
+                                            <div style="font-size: 11px; color: var(--text-tertiary);" x-text="item.username ? '@' + item.username : 'ID: ' + item.user_id"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px; color: var(--text-primary);" x-text="item.inbound_count + ' / ' + item.outbound_count"></span>
+                                    <span style="font-size: 11px; color: var(--text-tertiary); display: block;">in / out</span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px;" :style="'color:' + (item.avg_response_seconds != null && item.avg_response_seconds > 300 ? 'var(--accent-red)' : item.avg_response_seconds != null && item.avg_response_seconds > 60 ? 'var(--accent-orange)' : 'var(--text-primary)')" x-text="formatResponseTime(item.avg_response_seconds)"></span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px; align-items: center;">
+                                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(108,99,255,0.1); color: var(--accent-purple);" x-text="item.auto_approved_count + ' AI'"></span>
+                                        <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(251,146,60,0.1); color: var(--accent-orange);" x-text="item.operator_approved_count + ' Op'"></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px; font-weight: 500;" :style="'color:' + (item.queue_count > 3 ? 'var(--accent-red)' : item.queue_count > 0 ? 'var(--accent-orange)' : 'var(--text-secondary)')" x-text="item.queue_count"></span>
+                                </td>
+                                <td>
+                                    <span style="font-size: 13px;" :style="'color:' + (item.avg_confidence != null && item.avg_confidence >= 0.8 ? 'var(--accent-green)' : item.avg_confidence != null && item.avg_confidence >= 0.5 ? 'var(--accent-orange)' : 'var(--accent-red)')" x-text="item.avg_confidence != null ? Math.round(item.avg_confidence * 100) + '%' : 'N/A'"></span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                        <template x-for="reason in item.attention_reasons" :key="reason">
+                                            <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 500;"
+                                                  :style="reason === 'unanswered_message' ? 'background:rgba(239,68,68,0.1);color:var(--accent-red)' : reason === 'slow_response' ? 'background:rgba(251,146,60,0.1);color:var(--accent-orange)' : 'background:rgba(108,99,255,0.1);color:var(--accent-purple)'"
+                                                  x-text="reason === 'unanswered_message' ? 'Unanswered' : reason === 'slow_response' ? 'Slow' : 'Frequent Queue'"></span>
+                                        </template>
+                                        <span x-show="item.attention_reasons.length === 0" style="font-size: 11px; color: var(--accent-green);"><i class="fas fa-check-circle"></i> OK</span>
+                                    </div>
+                                </td>
+                                <td @click.stop>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500;"
+                                              :style="item.attention_status === 'reviewed' ? 'background:rgba(74,222,128,0.1);color:var(--accent-green)' : 'background:rgba(251,146,60,0.1);color:var(--accent-orange)'"
+                                              x-text="item.attention_status === 'reviewed' ? 'Reviewed' : 'New'"></span>
+                                        <button x-show="item.attention_status !== 'reviewed'"
+                                                @click="markReviewed(item.user_id)"
+                                                style="font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer;"
+                                                title="Mark as reviewed">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <select x-show="operators.length > 0"
+                                                @change="assignOperator(item.user_id, $event.target.value)"
+                                                style="font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer; max-width: 80px;">
+                                            <option value="0" :selected="!item.assigned_operator_id">Unassigned</option>
+                                            <template x-for="op in operators" :key="op.id">
+                                                <option :value="op.id" :selected="item.assigned_operator_id === op.id" x-text="op.username || op.name || 'Op #' + op.id"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-size: 12px; color: var(--text-tertiary);" x-text="item.last_inbound_at ? timeAgo(item.last_inbound_at) : 'Never'"></span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div x-show="convData && convData.pagination.total_pages > 1" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 0 0; border-top: 1px solid var(--border-color); margin-top: 12px;">
+                <span style="font-size: 12px; color: var(--text-tertiary);" x-text="'Page ' + convData.pagination.page + ' of ' + convData.pagination.total_pages + ' (' + convData.pagination.total + ' conversations)'"></span>
+                <div style="display: flex; gap: 8px;">
+                    <button @click="convPage = Math.max(1, convPage - 1); loadConversations()" :disabled="convPage <= 1" class="filter-btn secondary" :style="convPage <= 1 ? 'opacity:0.4;cursor:not-allowed' : ''">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button @click="convPage = Math.min(convData.pagination.total_pages, convPage + 1); loadConversations()" :disabled="convPage >= convData.pagination.total_pages" class="filter-btn secondary" :style="convPage >= convData.pagination.total_pages ? 'opacity:0.4;cursor:not-allowed' : ''">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversation Detail Modal -->
+    <div x-show="detailOpen" @click="detailOpen = false" class="fixed inset-0" style="background: rgba(0,0,0,0.5); z-index: 50; display: none;">
+        <div @click.stop style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 700px; max-height: 80vh; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">Conversation Detail</h3>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button x-show="detailData" @click="exportDetailCSV(detailData.user.id)"
+                            class="filter-btn secondary" style="font-size: 12px; padding: 4px 10px;">
+                        <i class="fas fa-download" style="margin-right: 3px;"></i> Export Detail
+                    </button>
+                    <button @click="detailOpen = false" style="background: none; border: none; cursor: pointer; color: var(--text-tertiary); font-size: 18px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div x-show="detailLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+
+            <div x-show="!detailLoading && detailData">
+                <!-- User Info -->
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;" x-text="(detailData?.user?.first_name || '?')[0].toUpperCase()"></div>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);" x-text="detailData?.user?.first_name || 'Unknown'"></div>
+                        <div style="font-size: 12px; color: var(--text-tertiary);" x-text="detailData?.user?.username ? '@' + detailData.user.username : 'ID: ' + (detailData?.user?.id || '')"></div>
+                    </div>
+                    <div style="margin-left: auto; text-align: right;">
+                        <div style="font-size: 12px; color: var(--text-tertiary);">Total Messages</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--text-primary);" x-text="detailData?.user?.message_count ?? 0"></div>
+                    </div>
+                </div>
+
+                <!-- Attention Reasons -->
+                <div x-show="detailData?.attention_reasons?.length > 0" style="margin-bottom: 16px;">
+                    <template x-for="reason in (detailData?.attention_reasons || [])" :key="reason">
+                        <span style="display: inline-block; font-size: 11px; padding: 4px 8px; border-radius: 6px; font-weight: 500; margin-right: 4px; margin-bottom: 4px;"
+                              :style="reason === 'unanswered_message' ? 'background:rgba(239,68,68,0.1);color:var(--accent-red)' : reason === 'slow_response' ? 'background:rgba(251,146,60,0.1);color:var(--accent-orange)' : 'background:rgba(108,99,255,0.1);color:var(--accent-purple)'"
+                              x-text="reason === 'unanswered_message' ? 'Unanswered Messages' : reason === 'slow_response' ? 'Slow Response Time' : 'Frequent Queue Routing'"></span>
+                    </template>
+                </div>
+
+                <!-- Attention Management -->
+                <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">Attention Management</div>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 12px; color: var(--text-tertiary);">Status:</span>
+                            <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500;"
+                                  :style="(detailData?.attention?.status === 'reviewed') ? 'background:rgba(74,222,128,0.1);color:var(--accent-green)' : 'background:rgba(251,146,60,0.1);color:var(--accent-orange)'"
+                                  x-text="(detailData?.attention?.status === 'reviewed') ? 'Reviewed' : 'New'"></span>
+                            <button x-show="detailData?.attention?.status !== 'reviewed'"
+                                    @click="detailMarkReviewed(detailData?.user?.id)"
+                                    style="font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--accent-green); cursor: pointer;">
+                                <i class="fas fa-check" style="margin-right: 2px;"></i> Mark Reviewed
+                            </button>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 12px; color: var(--text-tertiary);">Assigned:</span>
+                            <select @change="detailAssignOperator(detailData?.user?.id, $event.target.value)"
+                                    style="font-size: 11px; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+                                <option value="0" :selected="!detailData?.attention?.assigned_operator_id">Unassigned</option>
+                                <template x-for="op in operators" :key="op.id">
+                                    <option :value="op.id" :selected="detailData?.attention?.assigned_operator_id === op.id" x-text="op.username || op.name || 'Op #' + op.id"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div x-show="detailData?.attention?.reviewed_by" style="font-size: 11px; color: var(--text-tertiary);">
+                            <span x-text="'by ' + (detailData?.attention?.reviewed_by || '')"></span>
+                            <span x-show="detailData?.attention?.reviewed_at" x-text="' ' + timeAgo(detailData?.attention?.reviewed_at)"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Timeline -->
+                <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">
+                            <i class="fas fa-clock" style="margin-right: 4px; font-size: 10px;"></i> Activity Timeline
+                        </div>
+                        <button x-show="convDetail" @click="exportActivityCSV(convDetail.user.id)"
+                                class="filter-btn secondary" style="font-size: 11px; padding: 3px 8px;">
+                            <i class="fas fa-download" style="margin-right: 3px;"></i> Export
+                        </button>
+                    </div>
+                    <div x-show="activityLoading" style="font-size: 12px; color: var(--text-tertiary); padding: 8px 0;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading activity...
+                    </div>
+                    <div x-show="!activityLoading && activityError" style="font-size: 12px; color: var(--accent-red); padding: 8px 0;" x-text="activityError"></div>
+                    <div x-show="!activityLoading && !activityError && activityItems.length === 0" style="font-size: 12px; color: var(--text-tertiary); padding: 8px 0;">
+                        No activity yet.
+                    </div>
+                    <div x-show="!activityLoading && activityItems.length > 0" style="max-height: 300px; overflow-y: auto;">
+                        <template x-for="ev in activityItems" :key="ev.event_id + '_' + ev.event_type">
+                            <div class="activity-item">
+                                <div class="activity-icon" :class="ev.event_type">
+                                    <i class="fas" :class="ev.event_type === 'message' ? (ev.direction === 'inbound' ? 'fa-arrow-down' : 'fa-arrow-up') : ev.event_type === 'note' ? 'fa-sticky-note' : ev.event_type === 'attention_change' ? 'fa-eye' : 'fa-tag'"></i>
+                                </div>
+                                <div class="activity-body">
+                                    <div class="activity-desc">
+                                        <template x-if="ev.event_type === 'message'">
+                                            <span>
+                                                <strong x-text="ev.direction === 'inbound' ? 'Inbound message' : 'Outbound message'"></strong>
+                                                <span x-show="ev.content_preview" x-text="': ' + ev.content_preview"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="ev.event_type === 'note'">
+                                            <span>
+                                                <strong>Internal note</strong>
+                                                <span x-show="ev.content_preview" x-text="': ' + ev.content_preview"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="ev.event_type === 'attention_change'">
+                                            <span>
+                                                <strong>Attention changed</strong>
+                                                <span x-text="' to ' + ev.detail"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="ev.event_type === 'tag_assigned'">
+                                            <span>
+                                                <strong>Tag assigned</strong>
+                                                <span x-text="': ' + ev.detail"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                    <div class="activity-meta">
+                                        <span x-show="ev.operator" x-text="ev.operator"></span>
+                                        <span x-show="ev.operator && ev.created_at"> &middot; </span>
+                                        <span x-text="timeAgo(ev.created_at)"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div x-show="!activityLoading && activityTotalPages > 1" style="text-align: center; padding-top: 8px;">
+                        <button @click="loadMoreActivity()" :disabled="activityPage >= activityTotalPages"
+                                class="filter-btn secondary" style="font-size: 11px; padding: 4px 10px;"
+                                :style="activityPage >= activityTotalPages ? 'opacity:0.4;cursor:not-allowed' : ''">
+                            Load more
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Internal Notes -->
+                <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">
+                        <i class="fas fa-lock" style="margin-right: 4px; font-size: 10px;"></i> Internal Notes
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px; font-style: italic;">
+                        These notes are internal only and will never be sent to the user.
+                    </div>
+
+                    <!-- Note Input -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <textarea x-model="noteInput"
+                                  placeholder="Add a note..."
+                                  rows="2"
+                                  maxlength="2000"
+                                  :disabled="noteSubmitting"
+                                  style="flex: 1; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; resize: vertical; font-family: inherit;"
+                                  @keydown.ctrl.enter="submitNote(detailData?.user?.id)"
+                                  @keydown.meta.enter="submitNote(detailData?.user?.id)"></textarea>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                        <button @click="submitNote(detailData?.user?.id)"
+                                :disabled="noteSubmitting || !noteInput.trim()"
+                                class="filter-btn primary"
+                                :style="noteSubmitting || !noteInput.trim() ? 'opacity:0.5;cursor:not-allowed' : ''">
+                            <i class="fas" :class="noteSubmitting ? 'fa-spinner fa-spin' : 'fa-plus'" style="margin-right: 4px;"></i>
+                            <span x-text="noteSubmitting ? 'Adding...' : 'Add Note'"></span>
+                        </button>
+                        <span x-show="noteError" style="font-size: 12px; color: var(--accent-red);" x-text="noteError"></span>
+                        <span x-show="noteSuccess" style="font-size: 12px; color: var(--accent-green);">Note added</span>
+                    </div>
+
+                    <!-- Notes Loading -->
+                    <div x-show="notesLoading" style="font-size: 12px; color: var(--text-tertiary); padding: 8px 0;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading notes...
+                    </div>
+
+                    <!-- Notes Empty -->
+                    <div x-show="!notesLoading && notes.length === 0" style="font-size: 12px; color: var(--text-tertiary); padding: 8px 0;">
+                        No internal notes yet.
+                    </div>
+
+                    <!-- Notes List -->
+                    <div x-show="!notesLoading && notes.length > 0" style="max-height: 200px; overflow-y: auto;">
+                        <template x-for="note in notes" :key="note.id">
+                            <div style="padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+                                <!-- View mode -->
+                                <div x-show="editingNoteId !== note.id">
+                                    <div style="font-size: 13px; color: var(--text-primary); white-space: pre-wrap; word-break: break-word;" x-text="note.content"></div>
+                                    <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+                                        <span x-text="note.created_by || 'Unknown'"></span>
+                                        <span style="margin: 0;">·</span>
+                                        <span x-text="note.created_at ? formatDate(note.created_at) : ''"></span>
+                                        <template x-if="note.created_by === currentUser">
+                                            <span style="margin-left: auto; display: flex; gap: 4px;">
+                                                <button @click="startEditNote(note)" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); cursor: pointer;" title="Edit note">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+                                                <button @click="confirmDeleteNote(note)" style="font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--accent-red); cursor: pointer;" title="Delete note">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <!-- Edit mode -->
+                                <div x-show="editingNoteId === note.id">
+                                    <textarea x-model="editingNoteContent"
+                                              rows="3"
+                                              maxlength="2000"
+                                              :disabled="editingNoteSaving"
+                                              style="width: 100%; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--accent-purple); border-radius: 8px; color: var(--text-primary); font-size: 13px; resize: vertical; font-family: inherit; margin-bottom: 8px;"></textarea>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button @click="saveEditNote(detailData?.user?.id, note.id)"
+                                                :disabled="editingNoteSaving || !editingNoteContent.trim()"
+                                                class="filter-btn primary"
+                                                :style="editingNoteSaving || !editingNoteContent.trim() ? 'opacity:0.5;cursor:not-allowed' : ''"
+                                                style="font-size: 11px; padding: 4px 10px;">
+                                            <i class="fas" :class="editingNoteSaving ? 'fa-spinner fa-spin' : 'fa-check'" style="margin-right: 2px;"></i>
+                                            <span x-text="editingNoteSaving ? 'Saving...' : 'Save'"></span>
+                                        </button>
+                                        <button @click="cancelEditNote()"
+                                                :disabled="editingNoteSaving"
+                                                class="filter-btn secondary"
+                                                style="font-size: 11px; padding: 4px 10px;">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Conversation Tags -->
+                <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">
+                        <i class="fas fa-tags" style="margin-right: 4px; font-size: 10px;"></i> Conversation Tags
+                    </div>
+
+                    <!-- Assigned Tags -->
+                    <div x-show="convTagsLoading" style="font-size: 12px; color: var(--text-tertiary); padding: 4px 0;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading tags...
+                    </div>
+                    <div x-show="!convTagsLoading && convTags.length === 0" style="font-size: 12px; color: var(--text-tertiary); padding: 4px 0;">
+                        No tags assigned.
+                    </div>
+                    <div x-show="!convTagsLoading && convTags.length > 0" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                        <template x-for="t in convTags" :key="t.id">
+                            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: rgba(108,99,255,0.15); color: var(--accent-purple);">
+                                <span x-text="t.name"></span>
+                                <button @click="removeTag(detailData?.user?.id, t.id)"
+                                        :disabled="convTagAssigning"
+                                        style="background: none; border: none; cursor: pointer; color: var(--accent-purple); font-size: 10px; padding: 0; line-height: 1;"
+                                        title="Remove tag">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </span>
+                        </template>
+                    </div>
+
+                    <!-- Assign Tag -->
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select x-model="selectedTagToAssign"
+                                :disabled="convTagAssigning"
+                                style="flex: 1; padding: 6px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;">
+                            <option value="">Select a tag...</option>
+                            <template x-for="tag in availableTagsToAssign" :key="tag.id">
+                                <option :value="tag.id" x-text="tag.name"></option>
+                            </template>
+                        </select>
+                        <button @click="assignTag(detailData?.user?.id)"
+                                :disabled="convTagAssigning || !selectedTagToAssign"
+                                class="filter-btn primary"
+                                :style="(convTagAssigning || !selectedTagToAssign) ? 'opacity:0.5;cursor:not-allowed' : 'font-size:11px;padding:5px 10px;'">
+                            <i class="fas" :class="convTagAssigning ? 'fa-spinner fa-spin' : 'fa-plus'" style="margin-right: 2px;"></i>
+                            Assign
+                        </button>
+                        <span x-show="convTagError" style="font-size: 11px; color: var(--accent-red);" x-text="convTagError"></span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">Inbound</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);" x-text="detailData?.analytics?.inbound_count ?? 0"></div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">Outbound</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);" x-text="detailData?.analytics?.outbound_count ?? 0"></div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">Avg Response</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);" x-text="formatResponseTime(detailData?.analytics?.avg_response_seconds)"></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">AI Generated</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--accent-purple);" x-text="detailData?.analytics?.ai_generated ?? 0"></div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">Auto-Approval</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--accent-green);" x-text="detailData?.analytics?.auto_approval_rate != null ? detailData.analytics.auto_approval_rate + '%' : 'N/A'"></div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 4px;">Confidence</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);" x-text="detailData?.analytics?.avg_confidence != null ? Math.round(detailData.analytics.avg_confidence * 100) + '%' : 'N/A'"></div>
+                    </div>
+                </div>
+
+                <!-- Queue Stats -->
+                <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">Queue Activity</div>
+                    <div style="display: flex; gap: 16px;">
+                        <span style="font-size: 13px; color: var(--text-primary);"><strong x-text="detailData?.queue?.total_queue_items ?? 0"></strong> total</span>
+                        <span style="font-size: 13px; color: var(--accent-orange);"><strong x-text="detailData?.queue?.pending_queue_items ?? 0"></strong> pending</span>
+                        <span style="font-size: 13px; color: var(--accent-green);"><strong x-text="detailData?.queue?.approved_queue_items ?? 0"></strong> approved</span>
+                        <span style="font-size: 13px; color: var(--accent-red);"><strong x-text="detailData?.queue?.rejected_queue_items ?? 0"></strong> rejected</span>
+                    </div>
+                </div>
+
+                <!-- Mini Timeline -->
+                <div x-show="detailData?.timeline?.length > 0" style="padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">Daily Activity (Inbound / Outbound)</div>
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <template x-for="day in (detailData?.timeline || [])" :key="day.date">
+                            <div style="text-align: center; padding: 4px 6px; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border-color); min-width: 60px;">
+                                <div style="font-size: 10px; color: var(--text-tertiary);" x-text="day.date.slice(5)"></div>
+                                <div style="font-size: 12px; font-weight: 600; color: var(--accent-purple);" x-text="day.inbound + '/' + day.outbound"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Link to full profile -->
+                <div style="margin-top: 16px; text-align: center;">
+                    <a :href="'/dashboard/profile/' + (detailData?.user?.id || '')" target="_blank" style="font-size: 13px; color: var(--accent-purple); text-decoration: none; font-weight: 500;">
+                        <i class="fas fa-external-link-alt" style="margin-right: 4px;"></i> Open Full Profile
+                    </a>
+                </div>
+
+                <!-- Tag Management -->
+                <div style="margin-top: 16px; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;">
+                        <i class="fas fa-cog" style="margin-right: 4px; font-size: 10px;"></i> Manage Tags
+                    </div>
+
+                    <!-- Existing Tags List -->
+                    <div x-show="allTags.length > 0" style="margin-bottom: 10px;">
+                        <template x-for="tag in allTags" :key="tag.id">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border-color);">
+                                <div>
+                                    <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);" x-text="tag.name"></span>
+                                    <span x-show="tag.description" style="font-size: 11px; color: var(--text-tertiary); margin-left: 6px;" x-text="tag.description"></span>
+                                </div>
+                                <button @click="deleteTag(tag.id)"
+                                        style="font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--accent-red); cursor: pointer;"
+                                        title="Delete tag">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    <div x-show="allTags.length === 0" style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 10px;">
+                        No tags created yet.
+                    </div>
+
+                    <!-- Create Tag -->
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input x-model="newTagName"
+                               placeholder="Tag name..."
+                               maxlength="50"
+                               :disabled="tagCreating"
+                               style="flex: 1; padding: 6px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;">
+                        <input x-model="newTagDescription"
+                               placeholder="Description (optional)..."
+                               maxlength="200"
+                               :disabled="tagCreating"
+                               style="flex: 1; padding: 6px 10px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 12px;">
+                        <button @click="createTag()"
+                                :disabled="tagCreating || !newTagName.trim()"
+                                class="filter-btn primary"
+                                :style="(tagCreating || !newTagName.trim()) ? 'opacity:0.5;cursor:not-allowed' : 'font-size:11px;padding:5px 10px;'">
+                            <i class="fas" :class="tagCreating ? 'fa-spinner fa-spin' : 'fa-plus'" style="margin-right: 2px;"></i>
+                            Create
+                        </button>
+                    </div>
+                    <div x-show="tagError" style="font-size: 11px; color: var(--accent-red); margin-top: 6px;" x-text="tagError"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Assign Modal -->
+    <div x-show="bulkAssignOpen" @click="bulkAssignOpen = false" class="bulk-modal-overlay">
+        <div @click.stop class="bulk-modal">
+            <h4>Assign Operator</h4>
+            <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;" x-text="'Assigning to ' + selectedConvs.length + ' selected conversation(s)'"></p>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Or apply to entire segment:</label>
+                <select x-model="bulkSegmentId" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px;">
+                    <option value="">Use selected conversations only</option>
+                    <template x-for="seg in allSegments" :key="seg.id">
+                        <option :value="seg.id" x-text="seg.name"></option>
+                    </template>
+                </select>
+            </div>
+            <select x-model="bulkAssignOperatorId" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; margin-bottom: 12px;">
+                <option value="">Select operator...</option>
+                <template x-for="op in operators" :key="op.id">
+                    <option :value="op.id" x-text="op.username || op.name || 'Op #' + op.id"></option>
+                </template>
+            </select>
+            <div x-show="bulkError" style="font-size: 12px; color: var(--accent-red); margin-bottom: 8px;" x-text="bulkError"></div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button @click="bulkAssignOpen = false" class="filter-btn secondary" style="font-size: 12px;">Cancel</button>
+                <button @click="executeBulkAssign()" :disabled="!bulkAssignOperatorId || bulkOperating" class="filter-btn primary" style="font-size: 12px;">
+                    <i class="fas" :class="bulkOperating ? 'fa-spinner fa-spin' : 'fa-check'" style="margin-right: 2px;"></i>
+                    <span x-text="bulkOperating ? 'Assigning...' : 'Assign'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Tag Modal -->
+    <div x-show="bulkTagOpen" @click="bulkTagOpen = false" class="bulk-modal-overlay">
+        <div @click.stop class="bulk-modal">
+            <h4>Add Tag</h4>
+            <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;" x-text="'Tagging ' + selectedConvs.length + ' selected conversation(s)'"></p>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Or apply to entire segment:</label>
+                <select x-model="bulkSegmentId" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px;">
+                    <option value="">Use selected conversations only</option>
+                    <template x-for="seg in allSegments" :key="seg.id">
+                        <option :value="seg.id" x-text="seg.name"></option>
+                    </template>
+                </select>
+            </div>
+            <select x-model="bulkTagId" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; margin-bottom: 12px;">
+                <option value="">Select tag...</option>
+                <template x-for="tag in allTags" :key="tag.id">
+                    <option :value="tag.id" x-text="tag.name"></option>
+                </template>
+            </select>
+            <div x-show="bulkError" style="font-size: 12px; color: var(--accent-red); margin-bottom: 8px;" x-text="bulkError"></div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button @click="bulkTagOpen = false" class="filter-btn secondary" style="font-size: 12px;">Cancel</button>
+                <button @click="executeBulkTag()" :disabled="!bulkTagId || bulkOperating" class="filter-btn primary" style="font-size: 12px;">
+                    <i class="fas" :class="bulkOperating ? 'fa-spinner fa-spin' : 'fa-check'" style="margin-right: 2px;"></i>
+                    <span x-text="bulkOperating ? 'Adding...' : 'Add Tag'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Attention Modal -->
+    <div x-show="bulkAttentionOpen" @click="bulkAttentionOpen = false" class="bulk-modal-overlay">
+        <div @click.stop class="bulk-modal">
+            <h4>Set Attention Status</h4>
+            <p style="font-size: 12px; color: var(--text-tertiary); margin-bottom: 12px;" x-text="'Updating ' + selectedConvs.length + ' selected conversation(s)'"></p>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Or apply to entire segment:</label>
+                <select x-model="bulkSegmentId" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px;">
+                    <option value="">Use selected conversations only</option>
+                    <template x-for="seg in allSegments" :key="seg.id">
+                        <option :value="seg.id" x-text="seg.name"></option>
+                    </template>
+                </select>
+            </div>
+            <select x-model="bulkAttentionStatus" style="width: 100%; padding: 8px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 13px; margin-bottom: 12px;">
+                <option value="new">New</option>
+                <option value="reviewed">Reviewed</option>
+            </select>
+            <div x-show="bulkError" style="font-size: 12px; color: var(--accent-red); margin-bottom: 8px;" x-text="bulkError"></div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button @click="bulkAttentionOpen = false" class="filter-btn secondary" style="font-size: 12px;">Cancel</button>
+                <button @click="executeBulkAttention()" :disabled="bulkOperating" class="filter-btn primary" style="font-size: 12px;">
+                    <i class="fas" :class="bulkOperating ? 'fa-spinner fa-spin' : 'fa-check'" style="margin-right: 2px;"></i>
+                    <span x-text="bulkOperating ? 'Updating...' : 'Update'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div x-show="toastMessage" x-transition style="position: fixed; bottom: 20px; right: 20px; z-index: 100; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;"
+         :style="toastType === 'success' ? 'background:rgba(74,222,128,0.9);color:white' : 'background:rgba(239,68,68,0.9);color:white'"
+         x-text="toastMessage"></div>
+</div>
+
+<script>
+function analyticsApp() {
+    var _U = window.AnalyticsUtils;
+    var _API = window.AnalyticsAPI;
+    return {
+        data: null,
+        loading: false,
+        error: null,
+        startDate: '',
+        endDate: '',
+        chart: null,
+
+        convData: null,
+        convLoading: false,
+        convPage: 1,
+        convPageSize: 25,
+        convSortBy: 'last_activity',
+        convSortOrder: 'desc',
+        convAttention: '',
+        convOperatorFilter: '',
+        convSegmentFilter: '',
+        _listSeq: 0,
+        _listAbort: null,
+
+        allSegments: [],
+        segmentFilter: '',
+
+        selectedConvs: [],
+        bulkAssignOpen: false,
+        bulkAssignOperatorId: '',
+        bulkTagOpen: false,
+        bulkTagId: '',
+        bulkAttentionOpen: false,
+        bulkAttentionStatus: 'new',
+        bulkOperating: false,
+        bulkError: null,
+        bulkSegmentId: '',
+
+        toastMessage: '',
+        toastType: 'success',
+
+        activityItems: [],
+        activityLoading: false,
+        activityError: null,
+        activityPage: 1,
+        activityTotalPages: 0,
+        activityDetailUserId: null,
+
+        detailOpen: false,
+        detailLoading: false,
+        detailData: null,
+        _detailSeq: 0,
+        _detailAbort: null,
+
+        operators: [],
+
+        notes: [],
+        notesLoading: false,
+        noteInput: '',
+        noteSubmitting: false,
+        noteError: null,
+        noteSuccess: false,
+        currentUser: '',
+        editingNoteId: null,
+        editingNoteContent: '',
+        editingNoteSaving: false,
+
+        allTags: [],
+        convTags: [],
+        convTagsLoading: false,
+        convTagAssigning: false,
+        convTagError: null,
+        selectedTagToAssign: '',
+        convTagFilter: '',
+
+        newTagName: '',
+        newTagDescription: '',
+        tagCreating: false,
+        tagError: null,
+
+        searchQuery: '',
+        searchScope: 'all',
+        searchSegmentFilter: '',
+        searchResults: [],
+        searchLoading: false,
+        searchError: null,
+        searchTotal: 0,
+
+        get periodLabel() { return _U.computePeriodLabel(this.data); },
+
+        get aiPercent() { return _U.computeAiPercent(this.data); },
+
+        get operatorPercent() {
+            return 100 - this.aiPercent;
+        },
+
+        get totalHandled() {
+            const ai = this.data?.handling_breakdown?.ai || 0;
+            const op = this.data?.handling_breakdown?.operator || 0;
+            return ai + op;
+        },
+
+        formatResponseTime: function (s) { return _U.formatResponseTime(s); },
+        timeAgo: function (s) { return _U.timeAgo(s); },
+
+        async load() {
+            this.loading = true;
+            this.error = null;
+            try {
+                this.data = await _API.fetchDashboard(this.startDate, this.endDate);
+                this.$nextTick(() => this.renderChart());
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadConversations() {
+            if (this._listAbort) this._listAbort.abort();
+            this._listAbort = new AbortController();
+            var seq = ++this._listSeq;
+            this.convLoading = true;
+            try {
+                this.convData = await _API.fetchConversations({
+                    startDate: this.startDate, endDate: this.endDate,
+                    page: this.convPage, pageSize: this.convPageSize,
+                    sortBy: this.convSortBy, sortOrder: this.convSortOrder,
+                    attention: this.convAttention, tagFilter: this.convTagFilter,
+                    operatorFilter: this.convOperatorFilter,
+                    segmentFilter: this.convSegmentFilter,
+                }, this._listAbort.signal);
+                if (seq !== this._listSeq) return;
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('Failed to load conversations:', e);
+            } finally {
+                if (seq === this._listSeq) this.convLoading = false;
+            }
+        },
+
+        sortConversations(field) {
+            if (this.convSortBy === field) {
+                this.convSortOrder = this.convSortOrder === 'desc' ? 'asc' : 'desc';
+            } else {
+                this.convSortBy = field;
+                this.convSortOrder = 'desc';
+            }
+            this.convPage = 1;
+            this.loadConversations();
+        },
+
+        async showConversationDetail(userId) {
+            if (this._detailAbort) this._detailAbort.abort();
+            this._detailAbort = new AbortController();
+            var seq = ++this._detailSeq;
+            this.detailOpen = true;
+            this.detailLoading = true;
+            this.detailData = null;
+            this.notes = [];
+            this.noteInput = '';
+            this.noteError = null;
+            this.noteSuccess = false;
+            this.convTags = [];
+            this.convTagError = null;
+            this.selectedTagToAssign = '';
+            try {
+                this.detailData = await _API.fetchConversationDetail(userId, this.startDate, this.endDate, this._detailAbort.signal);
+                if (seq !== this._detailSeq) return;
+                this.loadNotes(userId, seq);
+                this.loadConvTags(userId, seq);
+                this.loadActivity(userId, seq);
+            } catch (e) {
+                if (e.name === 'AbortError') return;
+                console.error('Failed to load conversation detail:', e);
+                this.detailOpen = false;
+            } finally {
+                if (seq === this._detailSeq) this.detailLoading = false;
+            }
+        },
+
+        clearDates() {
+            this.startDate = '';
+            this.endDate = '';
+            this.load();
+            this.loadConversations();
+        },
+
+        renderChart() {
+            var timeline = (this.data && this.data.timeline) || [];
+            var ctx = document.getElementById('timelineChart');
+            if (!ctx) return;
+            if (this.chart) this.chart.destroy();
+            if (timeline.length === 0) return;
+            this.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: timeline.map(function (t) { return t.date; }),
+                    datasets: [
+                        { label: 'Inbound', data: timeline.map(function (t) { return t.inbound; }), backgroundColor: 'rgba(108,99,255,0.6)', borderColor: 'rgba(108,99,255,1)', borderWidth: 1, borderRadius: 4 },
+                        { label: 'Outbound', data: timeline.map(function (t) { return t.outbound; }), backgroundColor: 'rgba(74,222,128,0.6)', borderColor: 'rgba(74,222,128,1)', borderWidth: 1, borderRadius: 4 },
+                    ],
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 16, font: { size: 12 } } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 11 }, maxRotation: 45 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 }, stepSize: 1 } },
+                    },
+                },
+            });
+        },
+
+        init() {
+            var el = document.querySelector('[data-current-user]');
+            this.currentUser = el ? el.dataset.currentUser : '';
+            this.load();
+            this.loadConversations();
+            this.loadOperators();
+            this.loadAllTags();
+            this.loadSegments();
+            this._initRealtime();
+        },
+
+        async loadSegments() {
+            this.allSegments = await _API.fetchSegments();
+        },
+
+        _initRealtime() {
+            var self = this;
+            var _listTimer = null;
+            var _detailTimer = null;
+            var _detailUserId = null;
+            var _COALESCE_MS = 200;
+            function _scheduleListRefresh() {
+                if (_listTimer) return;
+                _listTimer = setTimeout(function () { _listTimer = null; self.loadConversations(); }, _COALESCE_MS);
+            }
+            function _scheduleDetailRefresh(userId) {
+                _detailUserId = userId;
+                if (_detailTimer) return;
+                _detailTimer = setTimeout(function () {
+                    _detailTimer = null;
+                    if (self.detailOpen && self.detailData && self.detailData.user.id === _detailUserId) self.showConversationDetail(_detailUserId);
+                }, _COALESCE_MS);
+            }
+            function _register(rt) {
+                rt.on('message.created', function () { _scheduleListRefresh(); if (self.detailOpen && self.detailData) _scheduleDetailRefresh(self.detailData.user.id); });
+                rt.on('message.sent', function () { _scheduleListRefresh(); if (self.detailOpen && self.detailData) _scheduleDetailRefresh(self.detailData.user.id); });
+                rt.on('operator_queue.updated', function () { _scheduleListRefresh(); });
+                rt.on('ai.generation_completed', function () { _scheduleListRefresh(); });
+                rt.on('conversation.attention_changed', function (evt) { _scheduleListRefresh(); if (evt && evt.data && evt.data.user_id) _scheduleDetailRefresh(evt.data.user_id); });
+                rt.on('conversation.assigned', function (evt) { _scheduleListRefresh(); if (evt && evt.data && evt.data.user_id) _scheduleDetailRefresh(evt.data.user_id); });
+                rt.on('conversation.tag_changed', function (evt) { _scheduleListRefresh(); if (evt && evt.data && evt.data.user_id) _scheduleDetailRefresh(evt.data.user_id); });
+                rt.on('conversation.note_changed', function (evt) { _scheduleListRefresh(); if (evt && evt.data && evt.data.user_id) _scheduleDetailRefresh(evt.data.user_id); });
+            }
+            if (window.rt) {
+                _register(window.rt);
+                window.rt.onconnected(function () { _scheduleListRefresh(); if (self.detailOpen && self.detailData) _scheduleDetailRefresh(self.detailData.user.id); });
+            } else {
+                var _poll = setInterval(function () {
+                    if (window.rt) {
+                        clearInterval(_poll);
+                        _register(window.rt);
+                        window.rt.onconnected(function () { _scheduleListRefresh(); if (self.detailOpen && self.detailData) _scheduleDetailRefresh(self.detailData.user.id); });
+                    }
+                }, 50);
+                setTimeout(function () { clearInterval(_poll); }, 3000);
+            }
+            setInterval(function () { if (window.rt && window.rt.isPollingActive()) self.loadConversations(); }, 15000);
+        },
+
+        async loadOperators() { this.operators = await _API.fetchOperators(); },
+
+        async markReviewed(userId) {
+            var r = await _API.markReviewed(userId);
+            if (r.ok) {
+                var items = this.convData && this.convData.items;
+                if (items) { var item = items.find(function (i) { return i.user_id === userId; }); if (item) item.attention_status = 'reviewed'; }
+            }
+        },
+
+        async assignOperator(userId, operatorId) {
+            var r = await _API.assignOperator(userId, operatorId);
+            if (r.ok) {
+                var items = this.convData && this.convData.items;
+                if (items) { var item = items.find(function (i) { return i.user_id === userId; }); if (item) item.assigned_operator_id = r.data.assigned_operator_id; }
+            }
+        },
+
+        async detailMarkReviewed(userId) {
+            var r = await _API.markReviewed(userId);
+            if (r.ok && this.detailData) {
+                this.detailData.attention = { status: r.data.status, assigned_operator_id: r.data.assigned_operator_id, reviewed_at: r.data.reviewed_at, reviewed_by: r.data.reviewed_by };
+            }
+        },
+
+        async detailAssignOperator(userId, operatorId) {
+            var r = await _API.assignOperator(userId, operatorId);
+            if (r.ok && this.detailData) {
+                this.detailData.attention = Object.assign({}, this.detailData.attention, { assigned_operator_id: r.data.assigned_operator_id, reviewed_by: r.data.reviewed_by });
+            }
+        },
+
+        async loadNotes(userId, seq) {
+            this.notesLoading = true;
+            try { this.notes = await _API.fetchNotes(userId); } catch (e) { console.error('Failed to load notes:', e); } finally { if (seq == null || seq === this._detailSeq) this.notesLoading = false; }
+        },
+
+        async submitNote(userId) {
+            var content = this.noteInput.trim();
+            if (!content || this.noteSubmitting) return;
+            this.noteSubmitting = true; this.noteError = null; this.noteSuccess = false;
+            var r = await _API.createNote(userId, content);
+            if (r.ok) { this.notes.unshift(r.data); this.noteInput = ''; this.noteSuccess = true; setTimeout(() => { this.noteSuccess = false; }, 3000); }
+            else { this.noteError = r.data.error || 'Failed to add note'; }
+            this.noteSubmitting = false;
+        },
+
+        startEditNote(note) { this.editingNoteId = note.id; this.editingNoteContent = note.content; },
+        cancelEditNote() { this.editingNoteId = null; this.editingNoteContent = ''; },
+
+        async saveEditNote(userId, noteId) {
+            var content = this.editingNoteContent.trim();
+            if (!content || this.editingNoteSaving) return;
+            this.editingNoteSaving = true; this.noteError = null;
+            var r = await _API.updateNote(userId, noteId, content);
+            if (r.ok) {
+                var idx = this.notes.findIndex(function (n) { return n.id === noteId; });
+                if (idx !== -1) this.notes[idx].content = r.data.content;
+                this.editingNoteId = null; this.editingNoteContent = '';
+            } else if (r.status === 403) { this.noteError = 'Not authorized to edit this note'; }
+            else if (r.status === 404) { this.noteError = 'Note not found'; }
+            else { this.noteError = r.data.error || 'Failed to update note'; }
+            this.editingNoteSaving = false;
+        },
+
+        async confirmDeleteNote(note) {
+            if (!confirm('Delete this note?')) return;
+            this.noteError = null;
+            var userId = this.detailData && this.detailData.user && this.detailData.user.id;
+            if (!userId) return;
+            var r = await _API.deleteNote(userId, note.id);
+            if (r.ok) { this.notes = this.notes.filter(function (n) { return n.id !== note.id; }); }
+            else if (r.status === 403) { this.noteError = 'Not authorized to delete this note'; }
+            else if (r.status === 404) { this.noteError = 'Note not found'; }
+            else { this.noteError = 'Failed to delete note'; }
+        },
+
+        async loadAllTags() { this.allTags = await _API.fetchAllTags(); },
+
+        async loadConvTags(userId, seq) {
+            this.convTagsLoading = true;
+            try { if (seq != null && seq !== this._detailSeq) return; this.convTags = await _API.fetchConvTags(userId); }
+            catch (e) { console.error('Failed to load conversation tags:', e); }
+            finally { if (seq == null || seq === this._detailSeq) this.convTagsLoading = false; }
+        },
+
+        get availableTagsToAssign() {
+            var assignedIds = new Set(this.convTags.map(function (t) { return t.id; }));
+            return this.allTags.filter(function (t) { return !assignedIds.has(t.id); });
+        },
+
+        async assignTag(userId) {
+            if (!this.selectedTagToAssign || this.convTagAssigning) return;
+            this.convTagAssigning = true; this.convTagError = null;
+            var r = await _API.assignTag(userId, this.selectedTagToAssign);
+            if (r.ok) {
+                var tagId = parseInt(this.selectedTagToAssign);
+                var tag = this.allTags.find(function (t) { return t.id === tagId; });
+                if (tag) this.convTags.push(Object.assign({}, tag, { assigned_by: this.currentUser, assigned_at: new Date().toISOString() }));
+                this.selectedTagToAssign = '';
+            } else { this.convTagError = 'Failed to assign tag'; }
+            this.convTagAssigning = false;
+        },
+
+        async removeTag(userId, tagId) {
+            this.convTagError = null;
+            var r = await _API.removeTag(userId, tagId);
+            if (r.ok) { this.convTags = this.convTags.filter(function (t) { return t.id !== tagId; }); }
+            else { this.convTagError = 'Failed to remove tag'; }
+        },
+
+        async createTag() {
+            var name = this.newTagName.trim();
+            if (!name || this.tagCreating) return;
+            this.tagCreating = true; this.tagError = null;
+            var r = await _API.createTag(name, this.newTagDescription.trim() || null);
+            if (r.ok) { this.allTags.push(r.data); this.newTagName = ''; this.newTagDescription = ''; }
+            else { this.tagError = r.data.error || 'Failed to create tag'; }
+            this.tagCreating = false;
+        },
+
+        async deleteTag(tagId) {
+            if (!confirm('Delete this tag? It will be removed from all conversations.')) return;
+            this.tagError = null;
+            var r = await _API.deleteTag(tagId);
+            if (r.ok) { this.allTags = this.allTags.filter(function (t) { return t.id !== tagId; }); this.convTags = this.convTags.filter(function (t) { return t.id !== tagId; }); }
+            else { this.tagError = 'Failed to delete tag'; }
+        },
+
+        async performSearch() {
+            if (this.searchQuery.length < 2) { this.searchResults = []; this.searchTotal = 0; return; }
+            this.searchLoading = true; this.searchError = null;
+            var data = await _API.search(this.searchQuery, this.searchScope, this.searchSegmentFilter);
+            if (data) { this.searchResults = data.items || []; this.searchTotal = (data.pagination && data.pagination.total) || 0; }
+            else { this.searchError = 'Search failed'; }
+            this.searchLoading = false;
+        },
+
+        clearSearch() {
+            this.searchQuery = '';
+            this.searchResults = [];
+            this.searchTotal = 0;
+            this.searchError = null;
+        },
+
+        handleSearchResultClick(result) {
+            if (result.type === 'user') {
+                this.showConversationDetail(result.id);
+            } else if (result.type === 'message' || result.type === 'note') {
+                this.showConversationDetail(result.user_id);
+            }
+        },
+
+        toggleSelectAll(event) {
+            if (event.target.checked) {
+                this.selectedConvs = this.convData.items.map(i => i.user_id);
+            } else {
+                this.selectedConvs = [];
+            }
+        },
+
+        toggleSelect(userId) {
+            const idx = this.selectedConvs.indexOf(userId);
+            if (idx === -1) {
+                this.selectedConvs.push(userId);
+            } else {
+                this.selectedConvs.splice(idx, 1);
+            }
+        },
+
+        clearSelection() {
+            this.selectedConvs = [];
+        },
+
+        showToast(message, type) {
+            this.toastMessage = message;
+            this.toastType = type || 'success';
+            setTimeout(() => { this.toastMessage = ''; }, 3000);
+        },
+
+        openBulkAssignModal() {
+            this.bulkAssignOperatorId = '';
+            this.bulkSegmentId = '';
+            this.bulkError = null;
+            this.bulkAssignOpen = true;
+        },
+
+        openBulkTagModal() {
+            this.bulkTagId = '';
+            this.bulkSegmentId = '';
+            this.bulkError = null;
+            this.bulkTagOpen = true;
+        },
+
+        openBulkAttentionModal() {
+            this.bulkAttentionStatus = 'new';
+            this.bulkSegmentId = '';
+            this.bulkError = null;
+            this.bulkAttentionOpen = true;
+        },
+
+        async executeBulkAssign() {
+            if (!this.bulkAssignOperatorId || this.bulkOperating) return;
+            this.bulkOperating = true; this.bulkError = null;
+            var r = await _API.bulkAssign(this.selectedConvs, this.bulkAssignOperatorId, this.bulkSegmentId);
+            if (r.ok) { this.showToast('Assigned ' + r.data.updated + ' conversation(s)', 'success'); this.bulkAssignOpen = false; this.selectedConvs = []; this.loadConversations(); }
+            else { this.bulkError = r.data.error || 'Assignment failed'; }
+            this.bulkOperating = false;
+        },
+
+        async executeBulkTag() {
+            if (!this.bulkTagId || this.bulkOperating) return;
+            this.bulkOperating = true; this.bulkError = null;
+            var r = await _API.bulkTag(this.selectedConvs, this.bulkTagId, this.bulkSegmentId);
+            if (r.ok) { this.showToast('Tagged ' + r.data.assigned + ' conversation(s)', 'success'); this.bulkTagOpen = false; this.selectedConvs = []; this.loadConversations(); }
+            else { this.bulkError = r.data.error || 'Tagging failed'; }
+            this.bulkOperating = false;
+        },
+
+        async executeBulkAttention() {
+            if (this.bulkOperating) return;
+            this.bulkOperating = true; this.bulkError = null;
+            var r = await _API.bulkAttention(this.selectedConvs, this.bulkAttentionStatus, this.bulkSegmentId);
+            if (r.ok) { this.showToast('Updated ' + r.data.updated + ' conversation(s)', 'success'); this.bulkAttentionOpen = false; this.selectedConvs = []; this.loadConversations(); }
+            else { this.bulkError = r.data.error || 'Update failed'; }
+            this.bulkOperating = false;
+        },
+
+        async loadActivity(userId, seq) {
+            this.activityLoading = true; this.activityError = null; this.activityItems = []; this.activityPage = 1; this.activityTotalPages = 0; this.activityDetailUserId = userId;
+            var data = await _API.fetchActivity(userId, 1, 50);
+            if (data && seq != null && seq !== this._detailSeq) return;
+            if (data) { this.activityItems = data.items || []; this.activityTotalPages = (data.pagination && data.pagination.total_pages) || 0; }
+            else { this.activityError = 'Failed to load activity'; }
+            if (seq == null || seq === this._detailSeq) this.activityLoading = false;
+        },
+
+        async loadMoreActivity() {
+            if (this.activityPage >= this.activityTotalPages || !this.activityDetailUserId) return;
+            this.activityPage++;
+            var data = await _API.fetchActivity(this.activityDetailUserId, this.activityPage, 50);
+            if (data) { this.activityItems = this.activityItems.concat(data.items || []); }
+            else { this.activityPage--; }
+        },
+
+        async exportConversationsCSV() {
+            try {
+                var resp = await _API.exportConversationsCSV({
+                    startDate: this.startDate, endDate: this.endDate,
+                    sortBy: this.convSortBy, sortOrder: this.convSortOrder,
+                    attention: this.convAttention, tagFilter: this.convTagFilter, operatorFilter: this.convOperatorFilter,
+                });
+                if (!resp.ok) { var err = await resp.json(); this.showToast(err.error || 'Export failed', 'error'); return; }
+                _U.triggerDownload(await resp.blob(), 'conversations_export.csv');
+                this.showToast('CSV exported', 'success');
+            } catch (e) { this.showToast('Export failed', 'error'); }
+        },
+
+        async exportActivityCSV(userId) {
+            try {
+                var resp = await _API.exportActivityCSV(userId);
+                if (!resp.ok) { this.showToast('Activity export failed', 'error'); return; }
+                _U.triggerDownload(await resp.blob(), 'activity_user_' + userId + '.csv');
+                this.showToast('Activity CSV exported', 'success');
+            } catch (e) { this.showToast('Activity export failed', 'error'); }
+        },
+
+        async exportDetailCSV(userId) {
+            try {
+                var resp = await _API.exportDetailCSV(userId, this.startDate, this.endDate);
+                if (!resp.ok) { this.showToast('Detail export failed', 'error'); return; }
+                _U.triggerDownload(await resp.blob(), 'conversation_' + userId + '_detail.csv');
+                this.showToast('Detail CSV exported', 'success');
+            } catch (e) { this.showToast('Detail export failed', 'error'); }
+        },
+
+        formatDate: function (s) { return _U.formatDate(s); },
+    };
+}
+</script>
+{% endblock %}

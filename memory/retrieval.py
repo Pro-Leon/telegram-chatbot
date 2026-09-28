@@ -1,20 +1,19 @@
-from openai import AsyncOpenAI
-
-from core.config import get_settings
+from core.llm_provider import get_llm_provider
 from db.postgres import vector_search_messages
 
-_settings = get_settings()
 
-_embedding_key = _settings.embedding_api_key or _settings.openai_api_key
-_client = AsyncOpenAI(api_key=_embedding_key)
+async def get_embedding(text: str, model: str | None = None) -> list[float]:
+    """Get embedding via the sole provider.
 
-
-async def get_embedding(text: str, model: str = "text-embedding-3-small") -> list[float]:
-    response = await _client.embeddings.create(
-        model=model,
-        input=text,
-    )
-    return response.data[0].embedding
+    llama.cpp provides no embeddings endpoint, so this raises
+    ``NotImplementedError`` via the provider default. Active reply
+    generation and Context Engine retrieval do not require provider
+    embeddings (local MiniLM handles semantic retrieval). This helper is
+    retained only for legacy callers, which must treat failure as
+    no-retrieval (fail-open).
+    """
+    provider = get_llm_provider()
+    return await provider.embed(text, model=model)
 
 
 async def retrieve_relevant_history(
@@ -22,5 +21,12 @@ async def retrieve_relevant_history(
     query: str,
     k: int = 3,
 ) -> list[dict]:
-    query_embedding = await get_embedding(query)
-    return await vector_search_messages(user_id, query_embedding, k=k)
+    try:
+        query_embedding = await get_embedding(query)
+    except Exception:
+        # No provider embeddings (llama.cpp) — fail open with no retrieval.
+        return []
+    try:
+        return await vector_search_messages(user_id, query_embedding, k=k)
+    except Exception:
+        return []

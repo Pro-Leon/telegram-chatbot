@@ -1,0 +1,321 @@
+{% extends "dashboard.html" %}
+{% block nav_users %}active{% endblock %}
+{% block page_title %}User: {{ user.first_name }}{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;">
+    <div style="space-y:24px;">
+        <!-- User Card -->
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:24px;">
+            <div style="display:flex;align-items:center;margin-bottom:24px;">
+                <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#8B85FF);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#FFFFFF;">
+                    {{ user.first_name[0] }}
+                </div>
+                <div style="margin-left:16px;">
+                    <p style="font-size:24px;font-weight:700;color:#111827;margin:0;">{{ user.first_name or '-' }}</p>
+                    {% if user.username %}
+                    <p style="font-size:14px;color:#6B7280;margin:4px 0 0 0;">@{{ user.username }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="space-y:16px;">
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">User ID</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.id }}</p>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">First Name</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.first_name or '-' }}</p>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Username</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.username or '-' }}</p>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Message Count</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.message_count }}</p>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Funnel Stage</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.funnel_stage }}</p>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Blocked</label>
+                    <p style="font-weight:500;font-size:14px;margin:4px 0 0 0;color:{{ '#EF4444' if user.is_blocked else '#22C55E' }};">
+                        {{ "Yes" if user.is_blocked else "No" }}
+                    </p>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#F8F8F5;border-radius:12px;">
+                    <div>
+                        <label style="font-size:14px;font-weight:500;color:#111827;display:block;">Exclude from Auto-Reply</label>
+                        <p style="font-size:11px;color:#6B7280;margin:4px 0 0 0;">Bot won't auto-respond to messages from this user</p>
+                    </div>
+                    <label style="position:relative;display:inline-block;width:48px;height:24px;">
+                        <input type="checkbox" id="auto-reply-toggle"
+                               {% if user.do_not_auto_reply %}checked{% endif %}
+                               style="opacity:0;width:0;height:0;">
+                        <span style="position:absolute;inset:0;border-radius:24px;transition:background 0.2s;cursor:pointer;background:{{ '#EF4444' if user.do_not_auto_reply else '#E5E7EB' }};">
+                            <span style="position:absolute;top:4px;left:{{ '24px' if user.do_not_auto_reply else '4px' }};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);transition:transform 0.2s;"></span>
+                        </span>
+                    </label>
+                </div>
+                {% if user.notes %}
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Notes</label>
+                    <p style="font-weight:500;color:#111827;font-size:14px;margin:4px 0 0 0;">{{ user.notes }}</p>
+                </div>
+                {% endif %}
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Persona</label>
+                    <select id="persona-select"
+                            style="margin-top:4px;width:100%;padding:8px 12px;background:#F8F8F5;border:1px solid rgba(0,0,0,0.08);border-radius:8px;color:#111827;font-size:14px;">
+                        <option value="">Default</option>
+                        {% for p in personas %}
+                        <option value="{{ p.id }}" {% if p.instructions == user_persona %}selected{% endif %}>
+                            {{ p.name }} {% if p.is_default %}★{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#6B7280;display:block;">Segments</label>
+                    <div id="profile-segments" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;">
+                        <span style="font-size:12px;color:#9CA3AF;">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px;">
+                <button onclick="sendMessage({{ user.id }})"
+                        style="width:100%;padding:12px 16px;background:#6C63FF;color:#FFFFFF;border:none;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+                <button onclick="manageUser({{ user.id }}, '{{ user.first_name or '' }}', '{{ user.username or '' }}')"
+                        style="width:100%;padding:12px 16px;background:#E5E7EB;color:#111827;border:none;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <i class="fas fa-user-cog"></i> Manage
+                </button>
+            </div>
+        </div>
+
+        {% if profile and profile.facts %}
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:24px;">
+            <h2 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 16px 0;">Profile Facts</h2>
+            <pre style="background:#F8F8F5;border:1px solid rgba(0,0,0,0.08);border-radius:8px;padding:12px;color:#6B7280;font-size:14px;white-space:pre-wrap;margin:0;">{{ profile.facts | tojson(indent=2) }}</pre>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="space-y:24px;">
+        <!-- Activity Timeline -->
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:24px;">
+            <h2 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 16px 0;">30-Day Activity</h2>
+            <div id="profile-timeline" style="display:flex;align-items:flex-end;gap:3px;height:80px;">
+                <span style="font-size:12px;color:#9CA3AF;">Loading...</span>
+            </div>
+            <div id="profile-timeline-legend" style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:#6B7280;">
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#6C63FF;margin-right:4px;"></span>Both</span>
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:rgba(108,99,255,0.4);margin-right:4px;"></span>Inbound</span>
+                <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#22C55E;margin-right:4px;"></span>Outbound</span>
+            </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:24px;">
+            <h2 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 16px 0;">Message History</h2>
+            <div style="space-y:12px;max-height:384px;overflow-y:auto;">
+                {% for msg in messages %}
+                <div style="padding:12px;border-radius:12px;background:{{ 'rgba(108,99,255,0.1)' if msg.direction == 'inbound' else 'rgba(34,197,94,0.1)' }};">
+                    <div style="display:flex;justify-content:space-between;">
+                        <span style="font-size:11px;font-weight:600;text-transform:uppercase;color:{{ '#6C63FF' if msg.direction == 'inbound' else '#22C55E' }};">
+                            {{ msg.direction }}
+                        </span>
+                        <span style="font-size:11px;color:#6B7280;">{{ msg.created_at[:19].replace('T', ' ') }}</span>
+                    </div>
+                    <p style="margin-top:4px;font-size:14px;color:#111827;">{{ msg.content }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:24px;">
+            <h2 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 16px 0;">Send Message to User</h2>
+            <form id="send-form">
+                <textarea id="message-content"
+                          style="width:100%;padding:8px 12px;margin-bottom:16px;background:#F8F8F5;border:1px solid rgba(0,0,0,0.08);border-radius:8px;color:#111827;font-size:14px;resize:vertical;"
+                          rows="3"
+                          placeholder="Enter message content..."></textarea>
+                <button type="submit"
+                        style="padding:8px 24px;background:#6C63FF;color:#FFFFFF;border:none;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;">
+                    Send via MTProto
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Send Message Modal -->
+<div id="send-modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,0.5);">
+    <div style="padding:24px;width:384px;margin:80px auto 0;background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;">
+        <h3 style="font-size:18px;font-weight:600;color:#111827;margin:0 0 16px 0;">Send Message</h3>
+        <form id="send-form-modal">
+            <textarea style="width:100%;padding:8px 12px;margin-bottom:16px;background:#F8F8F5;border:1px solid rgba(0,0,0,0.08);border-radius:8px;color:#111827;font-size:14px;resize:vertical;"
+                      rows="4"
+                      name="content" placeholder="Message content..."></textarea>
+            <div style="display:flex;justify-content:flex-end;gap:12px;">
+                <button type="button" onclick="closeSendModal()"
+                        style="padding:8px 16px;border-radius:8px;color:#6B7280;border:1px solid rgba(0,0,0,0.08);background:transparent;cursor:pointer;font-size:14px;">Cancel</button>
+                <button type="submit"
+                        style="padding:8px 16px;background:#6C63FF;color:#FFFFFF;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">
+                    Send
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const userId = {{ user.id }};
+
+async function loadProfileSegments() {
+    try {
+        const resp = await fetch('/api/user/' + userId + '/segments/explain');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const container = document.getElementById('profile-segments');
+        if (!container) return;
+        const segments = data.segments || [];
+        if (segments.length === 0) {
+            container.innerHTML = '<span style="font-size:12px;color:#9CA3AF;">No segments</span>';
+            return;
+        }
+        container.innerHTML = segments.map(s => {
+            const color = s.is_member ? '#6C63FF' : '#6B7280';
+            const bg = s.is_member ? 'rgba(108,99,255,0.12)' : 'rgba(156,163,175,0.1)';
+            const tooltip = s.is_member
+                ? s.satisfied_count + '/' + s.total_count + ' rules satisfied'
+                : s.satisfied_count + '/' + s.total_count + ' rules satisfied (not a member)';
+            return '<span title="' + tooltip + '" style="background:' + bg + ';color:' + color + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;cursor:help;">' + s.segment_name + (s.is_member ? '' : ' (partial)') + '</span>';
+        }).join('');
+    } catch (e) {}
+}
+loadProfileSegments();
+
+async function loadProfileTimeline() {
+    try {
+        var resp = await fetch('/api/user/' + userId + '/analytics');
+        if (!resp.ok) return;
+        var data = await resp.json();
+        var timeline = data.timeline || [];
+        var c = document.getElementById('profile-timeline');
+        if (!c) return;
+        if (!timeline.length) { c.innerHTML = '<span style="font-size:12px;color:#9CA3AF;">No activity</span>'; return; }
+        var max = Math.max.apply(null, timeline.map(function(t) { return t.total; }));
+        c.innerHTML = timeline.map(function(t) {
+            var h = max > 0 ? Math.max((t.total / max) * 68, 2) : 2;
+            var bg = 'rgba(0,0,0,0.06)';
+            if (t.inbound > 0 && t.outbound > 0) bg = '#6C63FF';
+            else if (t.inbound > 0) bg = 'rgba(108,99,255,0.4)';
+            else if (t.outbound > 0) bg = '#22C55E';
+            var d = new Date(t.date);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var label = months[d.getMonth()] + ' ' + d.getDate();
+            return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;">' +
+                '<div style="width:100%;border-radius:3px 3px 0 0;background:' + bg + ';height:' + h + 'px;cursor:pointer;" title="' + t.inbound + ' in, ' + t.outbound + ' out"></div>' +
+                '<span style="font-size:9px;color:#9CA3AF;margin-top:4px;">' + label + '</span></div>';
+        }).join('');
+    } catch (e) {}
+}
+loadProfileTimeline();
+
+function sendMessage(id) {
+    document.getElementById('send-form-modal').reset();
+    document.getElementById('send-form-modal').onsubmit = function(e) {
+        e.preventDefault();
+        const content = this.content.value;
+        fetch(`/api/send-message`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: id, content: content})
+        }).then(r => r.json()).then(data => {
+            if (data.ok) {
+                alert('Message sent!');
+                document.getElementById('send-modal').style.display = 'none';
+            } else {
+                alert('Failed: ' + (data.detail || 'Unknown'));
+            }
+        }).catch(err => alert('Error: ' + err.message));
+    };
+    document.getElementById('send-modal').style.display = 'block';
+}
+
+function closeSendModal() {
+    document.getElementById('send-modal').style.display = 'none';
+}
+
+function manageUser(id, firstName, username) {
+    // Persona managed via dropdown above
+}
+
+var selectedPersona = null;
+document.getElementById('persona-select')?.addEventListener('change', function(e) {
+    const personaId = e.target.value;
+    const formData = new FormData();
+    formData.append('persona_id', personaId);
+    fetch(`/api/users/${userId}/persona`, {
+        method: 'POST',
+        body: formData
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            alert('Persona updated!');
+        } else {
+            alert('Failed: ' + (data.detail || 'Unknown'));
+        }
+    }).catch(err => alert('Error: ' + err.message));
+});
+
+document.getElementById('send-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const content = document.getElementById('message-content').value;
+    fetch('/api/send-message', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id: userId, content: content})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            alert('Message sent!');
+            document.getElementById('message-content').value = '';
+        } else {
+            alert('Failed: ' + (data.detail || 'Unknown'));
+        }
+    }).catch(err => alert('Error: ' + err.message));
+});
+
+document.getElementById('auto-reply-toggle')?.addEventListener('change', function(e) {
+    const formData = new FormData();
+    formData.append('enabled', e.target.checked);
+    fetch(`/api/user/${userId}/auto-reply`, {
+        method: 'POST',
+        body: formData
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            const toggle = e.target;
+            const slider = toggle.nextElementSibling;
+            if (e.target.checked) {
+                slider.style.background = '#EF4444';
+                slider.querySelector('span').style.transform = 'translateX(24px)';
+                slider.querySelector('span').style.left = '24px';
+            } else {
+                slider.style.background = '#E5E7EB';
+                slider.querySelector('span').style.transform = 'translateX(4px)';
+                slider.querySelector('span').style.left = '4px';
+            }
+        } else {
+            e.target.checked = !e.target.checked;
+            alert('Failed: ' + (data.detail || 'Unknown'));
+        }
+    }).catch(err => {
+        e.target.checked = !e.target.checked;
+        alert('Error: ' + err.message);
+    });
+});
+</script>
+{% endblock %}

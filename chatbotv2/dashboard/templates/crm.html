@@ -1,0 +1,201 @@
+{% extends "dashboard.html" %}
+{% block nav_crm %}active{% endblock %}
+{% block page_title %}CRM{% endblock %}
+
+{% block content %}
+<div class="app-card" style="padding: 20px; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Fan 360&deg;</h2>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input id="crm-fan-id" type="number" min="1" placeholder="Fan user ID"
+               style="padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; width: 200px;">
+        <button onclick="loadFan360()" class="btn-primary" style="padding: 8px 16px; font-size: 13px;">
+            <i class="fas fa-search" style="font-size: 12px;"></i> Load fan
+        </button>
+        <button onclick="runOpportunity()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+            <i class="fas fa-bolt" style="font-size: 12px;"></i> Opportunity dry-run
+        </button>
+        <button onclick="clearHandoff()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+            <i class="fas fa-handshake" style="font-size: 12px;"></i> Clear handoff
+        </button>
+    </div>
+    <div id="crm-fan-error" style="margin-top: 10px; font-size: 13px; color: var(--accent-red); display: none;"></div>
+</div>
+
+<div id="crm-panels" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px;"></div>
+
+<div class="app-card" style="padding: 20px; margin-bottom: 16px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Commerce Ops</h2>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+        <button onclick="loadCatalog()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Product catalog</button>
+        <button onclick="loadLedger()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Recent opportunity decisions</button>
+    </div>
+    <pre id="crm-ops-out" style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.03); border-radius: 8px; padding: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap;">No data loaded.</pre>
+</div>
+
+<div class="app-card" style="padding: 20px;">
+    <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Explain Lab</h2>
+    <p style="font-size: 13px; color: var(--text-tertiary); margin-bottom: 12px;">Pure deterministic functions, explicit inputs, no database. Same math the pipeline uses.</p>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+        <button onclick="explain('desire', {relationship_state:'warm', primary_intent:'casual_chat', purchase_intent:0.1})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Desire: warm chat</button>
+        <button onclick="explain('desire', {relationship_state:'warm', primary_intent:'price_inquiry', purchase_intent:0.85, explicit_purchase_request:false})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Desire: price inquiry</button>
+        <button onclick="explain('temperature', {relationship_score:0.65, desire_stage:'interest', purchase_intent:0.1})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Temperature: warm interest</button>
+        <button onclick="explain('readiness', {desire_stage:'qualification', temperature:'hot', purchase_intent:0.6, has_relevant_product:true})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Readiness: qualified + hot</button>
+        <button onclick="explain('objective', {desire:'interest', temperature:'warm', sales_window:'building', offer_readiness:'test_interest'})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Objective: interest</button>
+        <button onclick="explain('qualification', {preferences:{}, purchase_history:[], recent_offers:[]})" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Qualification: empty</button>
+    </div>
+    <pre id="crm-explain-out" style="font-size: 12px; color: var(--text-secondary); background: rgba(0,0,0,0.03); border-radius: 8px; padding: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap;">No data loaded.</pre>
+</div>
+
+<script>
+function fanId() {
+    const v = parseInt((document.getElementById('crm-fan-id').value || '').trim(), 10);
+    return Number.isFinite(v) && v > 0 ? v : null;
+}
+function showFanError(msg) {
+    const el = document.getElementById('crm-fan-error');
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+}
+function esc(v) {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+}
+function panel(title, rows) {
+    const body = rows.map(([k, v]) => `
+        <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05); font-size: 13px;">
+            <span style="color: var(--text-tertiary);">${k}</span>
+            <span style="color: var(--text-primary); font-weight: 500; text-align: right; word-break: break-word;">${esc(v)}</span>
+        </div>`).join('');
+    return `<div class="app-card" style="padding: 16px 20px;">
+        <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">${title}</h3>${body}</div>`;
+}
+async function getJSON(url, opts) {
+    const resp = await fetch(url, opts);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+    return data;
+}
+function bandsStr(bands) {
+    if (!bands || typeof bands !== 'object') return '—';
+    const parts = Object.entries(bands).filter(([, v]) => v).map(([k, v]) => `${k}:${v}`);
+    return parts.length ? parts.join(', ') : 'all unknown';
+}
+async function loadFan360() {
+    const id = fanId();
+    if (!id) { showFanError('Enter a valid fan user ID.'); return; }
+    showFanError(null);
+    const host = document.getElementById('crm-panels');
+    host.innerHTML = '<p style="font-size: 13px; color: var(--text-tertiary);">Loading…</p>';
+    try {
+        const [rel, intim, bound, comm] = await Promise.all([
+            getJSON(`/api/crm/fan/${id}/relationship`),
+            getJSON(`/api/crm/fan/${id}/intimacy`),
+            getJSON(`/api/crm/fan/${id}/boundaries`),
+            getJSON(`/api/crm/fan/${id}/commerce`),
+        ]);
+        const fs = (comm.fan_commercial_state || {});
+        const bh = (comm.behavioral || {});
+        const hm = comm.handoff_memory, hd = comm.handoff_durable;
+        host.innerHTML =
+            panel('Relationship', [
+                ['State', rel.relationship_state],
+                ['Commercial pressure', rel.commercial_pressure],
+                ['Tip', `${rel.tip_eligibility} (${rel.tip_reason || '—'})`],
+                ['Trajectory', bandsStr(rel.trajectory_bands)],
+                ['Rejections (consec)', rel.consecutive_rejections],
+                ['Total purchases', rel.total_purchases],
+                ['Prev offer', rel.previous_offer_status],
+            ]) +
+            panel('Intimacy (descriptive)', [
+                ['Bands', bandsStr(intim.bands)],
+                ['Days since seen', intim.days_since_last_seen],
+                ['Decay applied', intim.decay_applied],
+            ]) +
+            panel('Boundaries', [
+                ['Active', (bound.active || []).join(', ') || 'none'],
+                ['Recovering', (bound.recovering || []).join(', ') || '—'],
+                ['Blocks offer', bound.blocks_offer],
+                ['Blocks contact', bound.blocks_contact],
+                ['Degraded', bound.degraded],
+            ]) +
+            panel('Commerce', [
+                ['Purchases', fs.purchase_count],
+                ['Total spend (minor)', fs.total_spend_minor],
+                ['Recent offers', fs.recent_offer_count],
+                ['Recent rejections', fs.recent_rejected_offer_count],
+                ['Aftercare', bh.aftercare_status],
+                ['Cooldown/offers(24h)', `${bh.hours_since_last_offer ?? '—'} / recent rows: ${(comm.recent_offers || []).length}`],
+                ['Handoff (memory)', hm ? `${hm.active ? 'ACTIVE' : 'inactive'} — ${hm.reason || ''}` : 'none'],
+                ['Handoff (durable)', hd ? `${hd.active ? 'ACTIVE' : 'inactive'} — ${hd.reason || ''}` : 'none'],
+            ]);
+    } catch (e) {
+        host.innerHTML = '';
+        showFanError(e.message || 'Load failed.');
+    }
+}
+async function runOpportunity() {
+    const id = fanId();
+    if (!id) { showFanError('Enter a valid fan user ID.'); return; }
+    showFanError(null);
+    try {
+        const data = await getJSON(`/api/crm/fan/${id}/opportunity`);
+        const sel = data.selected
+            ? `def ${data.selected.definition_id} v${data.selected.version} @ ${data.selected.price_minor} ${data.selected.currency} (${data.selected.vault_items} items)`
+            : 'none';
+        const inel = (data.ineligible || []).map(c => `def ${c.definition_id}: ${(c.denial_reasons || []).join('+')}`).join('\n') || '—';
+        document.getElementById('crm-panels').innerHTML = panel('Opportunity dry-run (read-only)', [
+            ['Has opportunity', data.has_opportunity],
+            ['Status', data.status],
+            ['Candidates / eligible', `${data.candidates} / ${data.eligible}`],
+            ['Selected', sel],
+        ]) + `<div class="app-card" style="padding: 16px 20px;"><h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Ineligible</h3><pre style="font-size: 12px; white-space: pre-wrap;">${esc(inel)}</pre></div>`;
+    } catch (e) {
+        showFanError(e.message || 'Dry-run failed.');
+    }
+}
+async function clearHandoff() {
+    const id = fanId();
+    if (!id) { showFanError('Enter a valid fan user ID.'); return; }
+    if (!confirm(`Clear handoff state for fan ${id}? Automation may resume.`)) return;
+    showFanError(null);
+    try {
+        const data = await getJSON(`/api/crm/fan/${id}/handoff/clear`, { method: 'POST' });
+        showFanError(data.ok ? '' : 'Clear returned not-ok.');
+        if (data.ok) loadFan360();
+    } catch (e) {
+        showFanError(e.message || 'Clear failed.');
+    }
+}
+async function loadCatalog() {
+    try {
+        const data = await getJSON('/api/crm/catalog');
+        const rows = (data.products || []).map(p => `${p.product_id} — ${p.title} — ${p.price_minor ?? '?'} ${p.currency || ''} ${p.is_active ? '' : '(inactive)'}`).join('\n') || 'No products.';
+        document.getElementById('crm-ops-out').textContent = rows;
+    } catch (e) {
+        document.getElementById('crm-ops-out').textContent = 'Error: ' + (e.message || e);
+    }
+}
+async function loadLedger() {
+    try {
+        const data = await getJSON('/api/crm/opportunities/recent?limit=25');
+        const rows = (data.decisions || []).map(d => `#${d.opportunity_id} fan=${d.user_id} ${d.evaluated_at} ${d.decision_status}/${d.outcome_state} sel=${d.selected_definition_id ?? '—'}${d.no_selection_reason ? ' (' + d.no_selection_reason + ')' : ''}`).join('\n') || 'No decisions.';
+        document.getElementById('crm-ops-out').textContent = rows;
+    } catch (e) {
+        document.getElementById('crm-ops-out').textContent = 'Error: ' + (e.message || e);
+    }
+}
+async function explain(kind, payload) {
+    try {
+        const data = await getJSON(`/api/crm/explain/${kind}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        document.getElementById('crm-explain-out').textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        document.getElementById('crm-explain-out').textContent = 'Error: ' + (e.message || e);
+    }
+}
+</script>
+{% endblock %}

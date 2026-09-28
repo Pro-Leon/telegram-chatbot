@@ -1,0 +1,282 @@
+{% extends "dashboard.html" %}
+{% block nav_dropfans %}active{% endblock %}
+{% block page_title %}DropFans Overview{% endblock %}
+
+{% block extra_head %}
+<style>
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } }
+    .kpi-card {
+        background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+        padding: 20px; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .kpi-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px;
+        border-radius: 50%; filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .kpi-card.purple::after { background: var(--accent-purple); }
+    .kpi-card.green::after { background: var(--accent-green); }
+    .kpi-card.orange::after { background: var(--accent-orange); }
+    .kpi-card.red::after { background: var(--accent-red); }
+    .kpi-card.blue::after { background: #3b82f6; }
+    .kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .kpi-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .kpi-icon.green { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .kpi-icon.orange { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .kpi-icon.red { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .kpi-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .kpi-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-badge.healthy { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.unhealthy { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .status-badge.warning { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .status-badge.connected { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .status-badge.disconnected { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+
+    .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .health-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-primary); border-radius: 8px; }
+    .health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .health-dot.green { background: var(--accent-green); }
+    .health-dot.red { background: var(--accent-red); }
+    .health-dot.orange { background: var(--accent-orange); }
+    .health-dot.purple { background: var(--accent-purple); }
+
+    .workspace-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .workspace-nav a {
+        display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+        border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none;
+        background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.2s;
+    }
+    .workspace-nav a:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+    .workspace-nav a i { font-size: 12px; }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+        border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.15s;
+    }
+    .btn-sync:hover { border-color: var(--accent-purple); }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loading-text { color: var(--text-tertiary); font-size: 13px; padding: 20px; text-align: center; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .error-state { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; padding: 12px 16px; color: var(--accent-red); font-size: 13px; margin-bottom: 16px; }
+
+    .identity-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg-primary); border-radius: 8px; }
+    .identity-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 600; }
+    .identity-info { flex: 1; }
+    .identity-name { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .identity-meta { font-size: 12px; color: var(--text-tertiary); }
+
+    .toast {
+        position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px;
+        font-size: 13px; font-weight: 500; z-index: 9999; display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: var(--accent-green); color: white; }
+    .toast.error { background: var(--accent-red); color: white; }
+    .toast.info { background: var(--accent-purple); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="overviewApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>DropFans Workspace</h2>
+        <p>Manage your DropFans commerce, vault, drops, and earnings.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <!-- Workspace Navigation -->
+    <div class="workspace-nav">
+        <a href="/dashboard/dropfans"><i class="fas fa-th-large"></i> Overview</a>
+        <a href="/dashboard/drops"><i class="fas fa-box"></i> Drops</a>
+        <a href="/dashboard/posts"><i class="fas fa-file-alt"></i> Posts</a>
+        <a href="/dashboard/earnings"><i class="fas fa-dollar-sign"></i> Earnings</a>
+        <a href="/dashboard/links"><i class="fas fa-link"></i> Links</a>
+        <a href="/dashboard/vault"><i class="fas fa-lock"></i> Vault</a>
+        <a href="/dashboard/notifications"><i class="fas fa-bell"></i> Notifications</a>
+        <a href="/dashboard/dropfans/settings"><i class="fas fa-cog"></i> Settings</a>
+    </div>
+
+    <div x-show="loading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading workspace...</div>
+
+    <template x-if="!loading && !overview?.connected">
+        <div class="section-card">
+            <div class="empty-state">
+                <i class="fas fa-store"></i>
+                <p style="font-size:16px;font-weight:500;margin-bottom:4px;color:var(--text-primary);">DropFans not connected</p>
+                <p style="font-size:13px;color:var(--text-tertiary);margin-bottom:16px;">Connect your DropFans API key to start managing your creator workspace.</p>
+                <a href="/dashboard/dropfans/settings" class="btn-sync" style="border-color:var(--accent-purple);color:var(--accent-purple);">
+                    <i class="fas fa-plug"></i> Connect DropFans
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <template x-if="!loading && overview?.connected">
+        <div>
+            <!-- Identity -->
+            <div class="section-card" style="margin-bottom:16px;">
+                <div class="section-header">
+                    <h2>Account</h2>
+                    <button @click="refreshHealth()" class="btn-sync" :disabled="healthLoading">
+                        <i class="fas" :class="healthLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh Health
+                    </button>
+                </div>
+                <div class="identity-card" x-show="overview.identity">
+                    <div class="identity-avatar" x-text="(overview.identity?.display_name || overview.identity?.username || '?')[0]?.toUpperCase()"></div>
+                    <div class="identity-info">
+                        <div class="identity-name" x-text="overview.identity?.display_name || overview.identity?.username || 'Unknown'"></div>
+                        <div class="identity-meta">
+                            <span x-text="'@' + (overview.identity?.username || 'unknown')"></span>
+                            <span style="margin:0 6px;">|</span>
+                            <span x-text="'ID: ' + (overview.identity?.dropfans_creator_id || '-')"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="status-badge" :class="healthStatus === 'HEALTHY' ? 'healthy' : healthStatus === 'NOT_CONFIGURED' ? 'disconnected' : 'warning'"
+                              x-text="healthStatus || 'Unknown'"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI Grid -->
+            <div class="kpi-grid">
+                <div class="kpi-card purple">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Vault Items</span>
+                        <div class="kpi-icon purple"><i class="fas fa-cloud-upload-alt"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="overview.vault_count || 0"></div>
+                    <div class="kpi-sub">Media files in vault</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Drops</span>
+                        <div class="kpi-icon green"><i class="fas fa-box"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="overview.drops_count || 0"></div>
+                    <div class="kpi-sub">Active drops</div>
+                </div>
+                <div class="kpi-card orange">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Total Sales</span>
+                        <div class="kpi-icon orange"><i class="fas fa-shopping-cart"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="overview.earnings?.total_sales || 0"></div>
+                    <div class="kpi-sub">Recorded transactions</div>
+                </div>
+                <div class="kpi-card blue" x-show="overview.balance">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Balance</span>
+                        <div class="kpi-icon blue"><i class="fas fa-wallet"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="'$' + (overview.balance?.available?.toFixed(2) || '0.00')"></div>
+                    <div class="kpi-sub">Available to withdraw</div>
+                </div>
+            </div>
+
+            <!-- Health Status -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Provider Health</h2>
+                </div>
+                <div x-show="healthLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Checking health...</div>
+                <div x-show="!healthLoading && healthResult">
+                    <div class="health-grid">
+                        <div class="health-item">
+                            <div class="health-dot" :class="healthResult?.health === 'HEALTHY' ? 'green' : 'red'"></div>
+                            <div>
+                                <div style="font-size:13px;font-weight:500;color:var(--text-primary);" x-text="healthResult?.health || 'Unknown'"></div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="healthResult?.message || 'API responding'"></div>
+                            </div>
+                        </div>
+                        <div class="health-item">
+                            <div class="health-dot purple"></div>
+                            <div>
+                                <div style="font-size:13px;font-weight:500;color:var(--text-primary);">API Tier</div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="healthResult?.account?.tier || 'Unknown'"></div>
+                            </div>
+                        </div>
+                        <div class="health-item">
+                            <div class="health-dot" :class="overview.connected ? 'green' : 'red'"></div>
+                            <div>
+                                <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Connection</div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="overview.connected ? 'Connected' : 'Disconnected'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+function overviewApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+        overview: null,
+        healthResult: null,
+        healthStatus: null,
+        healthLoading: false,
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.loadOverview();
+            await this.refreshHealth();
+            this.loading = false;
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        async loadOverview() {
+            try {
+                this.overview = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-overview`);
+            } catch (e) {
+                this.error = 'Failed to load overview: ' + e.message;
+            }
+        },
+
+        async refreshHealth() {
+            this.healthLoading = true;
+            try {
+                this.healthResult = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-health`);
+                this.healthStatus = this.healthResult?.health;
+            } catch (e) {
+                this.healthStatus = 'UNREACHABLE';
+                this.healthResult = { health: 'UNREACHABLE', message: e.message };
+            } finally {
+                this.healthLoading = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

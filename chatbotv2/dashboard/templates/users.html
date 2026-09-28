@@ -1,0 +1,95 @@
+{% extends "dashboard.html" %}
+{% block nav_users %}active{% endblock %}
+{% block page_title %}Users{% endblock %}
+
+{% block content %}
+<div x-data="usersSegmentsApp()" x-init="init()">
+    <!-- Users Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;">
+        {% for user in users %}
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:12px;overflow:hidden;">
+            <!-- User Header -->
+            <div style="padding:24px;">
+                <div style="display:flex;align-items:center;margin-bottom:20px;">
+                    <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#6C63FF,#8B85FF);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#FFFFFF;flex-shrink:0;">
+                        {{ (user.first_name or 'U')[0] }}
+                    </div>
+                    <div style="margin-left:16px;min-width:0;">
+                        <div style="font-size:20px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.first_name or 'Unknown' }}</div>
+                        {% if user.username %}
+                        <div style="font-size:14px;color:#6B7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@{{ user.username }}</div>
+                        {% endif %}
+                        <div style="font-size:12px;color:#9CA3AF;margin-top:2px;">ID: {{ user.id }}</div>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+                    <div style="text-align:center;padding:12px 8px;background:#F8F8F5;border-radius:8px;">
+                        <div style="font-size:20px;font-weight:700;color:#111827;">{{ user.message_count }}</div>
+                        <div style="font-size:11px;color:#6B7280;">Messages</div>
+                    </div>
+                    <div style="text-align:center;padding:12px 8px;background:#F8F8F5;border-radius:8px;">
+                        <div style="font-size:20px;font-weight:700;color:{{ '#22C55E' if not user.is_blocked else '#EF4444' }};">{{ 'Active' if not user.is_blocked else 'Blocked' }}</div>
+                        <div style="font-size:11px;color:#6B7280;">Status</div>
+                    </div>
+                    <div style="text-align:center;padding:12px 8px;background:#F8F8F5;border-radius:8px;">
+                        <div style="font-size:20px;font-weight:700;color:#111827;">{{ user.funnel_stage or 'new' }}</div>
+                        <div style="font-size:11px;color:#6B7280;">Funnel</div>
+                    </div>
+                </div>
+
+                <!-- Segments -->
+                <div style="margin-bottom:20px;">
+                    <div style="font-size:11px;color:#6B7280;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Segments</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                        <template x-if="userSegments[{{ user.id }}] && userSegments[{{ user.id }}].length > 0">
+                            <template x-for="seg in userSegments[{{ user.id }}]" :key="seg.id">
+                                <span :style="'background:' + (seg.is_member ? 'rgba(108,99,255,0.12)' : 'rgba(156,163,175,0.1)') + ';color:' + (seg.is_member ? '#6C63FF' : '#6B7280') + ';padding:4px 10px;border-radius:12px;font-size:12px;font-weight:500;'" x-text="seg.name"></span>
+                            </template>
+                        </template>
+                        <template x-if="!userSegments[{{ user.id }}] || userSegments[{{ user.id }}].length === 0">
+                            <span style="color:#9CA3AF;font-size:12px;">No segments</span>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Last Seen -->
+                {% if user.last_seen %}
+                <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#6B7280;padding:10px 12px;background:#F8F8F5;border-radius:8px;">
+                    <i class="fas fa-clock" style="font-size:12px;"></i>
+                    Last seen: {{ user.last_seen[:10] }}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Button -->
+            <a href="/dashboard/profile/{{ user.id }}" 
+               style="display:block;padding:14px 24px;background:#F8F8F5;border-top:1px solid rgba(0,0,0,0.06);text-decoration:none;color:#6C63FF;font-size:14px;font-weight:600;text-align:center;transition:background 0.15s;"
+               onmouseover="this.style.background='rgba(108,99,255,0.08)'"
+               onmouseout="this.style.background='#F8F8F5'">
+                <i class="fas fa-user" style="margin-right:8px;"></i> View Profile
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function usersSegmentsApp() {
+    return {
+        userSegments: {},
+        async init() {
+            const userIds = [{% for user in users %}{{ user.id }}{% if not loop.last %},{% endif %}{% endfor %}];
+            if (userIds.length === 0) return;
+            try {
+                const resp = await fetch('/api/users/segments-batch?user_ids=' + userIds.join(','));
+                if (!resp.ok) return;
+                const data = await resp.json();
+                this.userSegments = data;
+            } catch (e) {}
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,435 @@
+{% extends "dashboard.html" %}
+{% block nav_links %}active{% endblock %}
+{% block page_title %}DropFans Links & Telegram{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+
+    .section-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden; margin-bottom: 20px;
+    }
+    .section-header {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .status-badge.active { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.error { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 14px; }
+
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+    .error-state {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+        color: var(--accent-red); padding: 12px 16px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px;
+    }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--bg-card); color: var(--text-primary); transition: all 0.15s;
+    }
+    .btn-sync:hover { background: rgba(0,0,0,0.04); }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .btn-action.primary { background: var(--accent-purple); color: white; }
+    .btn-action.primary:hover { background: var(--accent-purple-light); }
+    .btn-action.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-action.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .btn-action.secondary:hover { background: rgba(0,0,0,0.04); }
+    .btn-action.danger { background: rgba(239,68,68,0.1); color: var(--accent-red); }
+    .btn-action.danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-action.sm { padding: 4px 8px; font-size: 11px; }
+
+    .toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+        padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); transition: all 0.3s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .toast.success { background: var(--accent-green); color: #fff; }
+    .toast.error { background: var(--accent-red); color: #fff; }
+    .toast.info { background: var(--accent-purple); color: #fff; }
+
+    .link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .link-card {
+        display: flex; align-items: center; gap: 10px; padding: 12px;
+        background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px;
+    }
+    .link-icon { width: 32px; height: 32px; min-width: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .link-icon.web { background: rgba(59,130,246,0.15); color: #3B82F6; }
+    .link-icon.tg { background: rgba(0,136,204,0.15); color: #0088CC; }
+    .link-url { font-size: 12px; font-family: monospace; color: var(--text-secondary); word-break: break-all; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="linksApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>Checkout Links & Telegram</h2>
+        <p>Manage your canonical purchase links and Telegram bot notifications.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <div x-show="!loading && creatorId === 0" class="empty-state">
+        <i class="fas fa-link"></i>
+        <p style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No creator configured</p>
+        <p class="empty-sub">Create a creator on the <a href="/dashboard/fangate" style="color:var(--accent-purple);">DropFans page</a> first.</p>
+    </div>
+
+    <template x-if="creatorId > 0">
+        <div>
+            <!-- Connection check banner -->
+            <div x-show="!loading && !linksConnected" class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:8px;background:rgba(251,146,60,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-plug" style="color:var(--accent-orange);"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">DropFans not connected</div>
+                        <div style="font-size:12px;color:var(--text-tertiary);">Connect your DropFans API key to manage checkout links and Telegram.</div>
+                    </div>
+                    <a href="/dashboard/fangate" class="btn-action primary"><i class="fas fa-plug"></i> Connect DropFans</a>
+                </div>
+            </div>
+            <!-- Checkout Links -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-link" style="color:var(--accent-purple);margin-right:8px;"></i>Checkout Links</h2>
+                    <button @click="loadLinks()" class="btn-sync" :disabled="linksLoading">
+                        <i class="fas" :class="linksLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                    </button>
+                </div>
+
+                <div x-show="linksLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading links...
+                </div>
+
+                <div x-show="!linksLoading && !links" class="empty-state" style="padding:24px;">
+                    <i class="fas fa-link" style="font-size:24px;"></i>
+                    <p>No links available</p>
+                </div>
+
+                <div x-show="!linksLoading && links">
+                    <!-- Web Links -->
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">
+                            <i class="fas fa-globe" style="margin-right:4px;"></i> Web Links
+                            <span style="font-weight:400;color:var(--text-tertiary);" x-text="'(@' + (links?.username || '') + ')'"></span>
+                        </div>
+                        <div class="link-grid">
+                            <div class="link-card" x-show="links?.web?.profile">
+                                <div class="link-icon web"><i class="fas fa-user"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Profile</div>
+                                    <div class="link-url" x-text="links?.web?.profile"></div>
+                                </div>
+                                <button @click="copyUrl(links?.web?.profile)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.web?.tip">
+                                <div class="link-icon web"><i class="fas fa-hand-holding-dollar"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Tip</div>
+                                    <div class="link-url" x-text="links?.web?.tip"></div>
+                                </div>
+                                <button @click="copyUrl(links?.web?.tip)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.web?.subscribe">
+                                <div class="link-icon web"><i class="fas fa-star"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Subscribe</div>
+                                    <div class="link-url" x-text="links?.web?.subscribe"></div>
+                                </div>
+                                <button @click="copyUrl(links?.web?.subscribe)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.web?.buy_template">
+                                <div class="link-icon web"><i class="fas fa-shopping-cart"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Buy Template</div>
+                                    <div class="link-url" x-text="links?.web?.buy_template"></div>
+                                </div>
+                                <button @click="copyUrl(links?.web?.buy_template)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Telegram Links -->
+                    <div>
+                        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">
+                            <i class="fab fa-telegram" style="margin-right:4px;color:#0088CC;"></i> Telegram Links
+                        </div>
+                        <div x-show="!links?.telegram" class="empty-state" style="padding:16px;">
+                            <p style="font-size:13px;">Telegram not configured</p>
+                        </div>
+                        <div class="link-grid" x-show="links?.telegram">
+                            <div class="link-card" x-show="links?.telegram?.bot">
+                                <div class="link-icon tg"><i class="fas fa-robot"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Bot</div>
+                                    <div class="link-url" x-text="links?.telegram?.bot"></div>
+                                </div>
+                                <button @click="copyUrl(links?.telegram?.bot)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.telegram?.profile">
+                                <div class="link-icon tg"><i class="fas fa-user"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Profile</div>
+                                    <div class="link-url" x-text="links?.telegram?.profile"></div>
+                                </div>
+                                <button @click="copyUrl(links?.telegram?.profile)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.telegram?.tip">
+                                <div class="link-icon tg"><i class="fas fa-hand-holding-dollar"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Tip</div>
+                                    <div class="link-url" x-text="links?.telegram?.tip"></div>
+                                </div>
+                                <button @click="copyUrl(links?.telegram?.tip)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.telegram?.subscribe">
+                                <div class="link-icon tg"><i class="fas fa-star"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Subscribe</div>
+                                    <div class="link-url" x-text="links?.telegram?.subscribe"></div>
+                                </div>
+                                <button @click="copyUrl(links?.telegram?.subscribe)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                            <div class="link-card" x-show="links?.telegram?.buy_template">
+                                <div class="link-icon tg"><i class="fas fa-shopping-cart"></i></div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:11px;font-weight:600;color:var(--text-secondary);">Buy Template</div>
+                                    <div class="link-url" x-text="links?.telegram?.buy_template"></div>
+                                </div>
+                                <button @click="copyUrl(links?.telegram?.buy_template)" class="btn-action secondary sm"><i class="fas fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Telegram Notifications -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fab fa-telegram" style="color:#0088CC;margin-right:8px;"></i>Telegram Notifications</h2>
+                    <button @click="loadTelegram()" class="btn-sync" :disabled="telegramLoading">
+                        <i class="fas" :class="telegramLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                    </button>
+                </div>
+
+                <div x-show="telegramLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+
+                <div x-show="!telegramLoading && !telegram" class="empty-state" style="padding:24px;">
+                    <i class="fab fa-telegram" style="font-size:24px;color:#0088CC;"></i>
+                    <p>Telegram not available</p>
+                </div>
+
+                <div x-show="!telegramLoading && telegram" style="display:grid;gap:12px;">
+                    <!-- Status -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;"
+                             :style="telegram?.personal_connected ? 'background:rgba(74,222,128,0.08)' : 'background:rgba(239,68,68,0.08)'">
+                            <i class="fas" :class="telegram?.personal_connected ? 'fa-check-circle' : 'fa-times-circle'"
+                               :style="'color:' + (telegram?.personal_connected ? 'var(--accent-green)' : 'var(--accent-red)')"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:600;">Personal Bot</div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="telegram?.personal_connected ? 'Connected' : 'Not connected'"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;"
+                             :style="telegram?.group_connected ? 'background:rgba(74,222,128,0.08)' : 'background:rgba(239,68,68,0.08)'">
+                            <i class="fas" :class="telegram?.group_connected ? 'fa-check-circle' : 'fa-times-circle'"
+                               :style="'color:' + (telegram?.group_connected ? 'var(--accent-green)' : 'var(--accent-red)')"></i>
+                            <div>
+                                <div style="font-size:12px;font-weight:600;">Group Bot</div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="telegram?.group_connected ? (telegram?.group_name || 'Connected') : 'Not connected'"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Handle -->
+                    <div x-show="telegram?.telegram_handle" style="padding:12px;background:var(--bg-primary);border-radius:8px;font-size:13px;">
+                        <span style="color:var(--text-tertiary);">Handle:</span>
+                        <span style="font-weight:500;color:var(--text-primary);" x-text="'@' + telegram?.telegram_handle"></span>
+                    </div>
+
+                    <!-- Register personal chat -->
+                    <div style="padding:12px;background:var(--bg-primary);border-radius:8px;">
+                        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Register Personal Chat</div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input x-model="registerChatId" type="text" placeholder="Telegram Chat ID"
+                                   style="flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-card);color:var(--text-primary);font-family:monospace;">
+                            <button @click="registerChat()" class="btn-action primary sm" :disabled="!registerChatId || registering">
+                                <i class="fas" :class="registering ? 'fa-spinner fa-spin' : 'fa-check'"></i> Register
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button @click="disconnectTelegram('personal')" class="btn-action danger sm" :disabled="!telegram?.personal_connected">
+                            <i class="fas fa-unlink"></i> Disconnect Personal
+                        </button>
+                        <button @click="disconnectTelegram('group')" class="btn-action danger sm" :disabled="!telegram?.group_connected">
+                            <i class="fas fa-unlink"></i> Disconnect Group
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </template>
+</div>
+
+<script>
+function linksApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+
+        // Links
+        links: null,
+        linksLoading: false,
+        linksConnected: false,
+
+        // Telegram
+        telegram: null,
+        telegramLoading: false,
+        registerChatId: '',
+        registering: false,
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.checkStatus();
+            if (this.linksConnected) {
+                await Promise.all([this.loadLinks(), this.loadTelegram()]);
+            }
+            this.loading = false;
+        },
+
+        async checkStatus() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.linksConnected = !!(data.status && data.status.dropfans_creator_id);
+            } catch (e) {
+                this.linksConnected = false;
+            }
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        // ── Links ─────────────────────────────────────────────────────
+
+        async loadLinks() {
+            this.linksLoading = true;
+            this.error = null;
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-links`);
+                this.links = data;
+            } catch (e) {
+                this.error = 'Failed to load links: ' + e.message;
+            } finally {
+                this.linksLoading = false;
+            }
+        },
+
+        copyUrl(url) {
+            if (!url) return;
+            navigator.clipboard.writeText(url).then(() => {
+                this.showToast('URL copied!', 'success');
+            }).catch(() => {
+                this.showToast('Failed to copy', 'error');
+            });
+        },
+
+        // ── Telegram ──────────────────────────────────────────────────
+
+        async loadTelegram() {
+            this.telegramLoading = true;
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-telegram`);
+                this.telegram = data;
+            } catch (e) {
+                // Non-fatal
+            } finally {
+                this.telegramLoading = false;
+            }
+        },
+
+        async registerChat() {
+            if (!this.registerChatId || this.registering) return;
+            this.registering = true;
+            try {
+                await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-telegram/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram_chat_id: this.registerChatId }),
+                });
+                this.showToast('Chat registered!', 'success');
+                this.registerChatId = '';
+                await this.loadTelegram();
+            } catch (e) {
+                this.showToast('Registration failed: ' + e.message, 'error');
+            } finally {
+                this.registering = false;
+            }
+        },
+
+        async disconnectTelegram(type) {
+            if (!confirm('Disconnect ' + type + ' Telegram bot?')) return;
+            try {
+                await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-telegram`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'disconnect', type }),
+                });
+                this.showToast('Disconnected', 'success');
+                await this.loadTelegram();
+            } catch (e) {
+                this.showToast('Disconnect failed: ' + e.message, 'error');
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

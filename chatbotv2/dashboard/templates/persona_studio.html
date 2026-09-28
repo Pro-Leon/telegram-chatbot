@@ -1,0 +1,243 @@
+{% extends "dashboard.html" %}
+{% block nav_personas %}active{% endblock %}
+{% block page_title %}Persona Studio{% endblock %}
+
+{% block extra_head %}
+<script>
+function studioApp() {
+    return {
+        creatorId: {{ creator_id|default(1) }},
+        personas: [],
+        selectedId: null,
+        selected: null,
+        // editor fields
+        form: {name: '', instructions: '', metadata: '', is_default: false},
+        previewFull: '',
+        previewCompact: '',
+        labHistory: [],
+        labMessage: '',
+        labResult: null,
+        labLoading: false,
+        error: null,
+        loading: false,
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch(`/api/personas?creator_id=${this.creatorId}`);
+                this.personas = await res.json();
+                if (this.personas.length && !this.selectedId) {
+                    const def = this.personas.find(p=>p.is_default) || this.personas[0];
+                    this.selectPersona(def.id);
+                }
+            } catch(e){ this.error = e.message; } finally { this.loading=false; }
+        },
+        async selectPersona(id){
+            this.selectedId=id;
+            this.selected=this.personas.find(p=>p.id===id) || null;
+            if(this.selected){
+                this.form.name=this.selected.name||'';
+                this.form.instructions=this.selected.instructions||'';
+                this.form.metadata=JSON.stringify(this.selected.metadata||{}, null, 2);
+                this.form.is_default=!!this.selected.is_default;
+                await this.preview();
+            }
+        },
+        async save(){
+            this.loading=true; this.error=null;
+            try{
+                let meta=null;
+                try{
+                    meta = this.form.metadata ? JSON.parse(this.form.metadata) : {};
+                }catch(e){ this.error='Invalid metadata JSON: '+e.message; this.loading=false; return; }
+                // commerce safety client check
+                const forbidden=["product_id","price","price_minor","currency","ppv","payment","offer","checkout"];
+                for(let k of forbidden){ if(JSON.stringify(meta).toLowerCase().includes(k)){ this.error='Metadata contains forbidden commerce field: '+k; this.loading=false; return; } }
+                const fd=new FormData();
+                fd.append('name', this.form.name);
+                fd.append('instructions', this.form.instructions);
+                fd.append('is_default', this.form.is_default?'true':'false');
+                fd.append('creator_id', this.creatorId);
+                fd.append('metadata', JSON.stringify(meta));
+                let res;
+                if(this.selectedId){
+                    res=await fetch(`/api/personas/${this.selectedId}`,{method:'PUT', body: fd});
+                }else{
+                    res=await fetch(`/api/personas`,{method:'POST', body: fd});
+                }
+                const j=await res.json();
+                if(!res.ok){ this.error=j.error||'save failed'; } else { await this.load(); }
+            }catch(e){ this.error=e.message; } finally{ this.loading=false; }
+        },
+        async promote(){
+            if(!this.selectedId) return;
+            this.loading=true;
+            try{
+                const fd=new FormData(); fd.append('creator_id', this.creatorId);
+                const res=await fetch(`/api/personas/${this.selectedId}/promote`,{method:'POST', body: fd});
+                const j=await res.json();
+                if(!res.ok) this.error=j.error; else await this.load();
+            }catch(e){ this.error=e.message; } finally{ this.loading=false; }
+        },
+        async preview(){
+            if(!this.selectedId) return;
+            try{
+                const res=await fetch(`/api/personas/${this.selectedId}/preview?creator_id=${this.creatorId}`,{method:'POST'});
+                const j=await res.json();
+                this.previewFull=j.rendered_full||'';
+                this.previewCompact=j.rendered_compact||'';
+            }catch(e){ this.error=e.message; }
+        },
+        async validate(){
+            this.error=null;
+            try{
+                let meta=JSON.parse(this.form.metadata||'{}');
+                const res=await fetch(`/api/personas/validate`,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({metadata: meta})});
+                const j=await res.json();
+                if(j.valid) alert('Valid persona metadata'); else alert('Invalid: '+(j.error||'unknown'));
+            }catch(e){ this.error=e.message; }
+        },
+        addHistory(role){
+            // helper to add synthetic history from labHistory
+        },
+        async runLab(){
+            if(!this.labMessage.trim()) return;
+            this.labLoading=true; this.error=null;
+            try{
+                const payload={
+                    creator_id: this.creatorId,
+                    fan_message: this.labMessage,
+                    history: this.labHistory,
+                    persona_id: this.selectedId,
+                    fan_first_name: 'Fan',
+                    fan_user_id: 999999001
+                };
+                const res=await fetch('/api/lab/execute',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+                const j=await res.json();
+                if(!res.ok){ this.error=j.error||'lab failed'; } else {
+                    this.labResult=j;
+                    // push to history
+                    this.labHistory.push({direction:'inbound', content: this.labMessage});
+                    this.labHistory.push({direction:'outbound', content: j.reply});
+                    this.labMessage='';
+                }
+            }catch(e){ this.error=e.message; } finally{ this.labLoading=false; }
+        },
+        clearLab(){ this.labHistory=[]; this.labResult=null; },
+        init(){ this.load(); }
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="studioApp()" style="background:#F8F8F5; min-height:100vh; padding:1.5rem;">
+    <div class="flex justify-between items-center">
+        <h2 style="font-size:24px; font-weight:600; color:#111827;">Persona Studio — Sunny</h2>
+        <span style="font-size:12px; color:#6B7280;">Creator {{ creator_id }} · Qwen2.5:3b · 1 LLM call</span>
+    </div>
+
+    <div x-show="error" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:#EF4444; padding:12px 16px; border-radius:8px;">
+        <span x-text="error"></span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 300px 1fr; gap:1.5rem;">
+        <!-- Left: persona list + editor -->
+        <div style="background:#FFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:16px;">
+            <h3 style="font-weight:600; margin-bottom:12px;">Personas (creator {{ creator_id }}) — Character</h3>
+            <div style="max-height:300px; overflow:auto; margin-bottom:12px;">
+                <template x-for="p in personas" :key="p.id">
+                    <div @click="selectPersona(p.id)" :style="`padding:8px 12px; border-radius:8px; cursor:pointer; margin-bottom:6px; border:1px solid ${selectedId===p.id ? '#6C63FF' : 'rgba(0,0,0,0.08)'}; background:${selectedId===p.id ? 'rgba(108,99,255,0.08)' : '#FFF'}`">
+                        <div style="font-weight:500;" x-text="p.name"></div>
+                        <div style="font-size:11px; color:#6B7280;">v<span x-text="p.version"></span> <span x-show="p.is_default" style="color:#F97316;">★ default</span> · Character</div>
+                    </div>
+                </template>
+            </div>
+            <button @click="selectedId=null; form={name:'', instructions:'', metadata:'{}', is_default:false}; selected=null; previewFull=''; previewCompact='';" style="width:100%; background:#6C63FF; color:#FFF; padding:8px; border-radius:8px; margin-bottom:12px;">New Character Persona</button>
+            <hr style="margin:12px 0;">
+            <div style="background:rgba(108,99,255,0.06); border:1px solid rgba(108,99,255,0.15); border-radius:8px; padding:10px; margin-bottom:12px; font-size:11px; color:#4B5563;">
+                <div style="font-weight:600; color:#6C63FF; margin-bottom:4px;">ROLEPLAY — CHARACTER / PLAYER</div>
+                This persona is portrayed as the <b>character</b>.<br>
+                Fans are <b>players / listeners</b>.<br>
+                The character responds to the fan. Turner: <b>Fan speaks → Character responds</b>.<br>
+                <span style="color:#6B7280;">Do not configure the fan as the character. Player identity is derived from fan profile, never from persona.</span>
+            </div>
+            <h4 style="font-weight:600; font-size:13px; margin-bottom:8px;">Character Configuration</h4>
+            <label style="font-size:11px; color:#6B7280;">Character name</label>
+            <input x-model="form.name" placeholder="e.g., Sunny Skye" style="width:100%; padding:6px 8px; border:1px solid rgba(0,0,0,0.08); border-radius:6px; margin-bottom:8px;">
+            <label style="font-size:11px; color:#6B7280;">Character behavior / persona instructions</label>
+            <textarea x-model="form.instructions" rows="4" placeholder="Character personality, tone, mannerisms, conversational habits, background, preferred style, roleplay boundaries..." style="width:100%; padding:6px 8px; border:1px solid rgba(0,0,0,0.08); border-radius:6px; font-family:monospace; font-size:12px; margin-bottom:4px;"></textarea>
+            <div style="font-size:10px; color:#9CA3AF; margin-bottom:8px;">Character may define: personality, tone, mannerisms, values, conversational habits, background, style, boundaries. Must NOT define player identity/dialogue/actions or commerce/payment authority.</div>
+            <label style="font-size:11px; color:#6B7280;">Character structured metadata (JSON) — personality / nyc_identity / favorites etc.</label>
+            <textarea x-model="form.metadata" rows="8" style="width:100%; padding:6px 8px; border:1px solid rgba(0,0,0,0.08); border-radius:6px; font-family:monospace; font-size:11px; margin-bottom:8px;"></textarea>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; margin-bottom:12px;"><input type="checkbox" x-model="form.is_default"> Set as default (production character)</label>
+            <div style="display:flex; gap:8px;">
+                <button @click="save()" style="flex:1; background:#6C63FF; color:#FFF; padding:8px; border-radius:6px;">Save Character</button>
+                <button @click="validate()" style="flex:1; border:1px solid rgba(0,0,0,0.08); padding:8px; border-radius:6px;">Validate</button>
+            </div>
+            <button x-show="selectedId" @click="promote()" style="width:100%; margin-top:8px; background:#F97316; color:#FFF; padding:8px; border-radius:6px;">Promote to Default Character</button>
+            <div style="margin-top:12px; font-size:11px; color:#6B7280;">Commerce fields (product_id, price, currency, ppv, payment, ...) are rejected. Player identity fields are also rejected.</div>
+        </div>
+
+        <!-- Right: preview + lab -->
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="background:#FFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:16px;">
+                <h3 style="font-weight:600; margin-bottom:8px;">Preview (canonical renderer)</h3>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div>
+                        <div style="font-size:11px; font-weight:600; color:#6B7280; margin-bottom:4px;">Full</div>
+                        <pre style="background:#F8F8F5; padding:8px; border-radius:6px; max-height:300px; overflow:auto; font-size:11px; white-space:pre-wrap;" x-text="previewFull || 'No preview'"></pre>
+                    </div>
+                    <div>
+                        <div style="font-size:11px; font-weight:600; color:#6B7280; margin-bottom:4px;">Compact (60 lines, used in OneCall)</div>
+                        <pre style="background:#F8F8F5; padding:8px; border-radius:6px; max-height:300px; overflow:auto; font-size:11px; white-space:pre-wrap;" x-text="previewCompact || 'No preview'"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#FFF; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:16px;">
+                <h3 style="font-weight:600; margin-bottom:8px;">Conversation Lab — Roleplay Test (no Telegram, no PPV)</h3>
+                <div style="font-size:11px; color:#6B7280; margin-bottom:8px;">
+                    <b>CHARACTER</b> is always <span x-text="selected ? selected.name : 'Sunny Skye'"></span> (creator persona, speaker). <b>PLAYER</b> is Fan (fan, listener).<br>
+                    Turn: <b>Fan speaks → Sunny responds</b>. Sunny controls Sunny, Fan controls Fan. 1 LLM call, qwen2.5:3b.
+                </div>
+                <div style="background:#F0F9FF; border:1px solid #BAE6FD; border-radius:6px; padding:8px; margin-bottom:8px; font-size:11px; color:#0C4A6E;">
+                    Lab exposes roleplay contract: <code>character / player / current_turn_owner / response_owner</code> plus participants, contract, validation, quality_signals, reply, generation_id, model.
+                </div>
+                <div style="border:1px solid rgba(0,0,0,0.08); border-radius:8px; padding:8px; max-height:200px; overflow:auto; margin-bottom:8px; background:#F8F8F5;">
+                    <template x-for="(m,i) in labHistory" :key="i">
+                        <div :style="`padding:6px 8px; margin-bottom:4px; border-radius:6px; background:${m.direction==='inbound' ? '#E0E7FF' : '#FFF'}; border:1px solid rgba(0,0,0,0.06);`">
+                            <span style="font-weight:600; font-size:11px;" x-text="m.direction==='inbound' ? 'Fan (fan):' : 'Sunny (speaker):'"></span>
+                            <span style="font-size:13px;" x-text="m.content"></span>
+                        </div>
+                    </template>
+                    <div x-show="labHistory.length===0" style="color:#9CA3AF; font-size:12px;">No history yet — try “Who are you?” or “What’s your favorite workout?”</div>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <input x-model="labMessage" @keydown.enter="runLab()" placeholder="Fan message (Fan)..." style="flex:1; padding:8px 12px; border:1px solid rgba(0,0,0,0.08); border-radius:8px;">
+                    <button @click="runLab()" :disabled="labLoading" style="background:#6C63FF; color:#FFF; padding:8px 16px; border-radius:8px;">Send to Sunny</button>
+                    <button @click="clearLab()" style="border:1px solid rgba(0,0,0,0.08); padding:8px 12px; border-radius:8px;">Clear</button>
+                </div>
+                <div x-show="labResult" style="border:1px solid rgba(108,99,255,0.3); border-radius:8px; padding:12px; background:rgba(108,99,255,0.05);">
+                    <div style="font-weight:600; font-size:13px; margin-bottom:6px;">Sunny reply:</div>
+                    <div style="background:#FFF; padding:8px; border-radius:6px; margin-bottom:8px;" x-text="labResult ? labResult.reply : ''"></div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:11px;">
+                        <div>
+                            <div style="font-weight:600; color:#6B7280;">Participants</div>
+                            <div x-text="labResult ? labResult.participants.rendered : ''" style="white-space:pre-wrap; background:#FFF; padding:6px; border-radius:4px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-weight:600; color:#6B7280;">Contract</div>
+                            <div x-text="labResult ? labResult.contract.rendered : ''" style="white-space:pre-wrap; background:#FFF; padding:6px; border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px; font-size:11px;">
+                        <span style="font-weight:600;">Validation:</span>
+                        <span x-text="labResult ? JSON.stringify(labResult.validation) : ''"></span>
+                        <span style="margin-left:12px; font-weight:600;">Model:</span> <span x-text="labResult ? labResult.model : ''"></span> (1 call)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

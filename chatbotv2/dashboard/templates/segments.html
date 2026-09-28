@@ -1,0 +1,982 @@
+{% extends "dashboard.html" %}
+{% block nav_segments %}active{% endblock %}
+{% block page_title %}Fan Segments{% endblock %}
+
+{% block extra_head %}
+<style>
+    .segments-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
+    .section-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden;
+    }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .btn-action {
+        padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        cursor: pointer; transition: all 0.15s; border: none; display: inline-flex;
+        align-items: center; gap: 6px;
+    }
+    .btn-action.primary { background: var(--accent-purple); color: #fff; }
+    .btn-action.primary:hover { opacity: 0.9; }
+    .btn-action.secondary {
+        background: transparent; color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+    .btn-action.secondary:hover { background: rgba(0,0,0,0.04); }
+    .btn-action.danger { background: transparent; color: var(--accent-red); }
+    .btn-action.danger:hover { background: rgba(239,68,68,0.08); }
+    .btn-action.small { padding: 4px 10px; font-size: 12px; }
+
+    .app-table { width: 100%; border-collapse: collapse; }
+    .app-table th {
+        font-size: 11px; font-weight: 600; color: var(--text-secondary);
+        text-transform: uppercase; letter-spacing: 0.5px;
+        padding: 10px 12px; text-align: left;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .app-table td {
+        padding: 12px; font-size: 13px; color: var(--text-primary);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .app-table tr:hover td { background: rgba(108,99,255,0.03); }
+
+    .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: rgba(74,222,128,0.15); color: #16a34a; }
+    .badge-gray { background: rgba(156,163,175,0.15); color: #6b7280; }
+    .badge-purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+        z-index: 50; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-box {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 16px; width: 90%; max-width: 800px; max-height: 90vh;
+        display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 20px 24px; border-bottom: 1px solid var(--border-color);
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; }
+    .modal-close {
+        background: none; border: none; font-size: 20px; cursor: pointer;
+        color: var(--text-tertiary); padding: 4px;
+    }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+        display: flex; justify-content: flex-end; gap: 8px;
+        padding: 16px 24px; border-top: 1px solid var(--border-color);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .form-input {
+        width: 100%; padding: 8px 12px; border: 1px solid var(--border-color);
+        border-radius: 8px; font-size: 13px; background: var(--bg-primary);
+        color: var(--text-primary); outline: none; transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: var(--accent-purple); }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+
+    .rule-group {
+        border: 1px solid var(--border-color); border-radius: 8px;
+        padding: 12px; margin-bottom: 8px; background: rgba(0,0,0,0.01);
+    }
+    .rule-group-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .rule-row {
+        display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+        padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 6px;
+    }
+    .rule-row select, .rule-row input {
+        padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px;
+        font-size: 12px; background: var(--bg-primary); color: var(--text-primary);
+    }
+    .rule-row select { min-width: 120px; }
+    .rule-row input { flex: 1; min-width: 60px; }
+    .rule-remove {
+        background: none; border: none; color: var(--text-tertiary); cursor: pointer;
+        font-size: 14px; padding: 2px 4px;
+    }
+    .rule-remove:hover { color: var(--accent-red); }
+
+    .and-or-toggle {
+        display: inline-flex; border: 1px solid var(--border-color); border-radius: 6px;
+        overflow: hidden; margin: 0 4px;
+    }
+    .and-or-toggle button {
+        padding: 3px 10px; font-size: 11px; font-weight: 600; border: none;
+        cursor: pointer; background: transparent; color: var(--text-secondary);
+    }
+    .and-or-toggle button.active { background: var(--accent-purple); color: #fff; }
+
+    .preview-count { font-size: 24px; font-weight: 700; color: var(--accent-purple); }
+    .preview-label { font-size: 12px; color: var(--text-secondary); }
+
+    .toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+        padding: 12px 20px; border-radius: 8px; font-size: 13px;
+        display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: #16a34a; color: #fff; }
+    .toast.error { background: #ef4444; color: #fff; }
+
+    .toggle-switch {
+        position: relative; width: 36px; height: 20px; cursor: pointer;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+        position: absolute; inset: 0; background: #d1d5db; border-radius: 20px;
+        transition: background 0.2s;
+    }
+    .toggle-slider::before {
+        content: ''; position: absolute; width: 16px; height: 16px;
+        border-radius: 50%; background: #fff; top: 2px; left: 2px;
+        transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent-purple); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+    .not-toggle {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+        cursor: pointer; transition: all 0.15s;
+    }
+    .not-toggle.active { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .not-toggle:not(.active) { background: transparent; color: var(--text-tertiary); }
+    .not-toggle:hover { background: rgba(239,68,68,0.1); }
+
+    .preset-card {
+        border: 1px solid var(--border-color); border-radius: 8px;
+        padding: 12px; cursor: pointer; transition: all 0.15s;
+    }
+    .preset-card:hover { border-color: var(--accent-purple); background: rgba(108,99,255,0.03); }
+    .preset-card .preset-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .preset-card .preset-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .preset-card .preset-category { font-size: 11px; color: var(--accent-purple); margin-top: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="segmentsApp()" x-init="init()" style="padding: 24px; overflow-y: auto;">
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 22px; font-weight: 700; color: var(--text-primary); margin: 0;">Fan Segments</h1>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Define audiences with rule-based segments</p>
+        </div>
+        <button class="btn-action primary" @click="openCreate()">
+            <i class="fas fa-plus"></i> Create Segment
+        </button>
+        <button class="btn-action secondary" @click="openPresets()" style="margin-left: 8px;">
+            <i class="fas fa-magic"></i> Create from Preset
+        </button>
+    </div>
+
+    <!-- Error -->
+    <div x-show="error" class="error-state" x-text="error" style="margin-bottom: 16px;"></div>
+
+    <!-- Loading -->
+    <div x-show="loading" class="loading-text">
+        <i class="fas fa-spinner fa-spin"></i> Loading segments...
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="!loading && segments.length === 0" class="empty-state">
+        <i class="fas fa-layer-group"></i>
+        <p>No segments yet. Create your first segment to start building audiences.</p>
+    </div>
+
+    <!-- Segments Table -->
+    <div x-show="!loading && segments.length > 0" class="section-card">
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Members</th>
+                    <th>Status</th>
+                    <th>Last Evaluated</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="seg in segments" :key="seg.id">
+                    <tr>
+                        <td style="font-weight: 600; cursor: pointer; color: var(--accent-purple);" @click="openDetail(seg)" x-text="seg.name"></td>
+                        <td style="color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="seg.description || '—'"></td>
+                        <td>
+                            <span class="badge badge-purple" x-text="seg.member_count"></span>
+                        </td>
+                        <td>
+                            <label class="toggle-switch">
+                                <input type="checkbox" :checked="seg.enabled" @change="toggleSegment(seg.id)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </td>
+                        <td style="font-size: 12px; color: var(--text-tertiary);" x-text="seg.last_evaluated_at ? formatDate(seg.last_evaluated_at) : 'Never'"></td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                <button class="btn-action secondary small" @click="openEdit(seg)" title="Edit">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button class="btn-action secondary small" @click="duplicateSegment(seg.id)" title="Duplicate">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn-action danger small" @click="deleteSegment(seg.id, seg.name)" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Rule Builder Modal -->
+    <div x-show="showBuilder" class="modal-overlay" @click.self="showBuilder = false">
+        <div class="modal-box" @click.stop>
+            <div class="modal-header">
+                <h3 x-text="editing ? 'Edit Segment' : 'Create Segment'"></h3>
+                <button class="modal-close" @click="showBuilder = false">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Name & Description -->
+                <div class="form-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Name</label>
+                        <input class="form-input" x-model="segmentName" placeholder="e.g., High-Value Fans">
+                    </div>
+                    <div class="form-group" style="flex: 3;">
+                        <label>Description</label>
+                        <input class="form-input" x-model="segmentDescription" placeholder="Optional description">
+                    </div>
+                </div>
+
+                <!-- Rules -->
+                <div class="form-group">
+                    <label>Rules</label>
+                    <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 8px;">
+                        All conditions in a group are combined with the selected operator (AND/OR).
+                    </div>
+                    <div class="rule-group">
+                        <div class="rule-group-header">
+                            <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Root Group</span>
+                        </div>
+                        <template x-for="(child, ci) in segmentRules.children" :key="ci">
+                            <div>
+                                <!-- Field Rule -->
+                                <div x-show="child.type === 'rule'" class="rule-row">
+                                    <span class="not-toggle" :class="child.negated && 'active'" @click="child.negated = !child.negated" title="Toggle NOT">
+                                        NOT
+                                    </span>
+                                    <select :value="child.field" @change="updateRuleField(child, $event.target.value)">
+                                        <option value="">Select field...</option>
+                                        <template x-for="cat in fieldCategories" :key="cat">
+                                            <optgroup :label="cat">
+                                                <template x-for="f in fieldsByCategory[cat]" :key="f.name">
+                                                    <option :value="f.name" x-text="f.label" :selected="child.field === f.name"></option>
+                                                </template>
+                                            </optgroup>
+                                        </template>
+                                    </select>
+                                    <select :value="child.operator" @change="child.operator = $event.target.value" x-show="child.field">
+                                        <template x-for="op in getOperators(child.field)" :key="op">
+                                            <option :value="op" x-text="op" :selected="child.operator === op"></option>
+                                        </template>
+                                    </select>
+                                    <template x-if="child.field && getValueType(child.field) === 'int'">
+                                        <input type="number" x-model.number="child.value" placeholder="Value" style="width: 80px;">
+                                    </template>
+                                    <template x-if="child.field && getValueType(child.field) === 'str'">
+                                        <input type="text" x-model="child.value" placeholder="Value">
+                                    </template>
+                                    <template x-if="child.field && getValueType(child.field) === 'bool'">
+                                        <select x-model="child.value">
+                                            <option :value="true">True</option>
+                                            <option :value="false">False</option>
+                                        </select>
+                                    </template>
+                                    <button class="rule-remove" @click="removeChild(segmentRules, ci)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Group Rule (nested) -->
+                                <div x-show="child.type === 'group'" class="rule-group" style="margin-left: 16px;">
+                                    <div class="rule-group-header">
+                                        <span class="not-toggle" :class="child.negated && 'active'" @click="child.negated = !child.negated" title="Toggle NOT on group">
+                                            NOT
+                                        </span>
+                                        <div class="and-or-toggle">
+                                            <button :class="child.operator === 'AND' && 'active'" @click="child.operator = 'AND'">AND</button>
+                                            <button :class="child.operator === 'OR' && 'active'" @click="child.operator = 'OR'">OR</button>
+                                        </div>
+                                        <button class="rule-remove" @click="removeChild(segmentRules, ci)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <template x-for="(gc, gi) in child.children" :key="gi">
+                                        <div class="rule-row" style="margin-left: 8px;">
+                                            <span class="not-toggle" :class="gc.negated && 'active'" @click="gc.negated = !gc.negated" title="Toggle NOT">
+                                                NOT
+                                            </span>
+                                            <select :value="gc.field" @change="updateRuleField(gc, $event.target.value)">
+                                                <option value="">Select field...</option>
+                                                <template x-for="cat2 in fieldCategories" :key="cat2">
+                                                    <optgroup :label="cat2">
+                                                        <template x-for="f2 in fieldsByCategory[cat2]" :key="f2.name">
+                                                            <option :value="f2.name" x-text="f2.label" :selected="gc.field === f2.name"></option>
+                                                        </template>
+                                                    </optgroup>
+                                                </template>
+                                            </select>
+                                            <select :value="gc.operator" @change="gc.operator = $event.target.value" x-show="gc.field">
+                                                <template x-for="op2 in getOperators(gc.field)" :key="op2">
+                                                    <option :value="op2" x-text="op2" :selected="gc.operator === op2"></option>
+                                                </template>
+                                            </select>
+                                            <template x-if="gc.field && getValueType(gc.field) === 'int'">
+                                                <input type="number" x-model.number="gc.value" placeholder="Value" style="width: 80px;">
+                                            </template>
+                                            <template x-if="gc.field && getValueType(gc.field) === 'str'">
+                                                <input type="text" x-model="gc.value" placeholder="Value">
+                                            </template>
+                                            <template x-if="gc.field && getValueType(gc.field) === 'bool'">
+                                                <select x-model="gc.value">
+                                                    <option :value="true">True</option>
+                                                    <option :value="false">False</option>
+                                                </select>
+                                            </template>
+                                            <button class="rule-remove" @click="removeChild(child, gi)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <div style="margin-top: 6px;">
+                                        <button class="btn-action secondary small" @click="addRule(child)">
+                                            <i class="fas fa-plus"></i> Rule
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Add buttons -->
+                        <div style="display: flex; gap: 6px; margin-top: 8px;">
+                            <button class="btn-action secondary small" @click="addRule(segmentRules)">
+                                <i class="fas fa-plus"></i> Add Rule
+                            </button>
+                            <button class="btn-action secondary small" @click="addGroup(segmentRules)">
+                                <i class="fas fa-layer-group"></i> Add Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div style="display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 16px; background: var(--bg-primary); border-radius: 8px;">
+                    <button class="btn-action secondary" @click="previewSegment()" :disabled="previewLoading">
+                        <i class="fas" :class="previewLoading ? 'fa-spinner fa-spin' : 'fa-eye'"></i> Preview
+                    </button>
+                    <div x-show="previewCount > 0">
+                        <div class="preview-count" x-text="previewCount"></div>
+                        <div class="preview-label">matching fans</div>
+                    </div>
+                </div>
+
+                <!-- Preview Members -->
+                <div x-show="previewMembers.length > 0" style="margin-top: 12px;">
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Preview (first 20)</div>
+                    <table class="app-table" style="font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Messages</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="m in previewMembers" :key="m.id">
+                                <tr>
+                                    <td x-text="m.id"></td>
+                                    <td x-text="m.first_name || '—'"></td>
+                                    <td x-text="m.username || '—'"></td>
+                                    <td x-text="m.message_count"></td>
+                                    <td x-text="m.last_seen ? formatDate(m.last_seen) : '—'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action secondary" @click="showBuilder = false">Cancel</button>
+                <button class="btn-action primary" @click="saveSegment()" :disabled="saving">
+                    <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+                    <span x-text="editing ? 'Update' : 'Create'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Modal -->
+    <div x-show="showPresets" class="modal-overlay" @click.self="showPresets = false">
+        <div class="modal-box" @click.stop style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Create from Preset</h3>
+                <button class="modal-close" @click="showPresets = false">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div x-show="presets.length === 0" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading presets...
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <template x-for="preset in presets" :key="preset.id">
+                        <div class="preset-card" @click="activatePreset(preset.id)">
+                            <div class="preset-name" x-text="preset.name"></div>
+                            <div class="preset-desc" x-text="preset.description"></div>
+                            <div class="preset-category" x-text="preset.category"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action secondary" @click="showPresets = false">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div x-show="showDetail" class="modal-overlay" @click.self="showDetail = false">
+        <div class="modal-box" @click.stop style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 x-text="detailSegment ? detailSegment.name : 'Segment Detail'"></h3>
+                <button class="modal-close" @click="showDetail = false">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div x-show="detailLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading segment details...
+                </div>
+                <div x-show="!detailLoading && detailSegment">
+                    <!-- Stats Row -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
+                        <div style="text-align: center; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                            <div style="font-size: 22px; font-weight: 700; color: var(--accent-purple);" x-text="detailSegment.member_count ?? '--'"></div>
+                            <div style="font-size: 11px; color: var(--text-tertiary);">Members</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                            <div style="font-size: 22px; font-weight: 700;" :style="detailSegment.enabled ? 'color:var(--accent-green)' : 'color:var(--text-tertiary)'" x-text="detailSegment.enabled ? 'Active' : 'Disabled'"></div>
+                            <div style="font-size: 11px; color: var(--text-tertiary);">Status</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                            <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);" x-text="detailSegment.last_evaluated_at ? formatDate(detailSegment.last_evaluated_at) : 'Never'"></div>
+                            <div style="font-size: 11px; color: var(--text-tertiary);">Last Evaluated</div>
+                        </div>
+                    </div>
+
+                    <!-- Refresh Count Button -->
+                    <div style="margin-bottom: 16px;">
+                        <button class="btn-action secondary small" @click="refreshCount()" :disabled="countRefreshing">
+                            <i class="fas" :class="countRefreshing ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh Count
+                        </button>
+                        <span x-show="countResult !== null" style="font-size:12px;color:var(--text-secondary);margin-left:8px;" x-text="countResult != null ? countResult + ' members' : ''"></span>
+                    </div>
+
+                    <!-- Check User Membership -->
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; margin-bottom: 16px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Check User Membership</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input class="form-input" x-model="checkUserId" type="number" placeholder="Enter user ID" style="width: 160px;">
+                            <button class="btn-action primary small" @click="checkUserMembership()" :disabled="!checkUserId || checkLoading">
+                                <i class="fas" :class="checkLoading ? 'fa-spinner fa-spin' : 'fa-search'"></i> Check
+                            </button>
+                        </div>
+                        <div x-show="checkResult" style="margin-top: 8px; padding: 8px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px;">
+                            <span class="badge" :class="checkResult?.is_member ? 'badge-green' : 'badge-gray'" x-text="checkResult?.is_member ? 'Member' : 'Not Member'"></span>
+                            <span style="font-size: 12px; color: var(--text-tertiary); margin-left: 8px;" x-text="checkResult ? checkResult.matched_count + '/' + checkResult.total_count + ' rules matched' : ''"></span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div x-show="detailSegment.description" style="margin-bottom: 16px; padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Description</div>
+                        <div style="font-size: 13px; color: var(--text-primary);" x-text="detailSegment.description"></div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div x-show="detailStats" style="margin-bottom: 16px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Field Statistics</div>
+                        <div style="overflow-x: auto;">
+                            <table class="app-table" style="font-size: 12px;">
+                                <thead>
+                                    <tr><th>Field</th><th>Avg</th><th>Min</th><th>Max</th><th>Distinct</th></tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(stat, field) in (detailStats?.fields || {})" :key="field">
+                                        <tr>
+                                            <td style="font-weight: 600;" x-text="field"></td>
+                                            <td x-text="stat.avg != null ? Number(stat.avg).toFixed(1) : '—'"></td>
+                                            <td x-text="stat.min ?? '—'"></td>
+                                            <td x-text="stat.max ?? '—'"></td>
+                                            <td x-text="stat.distinct ?? '—'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Members -->
+                    <div style="margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Members (first 20)</span>
+                            <button class="btn-action secondary small" @click="loadDetailMembers()">
+                                <i class="fas" :class="detailMembersLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                            </button>
+                        </div>
+                        <div x-show="detailMembersLoading" class="loading-text" style="padding: 12px;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading members...
+                        </div>
+                        <div x-show="!detailMembersLoading && detailMembers.length === 0" style="font-size: 13px; color: var(--text-tertiary); padding: 12px;">
+                            No members found.
+                        </div>
+                        <div x-show="!detailMembersLoading && detailMembers.length > 0" style="max-height: 250px; overflow-y: auto;">
+                            <table class="app-table" style="font-size: 12px;">
+                                <thead>
+                                    <tr><th>ID</th><th>Name</th><th>Username</th><th>Messages</th><th>Last Seen</th><th></th></tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="m in detailMembers" :key="m.id">
+                                        <tr>
+                                            <td x-text="m.id"></td>
+                                            <td x-text="m.first_name || '—'"></td>
+                                            <td x-text="m.username || '—'"></td>
+                                            <td x-text="m.message_count"></td>
+                                            <td x-text="m.last_seen ? formatDate(m.last_seen) : '—'"></td>
+                                            <td>
+                                                <button class="btn-action secondary small" @click="explainUser(m.id)" title="Explain">
+                                                    <i class="fas fa-question-circle"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Explain User -->
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px;">Explain User Match</div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input class="form-input" x-model="explainUserId" type="number" placeholder="Enter user ID" style="width: 160px;">
+                            <button class="btn-action primary small" @click="explainUser(explainUserId)" :disabled="!explainUserId || explainLoading">
+                                <i class="fas" :class="explainLoading ? 'fa-spinner fa-spin' : 'fa-search'"></i> Explain
+                            </button>
+                        </div>
+                        <div x-show="explainResult" style="margin-top: 12px; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span class="badge" :class="explainResult?.is_member ? 'badge-green' : 'badge-gray'" x-text="explainResult?.is_member ? 'Member' : 'Not Member'"></span>
+                                <span style="font-size: 12px; color: var(--text-tertiary);" x-text="explainResult ? explainResult.satisfied_count + '/' + explainResult.total_count + ' rules satisfied' : ''"></span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary); max-height: 200px; overflow-y: auto; white-space: pre-wrap;" x-text="explainResult ? JSON.stringify(explainResult.rule_evaluation, null, 2) : ''"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action secondary" @click="showDetail = false">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+</div>
+
+<script>
+function segmentsApp() {
+    return {
+        segments: [],
+        loading: true,
+        error: null,
+
+        // Builder
+        showBuilder: false,
+        editing: false,
+        editId: null,
+        segmentName: '',
+        segmentDescription: '',
+        segmentRules: { type: 'group', operator: 'AND', children: [] },
+        saving: false,
+
+        // Presets
+        showPresets: false,
+        presets: [],
+
+        // Fields
+        fields: [],
+        fieldCategories: [],
+        fieldsByCategory: {},
+
+        // Preview
+        previewMembers: [],
+        previewCount: 0,
+        previewLoading: false,
+
+        // Detail view
+        showDetail: false,
+        detailSegment: null,
+        detailStats: null,
+        detailMembers: [],
+        detailLoading: false,
+        detailMembersLoading: false,
+        explainUserId: '',
+        explainLoading: false,
+        explainResult: null,
+        countRefreshing: false,
+        countResult: null,
+        checkUserId: '',
+        checkLoading: false,
+        checkResult: null,
+
+        async init() {
+            await Promise.all([this.loadFields(), this.loadSegments()]);
+        },
+
+        async loadFields() {
+            try {
+                const resp = await fetch('/api/segments/fields');
+                if (!resp.ok) throw new Error('Failed to load fields');
+                this.fields = await resp.json();
+                // Group by category
+                const cats = {};
+                for (const f of this.fields) {
+                    if (!cats[f.category]) cats[f.category] = [];
+                    cats[f.category].push(f);
+                }
+                this.fieldCategories = Object.keys(cats);
+                this.fieldsByCategory = cats;
+            } catch (e) {
+                this.error = e.message;
+            }
+        },
+
+        async loadSegments() {
+            this.loading = true;
+            try {
+                const resp = await fetch('/api/segments');
+                if (!resp.ok) throw new Error('Failed to load segments');
+                this.segments = await resp.json();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        openCreate() {
+            this.editing = false;
+            this.editId = null;
+            this.segmentName = '';
+            this.segmentDescription = '';
+            this.segmentRules = { type: 'group', operator: 'AND', children: [] };
+            this.previewMembers = [];
+            this.previewCount = 0;
+            this.showBuilder = true;
+        },
+
+        openEdit(seg) {
+            this.editing = true;
+            this.editId = seg.id;
+            this.segmentName = seg.name;
+            this.segmentDescription = seg.description || '';
+            this.segmentRules = JSON.parse(JSON.stringify(seg.rules));
+            this.previewMembers = [];
+            this.previewCount = 0;
+            this.showBuilder = true;
+        },
+
+        async saveSegment() {
+            if (!this.segmentName.trim()) {
+                this.showToast('Name is required', 'error');
+                return;
+            }
+            if (this.segmentRules.children.length === 0) {
+                this.showToast('At least one rule is required', 'error');
+                return;
+            }
+            this.saving = true;
+            try {
+                const body = {
+                    name: this.segmentName.trim(),
+                    description: this.segmentDescription.trim(),
+                    rules: this.segmentRules,
+                };
+                const url = this.editing ? `/api/segments/${this.editId}` : '/api/segments';
+                const method = this.editing ? 'PATCH' : 'POST';
+                const resp = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to save segment');
+                }
+                this.showBuilder = false;
+                await this.loadSegments();
+                this.showToast(this.editing ? 'Segment updated' : 'Segment created', 'success');
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.saving = false;
+            }
+        },
+
+        async toggleSegment(id) {
+            try {
+                const resp = await fetch(`/api/segments/${id}/toggle`, { method: 'POST' });
+                if (!resp.ok) throw new Error('Failed to toggle');
+                await this.loadSegments();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        async duplicateSegment(id) {
+            try {
+                const resp = await fetch(`/api/segments/${id}/duplicate`, { method: 'POST' });
+                if (!resp.ok) throw new Error('Failed to duplicate');
+                await this.loadSegments();
+                this.showToast('Segment duplicated', 'success');
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        async deleteSegment(id, name) {
+            if (!confirm(`Delete segment "${name}"?`)) return;
+            try {
+                const resp = await fetch(`/api/segments/${id}`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error('Failed to delete');
+                await this.loadSegments();
+                this.showToast('Segment deleted', 'success');
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        async openDetail(seg) {
+            this.showDetail = true;
+            this.detailSegment = null;
+            this.detailStats = null;
+            this.detailMembers = [];
+            this.explainResult = null;
+            this.detailLoading = true;
+            try {
+                const [segResp, statsResp] = await Promise.all([
+                    fetch(`/api/segments/${seg.id}`),
+                    fetch(`/api/segments/${seg.id}/stats`),
+                ]);
+                if (segResp.ok) this.detailSegment = await segResp.json();
+                if (statsResp.ok) this.detailStats = await statsResp.json();
+                await this.loadDetailMembers(seg.id);
+            } catch (e) {
+                this.showToast('Failed to load segment details', 'error');
+            } finally {
+                this.detailLoading = false;
+            }
+        },
+
+        async loadDetailMembers(segId) {
+            if (!segId && this.detailSegment) segId = this.detailSegment.id;
+            if (!segId) return;
+            this.detailMembersLoading = true;
+            try {
+                const resp = await fetch(`/api/segments/${segId}/members?limit=20`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    this.detailMembers = data.members || [];
+                }
+            } catch (e) { /* silent */ }
+            finally { this.detailMembersLoading = false; }
+        },
+
+        async explainUser(userId) {
+            if (!userId || !this.detailSegment) return;
+            this.explainLoading = true;
+            this.explainResult = null;
+            try {
+                const resp = await fetch(`/api/segments/${this.detailSegment.id}/explain/${userId}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Explain failed');
+                }
+                this.explainResult = await resp.json();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.explainLoading = false;
+            }
+        },
+
+        async refreshCount() {
+            if (!this.detailSegment) return;
+            this.countRefreshing = true;
+            this.countResult = null;
+            try {
+                const resp = await fetch(`/api/segments/${this.detailSegment.id}/count`);
+                if (!resp.ok) throw new Error('Failed to refresh count');
+                const data = await resp.json();
+                this.countResult = data.count;
+                this.detailSegment.member_count = data.count;
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.countRefreshing = false;
+            }
+        },
+
+        async checkUserMembership() {
+            if (!this.checkUserId || !this.detailSegment) return;
+            this.checkLoading = true;
+            this.checkResult = null;
+            try {
+                const resp = await fetch(`/api/segments/${this.detailSegment.id}/check/${this.checkUserId}`);
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Check failed');
+                }
+                this.checkResult = await resp.json();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.checkLoading = false;
+            }
+        },
+
+        async previewSegment() {
+            if (this.segmentRules.children.length === 0) {
+                this.showToast('Add at least one rule to preview', 'error');
+                return;
+            }
+            this.previewLoading = true;
+            try {
+                const resp = await fetch('/api/segments/preview', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rules: this.segmentRules }),
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Preview failed');
+                }
+                const data = await resp.json();
+                this.previewCount = data.count;
+                this.previewMembers = data.members;
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.previewLoading = false;
+            }
+        },
+
+        // Preset helpers
+        async openPresets() {
+            this.showPresets = true;
+            await this.loadPresets();
+        },
+
+        async loadPresets() {
+            try {
+                const resp = await fetch('/api/segments/presets');
+                if (!resp.ok) throw new Error('Failed to load presets');
+                this.presets = await resp.json();
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        async activatePreset(presetId) {
+            try {
+                const resp = await fetch(`/api/segments/presets/${presetId}/activate`, { method: 'POST' });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to activate preset');
+                }
+                this.showPresets = false;
+                await this.loadSegments();
+                this.showToast('Preset activated', 'success');
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            }
+        },
+
+        // Rule builder helpers
+        addRule(parent) {
+            parent.children.push({ type: 'rule', field: '', operator: '', value: '' });
+        },
+
+        addGroup(parent) {
+            parent.children.push({ type: 'group', operator: 'AND', children: [] });
+        },
+
+        removeChild(parent, index) {
+            parent.children.splice(index, 1);
+        },
+
+        updateRuleField(rule, newField) {
+            rule.field = newField;
+            rule.operator = '';
+            rule.value = '';
+        },
+
+        getOperators(fieldName) {
+            if (!fieldName) return [];
+            const f = this.fields.find(f => f.name === fieldName);
+            return f ? f.operators : [];
+        },
+
+        getValueType(fieldName) {
+            if (!fieldName) return 'str';
+            const f = this.fields.find(f => f.name === fieldName);
+            return f ? f.value_type : 'str';
+        },
+
+        formatDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            const now = new Date();
+            const diff = (now - d) / 1000;
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+            return d.toLocaleDateString();
+        },
+
+        showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + type;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        },
+    };
+}
+</script>
+{% endblock %}

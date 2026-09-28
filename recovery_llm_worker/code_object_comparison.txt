@@ -1,0 +1,196 @@
+======================================================================
+CODE OBJECT COMPARISON — .pyc vs RECONSTRUCTED SOURCE (v2)
+======================================================================
+.pyc: recovery_llm_worker\llm_worker.cpython-314.pyc
+Source: recovery_llm_worker\reconstructed\llm_worker_recovered.py
+.pyc top-level: ['<module>', '_parse_worker_preferred_index', '_try_commerce_draft', '_worker_cleanup', 'generate_draft', 'generate_draft_with_tools', 'main', 'notify_operators', 'post_process', 'process_message', 'run_worker']
+Source top-level: ['<module>', '_is_quota_error', '_parse_worker_preferred_index', '_try_commerce_draft', '_worker_cleanup', 'generate_draft', 'generate_draft_with_tools', 'main', 'notify_operators', 'post_process', 'process_message', 'run_worker']
+
+======================================================================
+  ~ <module> — PARTIAL
+======================================================================
+  .pyc: args=0 posonly=0 kwonly=0 locals=0 line=1 async=False instrs=313
+    names(92): ['__conditional_annotations__', 'argparse', 'asyncio', 'hashlib', 'logging', 'time', '_time', 'uuid', 'datetime', 'timezone', 'typing', 'Any', 'google.genai', 'types', 'gtypes']...
+    consts: ['0', 'None', "('datetime', 'timezone')", "('Any',)", "('types',)", "('resolve_and_run_commerce',)", "('PIPELINE_MAX_MESSAGES',)", "('resolve_commerce_product_with_history',)"]
+    nested: ['__annotate__', '_parse_worker_preferred_index', '__annotate__', 'generate_draft', '__annotate__', 'generate_draft_with_tools', '__annotate__', '_try_commerce_draft', '__annotate__', 'notify_operators', '__annotate__', 'post_process', '__annotate__', 'process_message', '__annotate__', 'run_worker', '__annotate__', '_worker_cleanup', '__annotate__', 'main', '__annotate__']
+    ops: ['POP_JUMP_IF_FALSE', 'LOAD_NAME', 'RETURN_VALUE', 'SET_FUNCTION_ATTRIBUTE', 'IMPORT_FROM', 'BUILD_MAP', 'COMPARE_OP', 'STORE_GLOBAL', 'LOAD_CONST', 'RESUME', 'STORE_NAME', 'LOAD_SMALL_INT', 'CALL', 'SET_ADD', 'BUILD_TUPLE']...
+  src:  args=0 posonly=0 kwonly=0 locals=0 line=1 async=False instrs=317
+    names(93): ['__conditional_annotations__', 'argparse', 'asyncio', 'hashlib', 'logging', 'time', '_time', 'uuid', 'datetime', 'timezone', 'typing', 'Any', 'google.genai', 'types', 'gtypes']...
+    consts: ['0', 'None', "('datetime', 'timezone')", "('Any',)", "('types',)", "('resolve_and_run_commerce',)", "('PIPELINE_MAX_MESSAGES',)", "('resolve_commerce_product_with_history',)"]
+    nested: ['__annotate__', '_parse_worker_preferred_index', '__annotate__', 'generate_draft', '__annotate__', '_is_quota_error', '__annotate__', 'generate_draft_with_tools', '__annotate__', '_try_commerce_draft', '__annotate__', 'notify_operators', '__annotate__', 'post_process', '__annotate__', 'process_message', '__annotate__', 'run_worker', '__annotate__', '_worker_cleanup', '__annotate__', 'main', '__annotate__']
+    ops: ['POP_JUMP_IF_FALSE', 'LOAD_NAME', 'RETURN_VALUE', 'SET_FUNCTION_ATTRIBUTE', 'IMPORT_FROM', 'COMPARE_OP', 'STORE_GLOBAL', 'LOAD_CONST', 'RESUME', 'STORE_NAME', 'LOAD_SMALL_INT', 'CALL', 'SET_ADD', 'BUILD_TUPLE', 'NOT_TAKEN']...
+  reasons: nested count: 21 vs 23
+
+======================================================================
+  + _is_quota_error — EXTRA
+======================================================================
+  .pyc: NOT FOUND
+  src:  args=1 posonly=0 kwonly=0 locals=2 line=150 async=False instrs=27
+    names(2): ['str', 'lower']
+    consts: ["'Check if an exception indicates quota exhaustion.'", "'quota'", "'429'", "'resource_exhausted'"]
+    nested: []
+    ops: ['LOAD_ATTR', 'TO_BOOL', 'CALL', 'STORE_FAST', 'LOAD_FAST_BORROW', 'CONTAINS_OP', 'RETURN_VALUE', 'POP_TOP', 'POP_JUMP_IF_TRUE', 'COPY', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'NOT_TAKEN']
+  reasons: not in .pyc
+
+======================================================================
+  ✓ _parse_worker_preferred_index — MATCH
+======================================================================
+  .pyc: args=1 posonly=0 kwonly=0 locals=3 line=70 async=False instrs=38
+    names(7): ['int', 'rsplit', 'get_pool', 'size', 'ValueError', 'IndexError', 'RuntimeError']
+    consts: ['"Extract a numeric suffix from worker_id for credential affinity.\\n\\n\'worker_1\' -> 0, \'worker_2\' -> ', "'_'", '-1']
+    nested: []
+    ops: ['POP_JUMP_IF_FALSE', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'BINARY_OP', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'NOP', 'LOAD_SMALL_INT', 'CALL', 'BUILD_TUPLE', 'COPY']...
+  src:  args=1 posonly=0 kwonly=0 locals=3 line=70 async=False instrs=38
+    names(7): ['int', 'rsplit', 'get_pool', 'size', 'ValueError', 'IndexError', 'RuntimeError']
+    consts: ['"Extract a numeric suffix from worker_id for credential affinity.\\n\\n\'worker_1\' -> 0, \'worker_2\' -> ', "'_'", '-1']
+    nested: []
+    ops: ['POP_JUMP_IF_FALSE', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'BINARY_OP', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'NOP', 'LOAD_SMALL_INT', 'CALL', 'BUILD_TUPLE', 'COPY']...
+
+======================================================================
+  ~ _try_commerce_draft — PARTIAL
+======================================================================
+  .pyc: args=3 posonly=0 kwonly=1 locals=24 line=358 async=False instrs=344
+    names(32): ['_settings', 'autonomy_enabled', 'logger', 'info', 'resolve_single_application_creator', 'status', 'SingleCreatorStatus', 'READY', 'value', 'creator_id', 'core.conversation_state', 'derive_conversation_state', 'db.postgres', 'get_user', 'memory.context']...
+    consts: ['"Attempt the commerce draft-generation path at most once per message.\\n\\nWorker-local, thin adapter.', "'autonomy_disabled: commerce attempt skipped for user=%s (autonomy_enabled=false)'", 'None', "'Single-creator resolution %s for user %s (standard draft path)'", "('derive_conversation_state',)", "('get_user',)", "('get_last_profile',)", "'role'"]
+    nested: []
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'UNARY_NEGATIVE', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'IS_OP', 'FOR_ITER', 'BINARY_SLICE', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE']...
+  src:  args=4 posonly=0 kwonly=0 locals=19 line=306 async=False instrs=305
+    names(29): ['_settings', 'autonomy_enabled', 'logger', 'info', 'resolve_single_application_creator', 'status', 'SingleCreatorStatus', 'READY', 'value', 'creator_id', 'resolve_commerce_product_with_history', 'core.conversation_state', 'derive_conversation_state', 'get', 'tuple']...
+    consts: ['"Attempt the commerce draft-generation path at most once per message.\\n\\nWorker-local, thin adapter.', "'autonomy_disabled: commerce attempt skipped for user=%s (autonomy_enabled=false)'", 'None', "'Single-creator resolution %s for user %s (standard draft path)'", "('derive_conversation_state',)", "'current_topic'", "'open_threads'", "('get_user',)"]
+    nested: []
+    ops: ['POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'UNARY_NEGATIVE', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'IS_OP', 'BINARY_SLICE', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP', 'LOAD_FAST_BORROW_LOAD_FAST_BORROW', 'CALL_INTRINSIC_1']...
+  reasons: argcount: 3 vs 4; nlocals: 24 vs 19
+
+======================================================================
+  ✓ _worker_cleanup — MATCH
+======================================================================
+  .pyc: args=0 posonly=0 kwonly=0 locals=2 line=1812 async=False instrs=50
+    names(6): ['db.postgres', 'close_pool', 'db.redis', 'close_redis', 'logger', 'info']
+    consts: ['0', "('close_pool',)", "('close_redis',)", "'LLM worker shutting down...'", 'None']
+    nested: []
+    ops: ['LOAD_FAST_BORROW', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'CALL_INTRINSIC_1', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'LOAD_SMALL_INT', 'CALL', 'JUMP_BACKWARD_NO_INTERRUPT', 'YIELD_VALUE']...
+  src:  args=0 posonly=0 kwonly=0 locals=2 line=1600 async=False instrs=50
+    names(6): ['db.postgres', 'close_pool', 'db.redis', 'close_redis', 'logger', 'info']
+    consts: ['0', "('close_pool',)", "('close_redis',)", "'LLM worker shutting down...'", 'None']
+    nested: []
+    ops: ['LOAD_FAST_BORROW', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'CALL_INTRINSIC_1', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'LOAD_SMALL_INT', 'CALL', 'JUMP_BACKWARD_NO_INTERRUPT', 'YIELD_VALUE']...
+
+======================================================================
+  ~ generate_draft — PARTIAL
+======================================================================
+  .pyc: args=3 posonly=0 kwonly=0 locals=19 line=83 async=False instrs=373
+    names(25): ['get', 'append', 'startswith', 'strip', 'join', '_settings', 'llm_provider', 'get_llm_provider', 'generate_with_history', 'max_tokens', 'temperature', 'Exception', 'logger', 'exception', 'gemini_fallback_enabled']...
+    consts: ["'role'", "'content'", "''", "'system'", "'user'", "'__'", "'\\n\\n'", "'ollama'"]
+    nested: ['<genexpr>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'BUILD_MAP', 'GET_AWAITABLE', 'BINARY_OP', 'CALL_INTRINSIC_1']...
+  src:  args=3 posonly=0 kwonly=0 locals=18 line=83 async=False instrs=285
+    names(22): ['get', 'append', 'join', 'get_llm_provider', '_settings', 'llm_provider', 'strip', 'split', 'core.llm_provider_ollama', 'OllamaProvider', 'generate_with_history', 'max_tokens', 'temperature', 'Exception', 'logger']...
+    consts: ["'role'", "'content'", "''", "'system'", "'user'", "'\\n\\n'", 'None', "','"]
+    nested: ['<genexpr>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'BUILD_MAP', 'GET_AWAITABLE', 'CALL_INTRINSIC_1', 'LIST_APPEND', 'LOAD_FAST']...
+  reasons: nlocals close: 19 vs 18
+
+======================================================================
+  ~ generate_draft_with_tools — PARTIAL
+======================================================================
+  .pyc: args=5 posonly=0 kwonly=0 locals=34 line=180 async=False instrs=641
+    names(66): ['_settings', 'llm_max_tool_calls', 'get_gemini_function_declarations', 'generate_draft', 'get_llm_provider', 'supports_tool_calling', 'logger', 'info', 'provider_name', 'get', 'append', 'gtypes', 'Content', 'Part', 'join']...
+    consts: ["'Generate a draft with bounded tool calling.\\n\\nWhen the model returns a function call, the tool is ", 'None', "'Provider %s does not support tool calling, falling back to plain text'", "'role'", "'content'", "''", "'system'", "'user'"]
+    nested: ['<genexpr>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'STORE_ATTR', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'BINARY_SLICE', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP']...
+  src:  args=5 posonly=0 kwonly=0 locals=30 line=156 async=False instrs=508
+    names(59): ['_settings', 'llm_max_tool_calls', 'get_gemini_function_declarations', 'generate_draft', 'get_llm_provider', 'supports_tool_calling', 'logger', 'info', 'provider_name', 'get', 'append', 'gtypes', 'Content', 'Part', 'join']...
+    consts: ["'Generate a draft with bounded tool calling.\\n\\nWhen the model returns a function call, the tool is ", 'None', "'Provider %s does not support tool calling, falling back to plain text'", "'role'", "'content'", "''", "'system'", "'user'"]
+    nested: ['<genexpr>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'STORE_ATTR', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'BINARY_SLICE', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP']...
+  reasons: nlocals: 34 vs 30
+
+======================================================================
+  ✓ main — MATCH
+======================================================================
+  .pyc: args=0 posonly=0 kwonly=0 locals=3 line=1821 async=False instrs=40
+    names(11): ['argparse', 'ArgumentParser', 'add_argument', 'parse_args', 'get_settings', 'setup_logging', 'structured_logging', 'asyncio', 'run', 'run_worker', 'worker_id']
+    consts: ["'LLM Worker'", "('description',)", "'--worker-id'", 'True', "'Unique worker ID'", "('required', 'help')", "('structured',)", 'None']
+    nested: []
+    ops: ['LOAD_ATTR', 'PUSH_NULL', 'STORE_FAST', 'CALL', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'POP_TOP', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'CALL_KW']
+  src:  args=0 posonly=0 kwonly=0 locals=3 line=1609 async=False instrs=40
+    names(11): ['argparse', 'ArgumentParser', 'add_argument', 'parse_args', 'get_settings', 'setup_logging', 'structured_logging', 'asyncio', 'run', 'run_worker', 'worker_id']
+    consts: ["'LLM Worker'", "('description',)", "'--worker-id'", 'True', "'Unique worker ID'", "('required', 'help')", "('structured',)", 'None']
+    nested: []
+    ops: ['LOAD_ATTR', 'PUSH_NULL', 'STORE_FAST', 'CALL', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'POP_TOP', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME', 'CALL_KW']
+
+======================================================================
+  ✓ notify_operators — MATCH
+======================================================================
+  .pyc: args=5 posonly=0 kwonly=0 locals=5 line=472 async=False instrs=16
+    names(2): ['logger', 'info']
+    consts: ["'Operator queue item %s created for user %s (score=%.2f, flags=%s)'", 'None']
+    nested: []
+    ops: ['LOAD_ATTR', 'CALL_INTRINSIC_1', 'RETURN_GENERATOR', 'CALL', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'POP_TOP', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME']
+  src:  args=5 posonly=0 kwonly=0 locals=5 line=415 async=False instrs=16
+    names(2): ['logger', 'info']
+    consts: ["'Operator queue item %s created for user %s (score=%.2f, flags=%s)'", 'None']
+    nested: []
+    ops: ['LOAD_ATTR', 'CALL_INTRINSIC_1', 'RETURN_GENERATOR', 'CALL', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'POP_TOP', 'RERAISE', 'LOAD_GLOBAL', 'LOAD_CONST', 'RESUME']
+
+======================================================================
+  ✓ post_process — MATCH
+======================================================================
+  .pyc: args=1 posonly=0 kwonly=0 locals=5 line=488 async=False instrs=102
+    names(10): ['get_recent_messages', 'db.postgres', 'get_user', 'get', 'len', 'extract_and_update_profile', 'maybe_summarize', 'Exception', 'logger', 'exception']
+    consts: ['20', "('limit',)", 'None', "('get_user',)", "'message_count'", "'post_process failed for user %s'"]
+    nested: []
+    ops: ['POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'LOAD_FAST_BORROW_LOAD_FAST_BORROW', 'CALL_INTRINSIC_1', 'LOAD_FAST', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL']...
+  src:  args=1 posonly=0 kwonly=0 locals=5 line=431 async=False instrs=102
+    names(10): ['get_recent_messages', 'db.postgres', 'get_user', 'get', 'len', 'extract_and_update_profile', 'maybe_summarize', 'Exception', 'logger', 'exception']
+    consts: ['20', "('limit',)", 'None', "('get_user',)", "'message_count'", "'post_process failed for user %s'"]
+    nested: []
+    ops: ['POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'LOAD_FAST_BORROW_LOAD_FAST_BORROW', 'CALL_INTRINSIC_1', 'LOAD_FAST', 'STORE_FAST', 'RERAISE', 'LOAD_GLOBAL']...
+
+======================================================================
+  ~ process_message — PARTIAL
+======================================================================
+  .pyc: args=7 posonly=0 kwonly=0 locals=222 line=504 async=False instrs=6741
+    names(306): ['core.event_bus', 'publish_event', 'hashlib', 'md5', 'encode', 'hexdigest', 'str', 'core.telemetry', 'get_telemetry_collector', 'start_generation', 'commerce.single_creator', 'SingleCreatorStatus', 'resolve_single_application_creator', 'status', 'READY']...
+    consts: ['0', "('publish_event',)", 'None', "':'", "('get_telemetry_collector',)", "'legacy'", "('user_id', 'creator_id', 'runtime_mode', 'generation_id')", 'False']
+    nested: ['<genexpr>', '<genexpr>', '<genexpr>']
+    ops: ['STORE_ATTR', 'GET_ITER', 'FORMAT_SIMPLE', 'JUMP_FORWARD', 'POP_JUMP_IF_FALSE', 'TO_BOOL', 'BUILD_LIST', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'IS_OP', 'FOR_ITER', 'BINARY_SLICE', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM']...
+  src:  args=7 posonly=0 kwonly=0 locals=256 line=447 async=False instrs=4518
+    names(178): ['core.event_bus', 'publish_event', 'publish_events_batch', 'hashlib', 'md5', 'encode', 'hexdigest', 'core.telemetry', 'get_telemetry_collector', 'start_generation', 'commerce.single_creator', 'SingleCreatorStatus', 'resolve_single_application_creator', 'status', 'READY']...
+    consts: ['0', "('publish_event', 'publish_events_batch')", 'None', "':'", "('get_telemetry_collector',)", "'legacy'", "('user_id', 'creator_id', 'runtime_mode', 'generation_id')", 'False']
+    nested: ['<genexpr>', '<genexpr>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'FORMAT_SIMPLE', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'IS_OP', 'FOR_ITER', 'RETURN_VALUE', 'CLEANUP_THROW', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP']...
+  reasons: nlocals: 222 vs 256; consts overlap low: 0.21; nested count: 3 vs 2
+
+======================================================================
+  ✓ run_worker — MATCH
+======================================================================
+  .pyc: args=1 posonly=0 kwonly=0 locals=21 line=1700 async=False instrs=510
+    names(43): ['_parse_worker_preferred_index', '_worker_preferred_index', 'init_pool', 'ensure_consumer_group', 'commerce.production_control', 'load_persisted_state', 'logger', 'info', 'Exception', 'debug', 'commerce.embedding_model', 'get_model', 'commerce.unified_intelligence', '_ensure_reference_cache', 'time']...
+    consts: ['None', "('consumer_name',)", "('load_persisted_state',)", "'production_control: loaded persisted state %s'", "'production_control: load persisted state failed'", 'True', "('exc_info',)", "('get_model',)"]
+    nested: ['<lambda>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'RETURN_VALUE', 'CLEANUP_THROW', 'SET_FUNCTION_ATTRIBUTE', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP', 'BINARY_OP']...
+  src:  args=1 posonly=0 kwonly=0 locals=21 line=1496 async=False instrs=487
+    names(40): ['_parse_worker_preferred_index', '_worker_preferred_index', 'init_pool', 'ensure_consumer_group', 'commerce.production_control', 'load_persisted_state', 'logger', 'info', 'Exception', 'debug', 'commerce.embedding_model', 'get_model', '_time', 'monotonic', 'asyncio']...
+    consts: ['None', "('consumer_name',)", "('load_persisted_state',)", "'production_control: loaded persisted state %s'", "'production_control: load persisted state failed'", 'True', "('exc_info',)", "('get_model',)"]
+    nested: ['<lambda>']
+    ops: ['GET_ITER', 'BUILD_LIST', 'POP_JUMP_IF_FALSE', 'JUMP_FORWARD', 'TO_BOOL', 'PUSH_EXC_INFO', 'LOAD_FAST_BORROW', 'FOR_ITER', 'RETURN_VALUE', 'CLEANUP_THROW', 'SET_FUNCTION_ATTRIBUTE', 'IMPORT_FROM', 'GET_AWAITABLE', 'BUILD_MAP', 'BINARY_OP']...
+
+
+======================================================================
+SUMMARY
+======================================================================
+  ~ <module>: PARTIAL
+  + _is_quota_error: EXTRA
+  ✓ _parse_worker_preferred_index: MATCH
+  ~ _try_commerce_draft: PARTIAL
+  ✓ _worker_cleanup: MATCH
+  ~ generate_draft: PARTIAL
+  ~ generate_draft_with_tools: PARTIAL
+  ✓ main: MATCH
+  ✓ notify_operators: MATCH
+  ✓ post_process: MATCH
+  ~ process_message: PARTIAL
+  ✓ run_worker: MATCH
+
+  Totals: {'PARTIAL': 5, 'EXTRA': 1, 'MATCH': 6}

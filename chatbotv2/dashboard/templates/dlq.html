@@ -1,0 +1,195 @@
+{% extends "dashboard.html" %}
+{% block nav_dlq %}active{% endblock %}
+{% block page_title %}Dead Letter Queue{% endblock %}
+
+{% block extra_head %}
+<script>
+function dlqApp() {
+    return {
+        entries: [],
+        count: 0,
+        streamFilter: 'all',
+        loading: false,
+        error: null,
+
+        async load() {
+            this.loading = true;
+            this.error = null;
+            try {
+                const params = new URLSearchParams();
+                if (this.streamFilter !== 'all') params.set('stream', this.streamFilter);
+                const res = await fetch('/api/dlq?' + params.toString());
+                if (!res.ok) throw new Error('Failed to load DLQ entries');
+                this.entries = await res.json();
+                await this.loadCount();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadCount() {
+            try {
+                const params = new URLSearchParams();
+                if (this.streamFilter !== 'all') params.set('stream', this.streamFilter);
+                const res = await fetch('/api/dlq/count?' + params.toString());
+                if (res.ok) {
+                    const data = await res.json();
+                    this.count = data.count;
+                }
+            } catch (e) {
+                console.error('Failed to load DLQ count:', e);
+            }
+        },
+
+        async replay(entryId) {
+            if (!confirm('Replay this entry back to its stream?')) return;
+            try {
+                const res = await fetch('/api/dlq/' + entryId + '/replay', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    await this.load();
+                } else {
+                    alert('Replay failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Replay failed: ' + e.message);
+            }
+        },
+
+        async deleteEntry(entryId) {
+            if (!confirm('Permanently delete this DLQ entry?')) return;
+            try {
+                const res = await fetch('/api/dlq/' + entryId, { method: 'DELETE' });
+                if (res.ok) {
+                    await this.load();
+                } else {
+                    const data = await res.json();
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Delete failed: ' + e.message);
+            }
+        },
+
+        async cleanup() {
+            if (!confirm('Delete all DLQ entries older than 7 days?')) return;
+            try {
+                const res = await fetch('/api/dlq/cleanup', { method: 'POST' });
+                const data = await res.json();
+                alert('Cleaned up ' + data.deleted + ' expired entries.');
+                await this.load();
+            } catch (e) {
+                alert('Cleanup failed: ' + e.message);
+            }
+        },
+
+        formatTs(ts) {
+            if (!ts) return '-';
+            const ms = parseInt(ts.split('-')[0], 10);
+            if (isNaN(ms)) return ts;
+            return new Date(ms).toLocaleString();
+        },
+
+        init() {
+            this.load();
+        }
+    };
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div x-data="dlqApp()" x-init="init()" style="padding: 24px;">
+    <div class="app-card" style="padding: 20px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">
+                    Dead Letter Queue
+                </h2>
+                <span style="font-size: 13px; color: var(--text-tertiary);">
+                    <span style="font-weight: 600; color: var(--text-secondary);" x-text="count"></span> entries
+                </span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <select x-model="streamFilter" @change="load()"
+                        class="app-input" style="width: auto; padding: 6px 12px;">
+                    <option value="all">All Streams</option>
+                    <option value="send">Send</option>
+                    <option value="inbound">Inbound</option>
+                </select>
+                <button @click="cleanup()" class="btn-danger"
+                        style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-broom" style="font-size: 12px;"></i> Cleanup Old
+                </button>
+                <button @click="load()" class="btn-secondary"
+                        style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-sync-alt" style="font-size: 12px;"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="error" style="padding: 12px 16px; background: rgba(248,113,113,0.1); border-radius: 8px; color: var(--accent-red); font-size: 13px; margin-bottom: 16px;">
+        <i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i>
+        <span x-text="error"></span>
+    </div>
+
+    <div class="app-card" style="padding: 0; overflow: hidden;">
+        <div x-show="loading" style="padding: 48px 20px; text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 20px; color: var(--accent-purple);"></i>
+            <p style="font-size: 13px; color: var(--text-tertiary); margin-top: 8px;">Loading...</p>
+        </div>
+
+        <div x-show="!loading && entries.length === 0" style="padding: 48px 20px; text-align: center;">
+            <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: rgba(74, 222, 128, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-check-circle" style="font-size: 24px; color: var(--accent-green);"></i>
+            </div>
+            <p style="font-size: 14px; color: var(--text-secondary);">No DLQ entries</p>
+        </div>
+
+        <div x-show="!loading && entries.length > 0" style="overflow-x: auto;">
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Stream</th>
+                        <th>Reason</th>
+                        <th>Worker</th>
+                        <th>Timestamp</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="entry in entries" :key="entry.entry_id">
+                        <tr>
+                            <td style="font-family: monospace; font-size: 12px; color: var(--text-tertiary);" x-text="entry.entry_id"></td>
+                            <td>
+                                <span style="display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;"
+                                      :style="entry.stream === 'send' ? 'background: rgba(108,99,255,0.15); color: var(--accent-purple);' : 'background: rgba(249,115,22,0.15); color: var(--accent-orange);'"
+                                      x-text="entry.stream || '-'"></span>
+                            </td>
+                            <td style="font-size: 13px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="entry.reason || entry.error || '-'"></td>
+                            <td style="font-size: 13px; color: var(--text-secondary);" x-text="entry.worker_id || '-'"></td>
+                            <td style="font-size: 13px; color: var(--text-tertiary); white-space: nowrap;" x-text="formatTs(entry.timestamp || entry.failed_at)"></td>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <button @click="replay(entry.entry_id)" class="btn-primary"
+                                            style="padding: 5px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fas fa-redo" style="font-size: 11px;"></i> Replay
+                                    </button>
+                                    <button @click="deleteEntry(entry.entry_id)" class="btn-danger"
+                                            style="padding: 5px 12px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fas fa-trash" style="font-size: 11px;"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

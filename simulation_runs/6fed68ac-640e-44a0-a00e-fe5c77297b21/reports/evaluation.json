@@ -1,0 +1,164 @@
+{
+  "as_of": "2026-09-20T21:35:10.948372+03:00",
+  "baselines": {
+    "creator_rate": 0.2,
+    "fan_recent_rate": 0.2,
+    "global_rate": 0.2,
+    "offer_type_mean_rate": 0.2,
+    "offer_type_most_frequent_rate": 0.2
+  },
+  "by_cohort": {
+    "MID": {
+      "brier": 0.1747933259943064,
+      "log_loss": 0.5470935771391335,
+      "n": 15
+    },
+    "lifecycle:cold": {
+      "brier": 0.24854317741822296,
+      "log_loss": 0.7082350166890373,
+      "n": 3
+    },
+    "lifecycle:hot": {
+      "brier": 0.008222354165023501,
+      "log_loss": 0.09505512969500217,
+      "n": 1
+    },
+    "lifecycle:warm": {
+      "brier": 0.16982254577226394,
+      "log_loss": 0.5442403161204445,
+      "n": 11
+    },
+    "offer:SMALL_BUNDLE": {
+      "brier": 0.1747933259943064,
+      "log_loss": 0.5470935771391335,
+      "n": 15
+    },
+    "price:MID": {
+      "brier": 0.1747933259943064,
+      "log_loss": 0.5470935771391335,
+      "n": 15
+    }
+  },
+  "calibration": null,
+  "code_revision": "19e18841",
+  "counterfactual": [
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          71403,
+          1,
+          0.24138735535205105
+        ]
+      ],
+      "creator_id": 978031,
+      "deltas": [
+        {
+          "definition_id": 71403,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.24138735535205105,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9175402,
+      "primary_definition": [
+        71403,
+        1
+      ],
+      "primary_prob": 0.24138735535205105,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          48056,
+          1,
+          0.27043214944255006
+        ]
+      ],
+      "creator_id": 978031,
+      "deltas": [
+        {
+          "definition_id": 48056,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.27043214944255006,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9151529,
+      "primary_definition": [
+        48056,
+        1
+      ],
+      "primary_prob": 0.27043214944255006,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          39487,
+          1,
+          0.2022048893885221
+        ]
+      ],
+      "creator_id": 978031,
+      "deltas": [
+        {
+          "definition_id": 39487,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.2022048893885221,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9787270,
+      "primary_definition": [
+        39487,
+        1
+      ],
+      "primary_prob": 0.2022048893885221,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    }
+  ],
+  "dataset_hash": "5041856bcd798299",
+  "metrics": {
+    "accuracy": 0.8,
+    "brier": 0.1747933259943064,
+    "calibration_gap": 0.0016392573370445085,
+    "coverage": 1.0,
+    "log_loss": 0.5470935771391335,
+    "mean_predicted": 0.1983607426629555,
+    "n": 15,
+    "observed_rate": 0.2,
+    "precision": null,
+    "recall": 0.0
+  },
+  "optimizer_version": "p356.offline.proto.v1",
+  "scenario_id": "baseline",
+  "scenario_version": "v1",
+  "seed": 11,
+  "simulation_id": "6fed68ac-640e-44a0-a00e-fe5c77297b21",
+  "strategy_id": "baseline",
+  "stress": {
+    "60": {
+      "brier": 0.1747933259943064,
+      "dataset_hash": "5041856b",
+      "log_loss": 0.5470935771391335
+    },
+    "90": {
+      "brier": 0.1747933259943064,
+      "dataset_hash": "5041856bcd798299",
+      "log_loss": 0.5470935771391335
+    }
+  },
+  "test_n": 15,
+  "train_n": 60,
+  "valid_n": 15
+}

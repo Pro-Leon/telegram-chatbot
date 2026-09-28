@@ -1,0 +1,323 @@
+{% extends "dashboard.html" %}
+{% block nav_chats %}active{% endblock %}
+{% block page_content_attrs %}style="padding: 0; overflow: hidden;"{% endblock %}
+{% block page_title %}Chats{% endblock %}
+
+{% block extra_head %}
+<style>
+    .chats-container {
+        display:flex;
+        position:fixed;
+        top:56px;
+        left:240px;
+        right:0;
+        bottom:0;
+        overflow:hidden;
+        background:var(--bg-primary);
+        z-index:10;
+    }
+
+    /* LEFT PANEL */
+    .chat-list-panel {
+        width:320px; min-width:320px; background:var(--bg-secondary);
+        border-right:1px solid var(--border-color);
+        display:flex; flex-direction:column; overflow:hidden; flex-shrink:0;
+    }
+    .chat-list-header { padding:20px 20px 12px 20px; flex-shrink:0; }
+    .chat-list-title { font-size:16px; font-weight:600; color:var(--text-primary); margin-bottom:12px; }
+    .chat-search-wrap { position:relative; }
+    .chat-search-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); font-size:13px; pointer-events:none; }
+    .chat-search-input {
+        width:100%; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:8px;
+        padding:8px 12px 8px 36px; font-size:13px; color:var(--text-primary); outline:none; box-sizing:border-box;
+        transition:border-color 0.15s;
+    }
+    .chat-search-input:focus { border-color:rgba(108,99,255,0.5); }
+    .chat-search-input::placeholder { color:var(--text-tertiary); }
+
+    .chat-list-scroll { flex:1; overflow-y:auto; padding:8px 0; }
+    .chat-list-scroll::-webkit-scrollbar { width:4px; }
+    .chat-list-scroll::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:4px; }
+
+    .chat-list-item {
+        display:flex; align-items:center; gap:12px; padding:12px 20px; cursor:pointer;
+        transition:background 0.15s ease; border-bottom:1px solid rgba(0,0,0,0.04);
+        text-decoration:none; color:inherit; border-left:3px solid transparent;
+    }
+    .chat-list-item:hover { background:rgba(0,0,0,0.02); }
+    .chat-list-item.active {
+        background:rgba(108,99,255,0.06); border-left:3px solid #6C63FF;
+    }
+    .cl-avatar {
+        width:40px; height:40px; min-width:40px; border-radius:50%;
+        background:linear-gradient(135deg,#6C63FF,#8B85FF);
+        display:flex; align-items:center; justify-content:center;
+        font-size:14px; font-weight:600; color:#FFFFFF; flex-shrink:0;
+    }
+    .cl-text { flex:1; min-width:0; }
+    .cl-name {
+        font-size:14px; font-weight:600; color:var(--text-primary); white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis;
+    }
+    .cl-preview {
+        font-size:12px; font-weight:400; color:var(--text-secondary); white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis; margin-top:2px;
+    }
+    .cl-meta { flex-shrink:0; text-align:right; }
+    .cl-time { font-size:11px; color:var(--text-tertiary); white-space:nowrap; }
+    .cl-unread {
+        width:18px; height:18px; background:#6C63FF; border-radius:50%;
+        font-size:10px; font-weight:600; color:#FFFFFF; display:inline-flex;
+        align-items:center; justify-content:center; margin-top:4px;
+    }
+
+    .chat-list-footer { padding:16px 20px; border-top:1px solid var(--border-color); flex-shrink:0; }
+    .new-group-btn {
+        width:100%; background:rgba(108,99,255,0.08); color:#6C63FF;
+        border:1px solid rgba(108,99,255,0.2); border-radius:8px; padding:10px;
+        font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s;
+    }
+    .new-group-btn:hover { background:rgba(108,99,255,0.15); }
+
+    /* RIGHT PANEL */
+    .chat-window-panel {
+        flex:1; display:flex; flex-direction:column; height:100%;
+        overflow:hidden; min-width:0;
+    }
+    .chat-empty-state {
+        flex:1; display:flex; align-items:center; justify-content:center;
+        flex-direction:column; gap:16px;
+    }
+    .chat-empty-icon {
+        width:64px; height:64px; border-radius:50%; background:rgba(108,99,255,0.08);
+        display:flex; align-items:center; justify-content:center; font-size:28px;
+    }
+    .chat-empty-text { color:var(--text-secondary); font-size:14px; margin:0; }
+
+    /* MODAL */
+    .modal-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(4px);
+        display:none; z-index:50; align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal-card {
+        background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px;
+        padding:24px; width:90%; max-width:440px; box-shadow:0 24px 48px rgba(0,0,0,0.1);
+    }
+    .modal-title { font-size:16px; font-weight:600; color:var(--text-primary); margin-bottom:20px; }
+    .modal-label { font-size:12px; font-weight:500; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; display:block; }
+    .modal-input {
+        width:100%; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:8px;
+        padding:10px 14px; font-size:14px; color:var(--text-primary); outline:none; box-sizing:border-box;
+        transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-input:focus { border-color:#6C63FF; box-shadow:0 0 0 3px rgba(108,99,255,0.1); }
+    .modal-input::placeholder { color:var(--text-tertiary); }
+    .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+    .modal-btn-cancel {
+        padding:8px 16px; background:transparent; border:1px solid var(--border-color); border-radius:8px;
+        color:var(--text-secondary); font-size:13px; font-weight:500; cursor:pointer; transition:all 0.15s;
+    }
+    .modal-btn-cancel:hover { background:rgba(0,0,0,0.04); color:var(--text-primary); }
+    .modal-btn-submit {
+        padding:8px 20px; background:#6C63FF; border:none; border-radius:8px;
+        color:#FFFFFF; font-size:13px; font-weight:600; cursor:pointer; transition:background 0.15s;
+    }
+    .modal-btn-submit:hover { background:#8B85FF; }
+
+    /* CHAT POPUP - iframe */
+    .chat-popup-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(6px);
+        display:none; z-index:100; align-items:center; justify-content:center;
+    }
+    .chat-popup-overlay.open { display:flex; }
+    .chat-popup-card {
+        background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px;
+        width:92%; max-width:780px; height:85vh;
+        box-shadow:0 32px 64px rgba(0,0,0,0.25); display:flex; flex-direction:column; overflow:hidden;
+        position:relative;
+    }
+    .chat-popup-header {
+        height:48px; background:var(--bg-secondary); border-bottom:1px solid var(--border-color);
+        display:flex; align-items:center; justify-content:space-between; padding:0 16px; flex-shrink:0;
+    }
+    .chat-popup-title { font-size:14px; font-weight:600; color:var(--text-primary); }
+    .chat-popup-close {
+        width:28px; height:28px; border-radius:50%; background:transparent;
+        border:none; color:var(--text-secondary); cursor:pointer;
+        display:flex; align-items:center; justify-content:center; font-size:14px;
+        transition:all 0.15s;
+    }
+    .chat-popup-close:hover { background:rgba(0,0,0,0.06); color:var(--text-primary); }
+    .chat-popup-iframe {
+        flex:1; border:none; width:100%; height:100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chats-container" x-data="chatsApp()" x-init="init()"
+     :style="sidebarCollapsed ? 'left: 64px' : 'left: 240px'">
+    <!-- LEFT PANEL: Chat List -->
+    <div class="chat-list-panel">
+        <div class="chat-list-header">
+            <div class="chat-list-title">Chats</div>
+            <div class="chat-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="chat-search-input" placeholder="Search chats..." x-model="searchQuery" oninput="filterChats()">
+            </div>
+        </div>
+
+        <div class="chat-list-scroll" id="chat-list">
+            {% for d in dialogs %}
+            <div class="chat-list-item {% if active_chat_id and d.id == active_chat_id %}active{% endif %}"
+                 data-id="{{ d.id }}" data-name="{{ (d.first_name or d.username or '') | lower }}"
+                 onclick="selectChat({{ d.id }}, '{{ (d.first_name or d.username or 'Chat') | e }}')">
+                <div class="cl-avatar">{{ (d.first_name or 'U')[0] }}</div>
+                <div class="cl-text">
+                    <div class="cl-name">{{ d.first_name or d.username or 'Unknown' }}</div>
+                    {% if d.last_message %}
+                    <div class="cl-preview">{{ d.last_message[:50] }}{% if d.last_message|length > 50 %}...{% endif %}</div>
+                    {% else %}
+                    <div class="cl-preview" style="color:var(--text-tertiary);">No messages yet</div>
+                    {% endif %}
+                </div>
+                <div class="cl-meta">
+                    {% if d.last_message_at %}
+                    <div class="cl-time" data-ts="{{ d.last_message_at }}"></div>
+                    {% endif %}
+                    {% if d.unread and d.unread > 0 %}
+                    <div class="cl-unread">{{ d.unread if d.unread <= 99 else '99+' }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-list-footer">
+            <button class="new-group-btn" onclick="document.getElementById('new-group-modal').classList.add('open')">
+                <i class="fas fa-plus" style="margin-right:6px;"></i> New Group
+            </button>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL: Empty State -->
+    <div class="chat-window-panel">
+        <div class="chat-empty-state">
+            <div class="chat-empty-icon">💬</div>
+            <p class="chat-empty-text">Select a conversation to start chatting</p>
+        </div>
+    </div>
+</div>
+
+<!-- New Group Modal -->
+<div id="new-group-modal" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-card">
+        <div class="modal-title">Create New Group</div>
+        <form id="create-group-form">
+            <div style="margin-bottom:16px;">
+                <label class="modal-label">Group Title</label>
+                <input type="text" name="title" required class="modal-input" placeholder="Enter group name">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="modal-label">User IDs (comma-separated)</label>
+                <input type="text" name="user_ids" required placeholder="e.g. 123456789, 987654321" class="modal-input">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn-cancel" onclick="document.getElementById('new-group-modal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="modal-btn-submit">Create Group</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Chat Popup Modal (iframe) -->
+<div id="chat-popup" class="chat-popup-overlay" onclick="if(event.target===this)closeChatPopup()">
+    <div class="chat-popup-card">
+        <div class="chat-popup-header">
+            <span class="chat-popup-title" id="chat-popup-title">Chat</span>
+            <button class="chat-popup-close" onclick="closeChatPopup()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <iframe id="chat-popup-iframe" class="chat-popup-iframe" src="about:blank"></iframe>
+    </div>
+</div>
+
+<script>
+function chatsApp() {
+    return {
+        searchQuery: '',
+        init() {}
+    };
+}
+
+function formatChatListTime(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    var now = new Date();
+    var hh = String(d.getHours()).padStart(2, '0');
+    var mm = String(d.getMinutes()).padStart(2, '0');
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var mon = months[d.getMonth()];
+    var day = d.getDate();
+    var isToday = d.toDateString() === now.toDateString();
+    var yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+    var isYesterday = d.toDateString() === yesterday.toDateString();
+    var weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    if (isToday) return hh + ':' + mm;
+    if (isYesterday) return 'Yesterday';
+    if (d > weekAgo) return mon + ' ' + day;
+    if (d.getFullYear() === now.getFullYear()) return mon + ' ' + day;
+    return mon + ' ' + day + ', ' + d.getFullYear();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.cl-time[data-ts]').forEach(function(el) {
+        el.textContent = formatChatListTime(el.getAttribute('data-ts'));
+    });
+});
+
+function filterChats() {
+    var q = document.querySelector('.chat-search-input').value.toLowerCase();
+    document.querySelectorAll('.chat-list-item').forEach(function(el) {
+        var name = el.getAttribute('data-name') || '';
+        el.style.display = name.includes(q) ? '' : 'none';
+    });
+}
+
+function selectChat(id, name) {
+    var popup = document.getElementById('chat-popup');
+    var iframe = document.getElementById('chat-popup-iframe');
+    var title = document.getElementById('chat-popup-title');
+    title.textContent = name || 'Chat';
+    iframe.src = '/dashboard/chat/' + id + '/embed';
+    popup.classList.add('open');
+}
+
+function closeChatPopup() {
+    var popup = document.getElementById('chat-popup');
+    var iframe = document.getElementById('chat-popup-iframe');
+    popup.classList.remove('open');
+    iframe.src = 'about:blank';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var popup = document.getElementById('chat-popup');
+        if (popup && popup.classList.contains('open')) closeChatPopup();
+    }
+});
+
+document.getElementById('create-group-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    try {
+        var r = await fetch('/api/chats/create', {method:'POST', body:fd});
+        var d = await r.json();
+        if (d.ok) { document.getElementById('new-group-modal').classList.remove('open'); location.reload(); }
+        else { alert('Failed: '+(d.detail||'Unknown')); }
+    } catch(err) { alert('Error: '+err.message); }
+});
+</script>
+{% endblock %}

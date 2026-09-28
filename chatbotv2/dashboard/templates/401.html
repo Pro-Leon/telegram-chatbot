@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTProto Dashboard - Authentication required</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; margin:0; padding:0; }
+        body { background:#F8F8F5; }
+
+        .auth-wrap {
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F8F8F5;
+            padding:24px;
+        }
+
+        .auth-card {
+            width:100%;
+            max-width:400px;
+            text-align:center;
+        }
+
+        .auth-logo {
+            width:52px; height:52px;
+            background:linear-gradient(135deg,#6C63FF,#8B85FF);
+            border-radius:14px;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 4px 20px rgba(108,99,255,0.2);
+            margin:0 auto 16px;
+        }
+
+        .lock-badge {
+            width:64px; height:64px;
+            margin:0 auto 20px;
+            background:rgba(108,99,255,0.1);
+            border:1px solid rgba(108,99,255,0.2);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+        }
+
+        .auth-btn {
+            display:block;
+            width:100%;
+            padding:12px;
+            background:#6C63FF;
+            border:none;
+            border-radius:10px;
+            color:#fff;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+            text-decoration:none;
+            transition:all 0.2s ease;
+            box-sizing:border-box;
+        }
+        .auth-btn:hover { background:#8B85FF; transform:translateY(-1px); box-shadow:0 4px 16px rgba(108,99,255,0.25); }
+        .auth-btn:active { transform:translateY(0); }
+
+        .auth-link {
+            display:inline-block;
+            margin-top:16px;
+            font-size:13px;
+            color:#6B7280;
+            text-decoration:none;
+        }
+        .auth-link:hover { color:#6C63FF; }
+
+        .auth-code {
+            display:inline-block;
+            font-size:11px;
+            font-weight:600;
+            letter-spacing:1px;
+            color:#9CA3AF;
+            background:rgba(0,0,0,0.04);
+            border-radius:6px;
+            padding:4px 10px;
+            margin-bottom:16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-wrap">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fas fa-paper-plane" style="color:#fff; font-size:20px;"></i>
+            </div>
+            <h1 style="font-size:22px; font-weight:700; color:#111827;">MTProto Dashboard</h1>
+            <div style="margin:20px 0 8px;">
+                <div class="lock-badge">
+                    <i class="fas fa-lock" style="font-size:22px; color:#6C63FF;"></i>
+                </div>
+                <div class="auth-code">401 &middot; AUTHENTICATION REQUIRED</div>
+                <h2 style="font-size:17px; font-weight:600; color:#111827; margin-bottom:8px;">Please sign in to continue</h2>
+                <p style="font-size:13px; color:#6B7280; line-height:1.6; margin-bottom:4px;">
+                    {% if next_url %}
+                    You need to be signed in to view <strong>{{ next_url }}</strong>.
+                    {% else %}
+                    You need to be signed in to view this page.
+                    {% endif %}
+                </p>
+                <p style="font-size:13px; color:#6B7280; line-height:1.6; margin-bottom:24px;">
+                    Your session may have expired or you may have signed out in another tab.
+                </p>
+            </div>
+            <a class="auth-btn" href="/login{% if next_url %}?next={{ next_url }}{% endif %}">Sign In</a>
+            <a class="auth-link" href="/login">Go to login page</a>
+        </div>
+    </div>
+</body>
+</html>

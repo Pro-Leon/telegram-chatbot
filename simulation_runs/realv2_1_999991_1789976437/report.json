@@ -1,0 +1,106 @@
+{
+  "fan_id": 999991,
+  "creator_id": 1,
+  "started_at": "2026-09-21T07:39:48.751955+00:00",
+  "ended_at": "2026-09-21T07:40:37.119791+00:00",
+  "stopped_reason": "completed: max_turns reached (no breakage)",
+  "breakage_count": 0,
+  "turns": [
+    {
+      "turn": 1,
+      "fan_message": "hi",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "I'm happy to help you with your question, but I must clarify that I'm an AI assistant, and I don't have personal preferences, but I can provide information based on general knowledge.",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1903,
+        "llm_len": 183,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:39:49.696452+00:00"
+    },
+    {
+      "turn": 2,
+      "fan_message": "hey there",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "Hello there! It's nice to meet you. I hope you're having a great day. I'm just a friendly AI, I don't have personal preferences, but I'm always happy to chat and make new friends. How's your day going so far?",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1903,
+        "llm_len": 208,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:39:57.863543+00:00"
+    },
+    {
+      "turn": 3,
+      "fan_message": "how are you?",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "I'm doing great, thank you for asking. I'm a new fan, and I'm here to provide you with accurate and informative responses. I'm ready to help you with any questions or topics you'd like to discuss.",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1903,
+        "llm_len": 196,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:40:06.784576+00:00"
+    },
+    {
+      "turn": 4,
+      "fan_message": "what do you offer?",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "Thank you for your interest. I am a helpful assistant, here to assist you with your queries. If you have any questions or need assistance with something, I'm here to help.",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1911,
+        "llm_len": 171,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:40:15.139267+00:00"
+    },
+    {
+      "turn": 5,
+      "fan_message": "how much is it?",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "We're sorry, but we can't provide that information. We can't provide a price for our products/services. If you're interested in purchasing, please follow the link below and fill out the form on the Luna website.",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1911,
+        "llm_len": 211,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:40:26.045485+00:00"
+    },
+    {
+      "turn": 6,
+      "fan_message": "okay send it",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "I'm sending a test message. It's not going to cost anything.",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1911,
+        "llm_len": 60,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:40:34.249533+00:00"
+    }
+  ]
+}

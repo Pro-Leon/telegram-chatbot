@@ -1,0 +1,104 @@
+{
+  "as_of": "2026-09-20T21:20:07.912371+03:00",
+  "baselines": {
+    "creator_rate": 0.06666666666666667,
+    "fan_recent_rate": 0.06666666666666667,
+    "global_rate": 0.06666666666666667,
+    "offer_type_mean_rate": 0.0575,
+    "offer_type_most_frequent_rate": 0.2
+  },
+  "by_cohort": {
+    "HIGH": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 3
+    },
+    "LOW": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "MID": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 3
+    },
+    "lifecycle:cold": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 3
+    },
+    "lifecycle:hot": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 1
+    },
+    "lifecycle:warm": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 4
+    },
+    "offer:CORE_BUNDLE": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "offer:PREMIUM": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 1
+    },
+    "offer:SMALL_BUNDLE": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 5
+    },
+    "price:HIGH": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 3
+    },
+    "price:LOW": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "price:MID": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 3
+    }
+  },
+  "calibration": null,
+  "code_revision": "2b2c6f60",
+  "counterfactual": null,
+  "dataset_hash": "4e46e7298fde5120",
+  "metrics": {
+    "accuracy": 0.5,
+    "brier": 0.25,
+    "calibration_gap": 0.0,
+    "coverage": 1.0,
+    "log_loss": 0.6931471805599453,
+    "mean_predicted": 0.5,
+    "n": 8,
+    "observed_rate": 0.5,
+    "precision": 0.5,
+    "recall": 1.0
+  },
+  "optimizer_version": "p356.offline.proto.v1",
+  "scenario_id": "balanced",
+  "scenario_version": "v1",
+  "seed": 42,
+  "simulation_id": "84939a91-b5da-4b3a-9ec3-174568e70147",
+  "strategy_id": "balanced",
+  "stress": {
+    "30": {
+      "brier": 0.25,
+      "dataset_hash": "4e46e7298fde5120",
+      "log_loss": 0.6931471805599453
+    }
+  },
+  "test_n": 8,
+  "train_n": 15,
+  "valid_n": 7
+}

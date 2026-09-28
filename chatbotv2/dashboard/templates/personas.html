@@ -1,0 +1,199 @@
+{% extends "dashboard.html" %}
+{% block nav_personas %}active{% endblock %}
+{% block page_title %}Personas{% endblock %}
+
+{% block extra_head %}
+<script>
+function personasApp() {
+    return {
+        personas: [],
+        editing: null,
+        showForm: false,
+        loading: false,
+        error: null,
+
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch('/api/personas');
+                this.personas = await res.json();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        edit(persona) {
+            this.editing = {...persona};
+            this.showForm = true;
+        },
+
+        create() {
+            this.editing = {id: null, name: '', instructions: '', is_default: false};
+            this.showForm = true;
+        },
+
+        async save() {
+            this.loading = true;
+            this.error = null;
+            try {
+                const formData = new FormData();
+                formData.append('name', this.editing.name);
+                formData.append('instructions', this.editing.instructions);
+                formData.append('is_default', this.editing.is_default ? 'true' : 'false');
+
+                if (this.editing.id) {
+                    await fetch(`/api/personas/${this.editing.id}`, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+                } else {
+                    await fetch('/api/personas', {method: 'POST', body: formData});
+                }
+
+                this.showForm = false;
+                this.editing = null;
+                await this.load();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async remove(persona) {
+            if (!confirm(`Delete persona "${persona.name}"?`)) return;
+            this.loading = true;
+            try {
+                await fetch(`/api/personas/${persona.id}`, {method: 'DELETE'});
+                await this.load();
+            } catch (e) {
+                this.error = e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async toggleDefault(persona) {
+            persona.is_default = !persona.is_default;
+            const formData = new FormData();
+            formData.append('name', persona.name);
+            formData.append('instructions', persona.instructions);
+            formData.append('is_default', persona.is_default ? 'true' : 'false');
+
+            try {
+                await fetch(`/api/personas/${persona.id}`, {method: 'PUT', body: formData});
+            } catch (e) {
+                this.error = e.message;
+                persona.is_default = !persona.is_default;
+            }
+        },
+
+        init() {
+            this.load();
+        }
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="personasApp()" style="background-color: #F8F8F5; min-height: 100vh; padding: 1.5rem;">
+    <div class="flex justify-between items-center">
+        <h2 style="font-size: 24px; font-weight: 600; color: #111827;">Personas</h2>
+        <button @click="create()"
+                style="background-color: #6C63FF; color: #FFFFFF; padding: 8px 16px; border-radius: 8px; display: flex; align-items: center; gap: 8px; transition: background-color 0.2s;"
+                onmouseover="this.style.backgroundColor='#5a52e0'" onmouseout="this.style.backgroundColor='#6C63FF'">
+            <i class="fas fa-plus"></i>
+            <span>New Persona</span>
+        </button>
+    </div>
+
+    <div x-show="error" style="background-color: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; padding: 12px 16px; border-radius: 8px;">
+        <span x-text="error"></span>
+    </div>
+
+    <div x-show="showForm"
+         style="position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50;">
+        <div style="background-color: #FFFFFF; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 24px; width: 384px; max-width: 512px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 16px;" x-text="editing.id ? 'Edit Persona' : 'New Persona'"></h3>
+            <form @submit.prevent="save()">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: #6B7280; margin-bottom: 6px;">Name</label>
+                    <input type="text" x-model="editing.name" required
+                           style="width: 100%; padding: 8px 12px; background-color: #F8F8F5; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; color: #111827; outline: none; font-size: 14px;"
+                           onfocus="this.style.borderColor='#6C63FF'" onblur="this.style.borderColor='rgba(0,0,0,0.08)'">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 13px; font-weight: 500; color: #6B7280; margin-bottom: 6px;">Instructions (System Prompt)</label>
+                    <textarea x-model="editing.instructions" required rows="8"
+                              style="width: 100%; padding: 8px 12px; background-color: #F8F8F5; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; color: #111827; outline: none; font-family: monospace; font-size: 13px; resize: vertical;"
+                              onfocus="this.style.borderColor='#6C63FF'" onblur="this.style.borderColor='rgba(0,0,0,0.08)'"></textarea>
+                </div>
+                <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" x-model="editing.is_default" id="is_default_edit"
+                           style="accent-color: #6C63FF;">
+                    <label for="is_default_edit" style="font-size: 13px; color: #6B7280;">Set as default persona</label>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" @click="showForm=false; editing=null"
+                            style="padding: 8px 16px; color: #6B7280; border: 1px solid rgba(0,0,0,0.08); border-radius: 8px; transition: background-color 0.2s; background: transparent;"
+                            onmouseover="this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.backgroundColor='transparent'">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="loading"
+                            style="padding: 8px 16px; background-color: #6C63FF; color: #FFFFFF; border: none; border-radius: 8px; transition: background-color 0.2s;"
+                            onmouseover="this.style.backgroundColor='#5a52e0'" onmouseout="this.style.backgroundColor='#6C63FF'">
+                        <span x-show="!loading">Save</span>
+                        <span x-show="loading">Saving...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div style="background-color: #FFFFFF; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%;">
+            <thead>
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.08);">
+                    <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280;">Name</th>
+                    <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280;">Instructions</th>
+                    <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280;">Default</th>
+                    <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="p in personas" :key="p.id">
+                <tr style="border-bottom: 1px solid rgba(0,0,0,0.08);">
+                    <td style="padding: 12px 16px; font-weight: 500; color: #111827;" x-text="p.name"></td>
+                    <td style="padding: 12px 16px; color: #6B7280;">
+                        <div style="max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" x-text="p.instructions"></div>
+                    </td>
+                    <td style="padding: 12px 16px; text-align: center;">
+                        <button @click="toggleDefault(p)"
+                                :style="`background: none; border: none; cursor: pointer; color: ${p.is_default ? '#F97316' : '#9CA3AF'}; transition: color 0.2s; font-size: 16px;`"
+                                onmouseover="this.style.color='#F97316'" onmouseout="this.style.color=this.dataset.originalColor"
+                                :data-original-color="p.is_default ? '#F97316' : '#9CA3AF'">
+                            <i :class="p.is_default ? 'fas fa-star' : 'far fa-star'"></i>
+                        </button>
+                    </td>
+                    <td style="padding: 12px 16px; text-align: center;">
+                        <div style="display: inline-flex; gap: 12px;">
+                            <button @click="edit(p)" style="background: none; border: none; cursor: pointer; color: #6C63FF; transition: opacity 0.2s; font-size: 15px;"
+                                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button @click="remove(p)" style="background: none; border: none; cursor: pointer; color: #EF4444; transition: opacity 0.2s; font-size: 15px;"
+                                    onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

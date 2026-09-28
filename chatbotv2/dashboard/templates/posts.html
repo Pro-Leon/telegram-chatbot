@@ -1,0 +1,480 @@
+{% extends "dashboard.html" %}
+{% block nav_posts %}active{% endblock %}
+{% block page_title %}DropFans Posts{% endblock %}
+
+{% block extra_head %}
+<style>
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 1024px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr; } }
+    .kpi-card {
+        background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+        padding: 20px; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .kpi-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px;
+        border-radius: 50%; filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .kpi-card.purple::after { background: var(--accent-purple); }
+    .kpi-card.green::after { background: var(--accent-green); }
+    .kpi-card.orange::after { background: var(--accent-orange); }
+    .kpi-card.blue::after { background: #3b82f6; }
+    .kpi-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .kpi-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .kpi-icon.green { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .kpi-icon.orange { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .kpi-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .kpi-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .post-grid { display: flex; flex-direction: column; gap: 12px; }
+    .post-card {
+        background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 10px;
+        padding: 16px; display: flex; gap: 16px; transition: border-color 0.15s;
+    }
+    .post-card:hover { border-color: var(--accent-purple); }
+    .post-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .post-icon.TEXT { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .post-icon.MEDIA { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .post-icon.DROP { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .post-icon.SUBSCRIPTION { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .post-icon.COMMUNITY { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .post-body { flex: 1; min-width: 0; }
+    .post-caption { font-size: 14px; color: var(--text-primary); margin-bottom: 6px; line-height: 1.4; }
+    .post-meta { display: flex; gap: 12px; font-size: 11px; color: var(--text-tertiary); }
+    .post-meta span { display: inline-flex; align-items: center; gap: 4px; }
+    .post-actions { display: flex; gap: 6px; align-items: flex-start; }
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .status-badge.APPROVED { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.PENDING { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .status-badge.REJECTED { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .status-badge.FLAGGED { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+        border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.15s;
+    }
+    .btn-sync:hover { border-color: var(--accent-purple); }
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+        border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.15s;
+    }
+    .btn-action:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+    .btn-action.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+    .pagination { display: flex; gap: 6px; align-items: center; justify-content: center; margin-top: 16px; }
+    .page-btn {
+        padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+        background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+    }
+    .page-btn:hover { border-color: var(--accent-purple); }
+    .page-btn.active { background: var(--accent-purple); color: white; border-color: var(--accent-purple); }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .loading-text { color: var(--text-tertiary); font-size: 13px; padding: 20px; text-align: center; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .error-state { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; padding: 12px 16px; color: var(--accent-red); font-size: 13px; margin-bottom: 16px; }
+
+    .workspace-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .workspace-nav a {
+        display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+        border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none;
+        background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.2s;
+    }
+    .workspace-nav a:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+    .workspace-nav a i { font-size: 12px; }
+
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex;
+        align-items: center; justify-content: center; z-index: 1000;
+    }
+    .modal-content {
+        background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+        padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto;
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-header h3 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .modal-close { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 18px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input, .form-select, .form-textarea {
+        width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;
+        font-size: 14px; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;
+    }
+    .form-textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent-purple); }
+    .btn-primary {
+        display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+        border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+        background: var(--accent-purple); color: white; border: none; transition: all 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+        position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px;
+        font-size: 13px; font-weight: 500; z-index: 9999; display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: var(--accent-green); color: white; }
+    .toast.error { background: var(--accent-red); color: white; }
+    .toast.info { background: var(--accent-purple); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="postsApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>DropFans Posts</h2>
+        <p>Create and manage posts on the DropFans For You feed.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <!-- Workspace Navigation -->
+    <div class="workspace-nav">
+        <a href="/dashboard/dropfans"><i class="fas fa-th-large"></i> Overview</a>
+        <a href="/dashboard/drops"><i class="fas fa-box"></i> Drops</a>
+        <a href="/dashboard/posts"><i class="fas fa-file-alt"></i> Posts</a>
+        <a href="/dashboard/earnings"><i class="fas fa-dollar-sign"></i> Earnings</a>
+        <a href="/dashboard/links"><i class="fas fa-link"></i> Links</a>
+        <a href="/dashboard/vault"><i class="fas fa-lock"></i> Vault</a>
+        <a href="/dashboard/notifications"><i class="fas fa-bell"></i> Notifications</a>
+        <a href="/dashboard/dropfans/settings"><i class="fas fa-cog"></i> Settings</a>
+    </div>
+
+    <!-- Connection check -->
+    <div x-show="!loading && !postsConnected" class="section-card" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:40px;height:40px;border-radius:8px;background:rgba(251,146,60,0.15);display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-plug" style="color:var(--accent-orange);"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:14px;font-weight:600;color:var(--text-primary);">DropFans not connected</div>
+                <div style="font-size:12px;color:var(--text-tertiary);">Connect your DropFans API key to manage posts.</div>
+            </div>
+            <a href="/dashboard/dropfans/settings" class="btn-action" style="border-color:var(--accent-purple);color:var(--accent-purple);"><i class="fas fa-plug"></i> Connect DropFans</a>
+        </div>
+    </div>
+
+    <div x-show="loading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>
+
+    <template x-if="!loading && postsConnected">
+        <div>
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card purple">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Total Posts</span>
+                        <div class="kpi-icon purple"><i class="fas fa-file-alt"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="pagination?.total || 0"></div>
+                    <div class="kpi-sub">All time</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Posts Per Day</span>
+                        <div class="kpi-icon green"><i class="fas fa-calendar-day"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="limits?.posts_per_day || 5"></div>
+                    <div class="kpi-sub">Daily limit</div>
+                </div>
+                <div class="kpi-card orange">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Max Caption</span>
+                        <div class="kpi-icon orange"><i class="fas fa-font"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="limits?.max_caption_chars || 2000"></div>
+                    <div class="kpi-sub">Characters</div>
+                </div>
+                <div class="kpi-card blue">
+                    <div class="kpi-top">
+                        <span class="kpi-label">Max Media</span>
+                        <div class="kpi-icon blue"><i class="fas fa-images"></i></div>
+                    </div>
+                    <div class="kpi-value" x-text="limits?.max_media_per_post || 10"></div>
+                    <div class="kpi-sub">Per post</div>
+                </div>
+            </div>
+
+            <!-- Posts List -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Posts</h2>
+                    <div style="display:flex;gap:8px;">
+                        <select x-model="statusFilter" @change="loadPosts(1)" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-primary);color:var(--text-primary);">
+                            <option value="">All Status</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="REJECTED">Rejected</option>
+                        </select>
+                        <button @click="loadPosts(pagination.page)" class="btn-sync" :disabled="postsLoading">
+                            <i class="fas" :class="postsLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                        </button>
+                        <button @click="showCreateModal = true" class="btn-primary" style="padding:6px 12px;font-size:12px;">
+                            <i class="fas fa-plus"></i> New Post
+                        </button>
+                    </div>
+                </div>
+                <div x-show="postsLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                <div x-show="!postsLoading && posts.length === 0" class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <p>No posts yet. Create your first post to reach your audience.</p>
+                </div>
+                <div class="post-grid" x-show="!postsLoading && posts.length > 0">
+                    <template x-for="post in posts" :key="post.id">
+                        <div class="post-card">
+                            <div class="post-icon" :class="post.kind || 'TEXT'">
+                                <i class="fas" :class="{
+                                    'fa-font': post.kind === 'TEXT',
+                                    'fa-image': post.kind === 'MEDIA',
+                                    'fa-box': post.kind === 'DROP',
+                                    'fa-star': post.kind === 'SUBSCRIPTION',
+                                    'fa-users': post.kind === 'COMMUNITY'
+                                }"></i>
+                            </div>
+                            <div class="post-body">
+                                <div class="post-caption" x-text="post.caption || 'No caption'"></div>
+                                <div class="post-meta">
+                                    <span><i class="fas fa-tag"></i> <span x-text="post.kind || 'TEXT'"></span></span>
+                                    <span><i class="fas fa-heart"></i> <span x-text="post.likes || 0"></span></span>
+                                    <span><i class="fas fa-comment"></i> <span x-text="post.comments || 0"></span></span>
+                                    <span x-show="post.published_at"><i class="fas fa-clock"></i> <span x-text="post.published_at ? new Date(post.published_at).toLocaleDateString() : ''"></span></span>
+                                </div>
+                            </div>
+                            <div class="post-actions">
+                                <span class="status-badge" :class="post.status || 'PENDING'" x-text="post.status || 'PENDING'"></span>
+                                <button @click="viewPost(post)" class="btn-action"><i class="fas fa-eye"></i></button>
+                                <button @click="deletePost(post)" class="btn-action danger" :disabled="deletingId === post.id"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <!-- Pagination -->
+                <div class="pagination" x-show="pagination?.has_more || pagination?.page > 1">
+                    <button @click="loadPosts(pagination.page - 1)" class="page-btn" :disabled="!pagination || pagination.page <= 1">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span style="font-size:12px;color:var(--text-tertiary);" x-text="'Page ' + (pagination?.page || 1) + ' of ' + (Math.ceil((pagination?.total || 0) / (pagination?.limit || 20)) || 1)"></span>
+                    <button @click="loadPosts(pagination.page + 1)" class="page-btn" :disabled="!pagination?.has_more">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Create Post Modal -->
+    <div x-show="showCreateModal" class="modal-overlay" @click.self="showCreateModal = false" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Post</h3>
+                <button @click="showCreateModal = false" class="modal-close">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Type</label>
+                <select x-model="createForm.kind" class="form-select">
+                    <option value="TEXT">Text</option>
+                    <option value="MEDIA">Media</option>
+                    <option value="DROP">Drop</option>
+                    <option value="SUBSCRIPTION">Subscription</option>
+                    <option value="COMMUNITY">Community</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Caption</label>
+                <textarea x-model="createForm.caption" class="form-textarea" :placeholder="'Max ' + (limits?.max_caption_chars || 2000) + ' characters'"></textarea>
+            </div>
+            <div class="form-group" x-show="createForm.kind === 'DROP'">
+                <label class="form-label">Product ID (optional)</label>
+                <input x-model="createForm.product_id" type="text" class="form-input" placeholder="DropFans product ID">
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button @click="showCreateModal = false" class="btn-action">Cancel</button>
+                <button @click="createPost()" class="btn-primary" :disabled="creatingPost">
+                    <i class="fas" :class="creatingPost ? 'fa-spinner fa-spin' : 'fa-plus'"></i> Create
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Post Modal -->
+    <div x-show="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Post Details</h3>
+                <button @click="showDetailModal = false" class="modal-close">&times;</button>
+            </div>
+            <div x-show="selectedPost">
+                <div style="margin-bottom:12px;">
+                    <span class="status-badge" :class="selectedPost?.status" x-text="selectedPost?.status"></span>
+                    <span style="margin-left:8px;font-size:12px;color:var(--text-tertiary);" x-text="selectedPost?.kind"></span>
+                </div>
+                <div style="font-size:14px;color:var(--text-primary);margin-bottom:16px;line-height:1.5;" x-text="selectedPost?.caption || 'No caption'"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+                    <div style="padding:8px;background:var(--bg-primary);border-radius:6px;">
+                        <span style="color:var(--text-tertiary);">Likes</span>
+                        <div style="font-weight:600;color:var(--text-primary);" x-text="selectedPost?.likes || 0"></div>
+                    </div>
+                    <div style="padding:8px;background:var(--bg-primary);border-radius:6px;">
+                        <span style="color:var(--text-tertiary);">Comments</span>
+                        <div style="font-weight:600;color:var(--text-primary);" x-text="selectedPost?.comments || 0"></div>
+                    </div>
+                    <div style="padding:8px;background:var(--bg-primary);border-radius:6px;">
+                        <span style="color:var(--text-tertiary);">Published</span>
+                        <div style="font-weight:600;color:var(--text-primary);" x-text="selectedPost?.published_at ? new Date(selectedPost.published_at).toLocaleDateString() : 'Not published'"></div>
+                    </div>
+                    <div style="padding:8px;background:var(--bg-primary);border-radius:6px;">
+                        <span style="color:var(--text-tertiary);">ID</span>
+                        <div style="font-weight:600;color:var(--text-primary);font-size:10px;word-break:break-all;" x-text="selectedPost?.id"></div>
+                    </div>
+                </div>
+                <div x-show="selectedPost?.media?.length" style="margin-top:12px;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Media (<span x-text="selectedPost?.media?.length"></span>)</div>
+                    <template x-for="m in selectedPost?.media || []" :key="m.id">
+                        <div style="display:flex;align-items:center;gap:8px;padding:6px;background:var(--bg-primary);border-radius:6px;margin-bottom:4px;">
+                            <i class="fas" :class="m.type === 'video' ? 'fa-video' : 'fa-image'" style="font-size:12px;color:var(--text-tertiary);"></i>
+                            <span style="font-size:11px;color:var(--text-primary);" x-text="m.vault_item_id || m.id"></span>
+                            <span x-show="m.is_paid" style="font-size:10px;padding:2px 6px;background:rgba(251,146,60,0.15);color:var(--accent-orange);border-radius:4px;">PAID</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function postsApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+        postsConnected: false,
+        posts: [],
+        pagination: null,
+        limits: null,
+        postsLoading: false,
+        statusFilter: '',
+        deletingId: null,
+        showCreateModal: false,
+        showDetailModal: false,
+        selectedPost: null,
+        creatingPost: false,
+        createForm: { kind: 'TEXT', caption: '', product_id: null },
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.checkStatus();
+            if (this.postsConnected) await this.loadPosts(1);
+            this.loading = false;
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        async checkStatus() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.postsConnected = !!(data.status && data.status.dropfans_creator_id);
+            } catch (e) {
+                this.postsConnected = false;
+            }
+        },
+
+        async loadPosts(page = 1) {
+            this.postsLoading = true;
+            this.error = null;
+            try {
+                const params = new URLSearchParams({ page: page, limit: 20 });
+                if (this.statusFilter) params.set('status', this.statusFilter);
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-posts?${params}`);
+                this.posts = data.posts || [];
+                this.pagination = data.pagination || { page: 1, limit: 20, total: 0, has_more: false };
+                this.limits = data.limits || {};
+            } catch (e) {
+                this.error = 'Failed to load posts: ' + e.message;
+            } finally {
+                this.postsLoading = false;
+            }
+        },
+
+        async createPost() {
+            this.creatingPost = true;
+            this.error = null;
+            try {
+                await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-posts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.createForm),
+                });
+                this.showCreateModal = false;
+                this.createForm = { kind: 'TEXT', caption: '', product_id: null };
+                this.showToast('Post created!', 'success');
+                await this.loadPosts(1);
+            } catch (e) {
+                this.error = 'Failed to create post: ' + e.message;
+            } finally {
+                this.creatingPost = false;
+            }
+        },
+
+        async viewPost(post) {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-posts/${post.id}`);
+                this.selectedPost = data;
+                this.showDetailModal = true;
+            } catch (e) {
+                this.error = 'Failed to load post details: ' + e.message;
+            }
+        },
+
+        async deletePost(post) {
+            if (!confirm('Delete this post? This cannot be undone.')) return;
+            this.deletingId = post.id;
+            try {
+                await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-posts/${post.id}`, { method: 'DELETE' });
+                this.showToast('Post deleted', 'success');
+                await this.loadPosts(this.pagination?.page || 1);
+            } catch (e) {
+                this.error = 'Failed to delete post: ' + e.message;
+            } finally {
+                this.deletingId = null;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

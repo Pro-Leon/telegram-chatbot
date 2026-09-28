@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTProto Dashboard - Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; margin:0; padding:0; }
+        body { background:#F8F8F5; }
+
+        .login-wrap {
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#F8F8F5;
+            padding:24px;
+        }
+
+        .login-card {
+            width:100%;
+            max-width:380px;
+        }
+
+        .login-logo {
+            width:52px; height:52px;
+            background:linear-gradient(135deg,#6C63FF,#8B85FF);
+            border-radius:14px;
+            display:flex; align-items:center; justify-content:center;
+            box-shadow:0 4px 20px rgba(108,99,255,0.2);
+        }
+
+        .login-input {
+            width:100%;
+            padding:12px 16px;
+            background:rgba(0,0,0,0.03);
+            border:1px solid rgba(0,0,0,0.08);
+            border-radius:10px;
+            color:#111827;
+            font-size:14px;
+            transition:all 0.2s ease;
+            box-sizing:border-box;
+        }
+        .login-input:focus {
+            outline:none;
+            border-color:rgba(108,99,255,0.5);
+            box-shadow:0 0 0 3px rgba(108,99,255,0.1);
+        }
+        .login-input::placeholder { color:#9CA3AF; }
+
+        .login-btn {
+            width:100%;
+            padding:12px;
+            background:#6C63FF;
+            border:none;
+            border-radius:10px;
+            color:#fff;
+            font-size:14px;
+            font-weight:600;
+            cursor:pointer;
+            transition:all 0.2s ease;
+        }
+        .login-btn:hover { background:#8B85FF; transform:translateY(-1px); box-shadow:0 4px 16px rgba(108,99,255,0.25); }
+        .login-btn:active { transform:translateY(0); }
+
+        .error-box {
+            background:rgba(239,68,68,0.08);
+            border:1px solid rgba(239,68,68,0.2);
+            border-radius:8px;
+            color:#DC2626;
+            font-size:13px;
+            padding:10px 14px;
+            margin-bottom:16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+        <div class="login-card">
+            <div style="text-align:center; margin-bottom:32px;">
+                <div class="login-logo" style="margin:0 auto 16px;">
+                    <i class="fas fa-paper-plane" style="color:#fff; font-size:20px;"></i>
+                </div>
+                <h1 style="font-size:22px; font-weight:700; color:#111827;">MTProto Dashboard</h1>
+                <p style="font-size:13px; color:#6B7280; margin-top:6px;">Sign in to your account</p>
+            </div>
+            {% if error %}
+            <div class="error-box">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="/login">
+                {% if next_url %}
+                <input type="hidden" name="next" value="{{ next_url }}">
+                {% endif %}
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12px; font-weight:500; color:#6B7280; margin-bottom:6px; letter-spacing:0.3px;">Username</label>
+                    <input type="text" name="username" required class="login-input" autocomplete="username">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; font-size:12px; font-weight:500; color:#6B7280; margin-bottom:6px; letter-spacing:0.3px;">Password</label>
+                    <input type="password" name="password" required class="login-input" autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+            <p style="text-align:center; font-size:11px; color:#9CA3AF; margin-top:24px;">
+                Enter the dashboard admin credentials
+            </p>
+        </div>
+    </div>
+</body>
+</html>

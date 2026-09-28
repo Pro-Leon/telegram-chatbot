@@ -1,0 +1,5769 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Fangate",
+    "license": {
+      "name": "MIT"
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/affiliate/invited": {
+      "get": {
+        "tags": [
+          "Affiliate"
+        ],
+        "description": "Invited users",
+        "operationId": "c8993202a90d5a7a9d630a81fa9420e1",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.affiliate.users.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/affiliate/invitation": {
+      "get": {
+        "tags": [
+          "Affiliate"
+        ],
+        "description": "Get user invitation link",
+        "operationId": "cb46df6b177ceadc1c728b4eb4e1f8f2",
+        "parameters": [
+          {
+            "name": "fee_percentage",
+            "in": "query",
+            "description": "Fee percentage",
+            "required": false,
+            "schema": {
+              "type": "float"
+            },
+            "example": 2.75
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.affiliate.invitation-link.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/affiliate/invitation/code": {
+      "get": {
+        "tags": [
+          "Affiliate"
+        ],
+        "description": "Get user invitation code",
+        "operationId": "83a0b5e8cfdb8f8e6c19be87f317e41d",
+        "parameters": [
+          {
+            "name": "fee_percentage",
+            "in": "query",
+            "description": "Fee percentage",
+            "required": false,
+            "schema": {
+              "type": "float"
+            },
+            "example": 2.75
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.affiliate.invitation-code.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/api-keys": {
+      "get": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "List generated API keys for authenticated user",
+        "operationId": "c5dc03df7699dde6e11487c2a0d4b5b3",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.api_key.list"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Generate API key for external Fangate integrations",
+        "operationId": "55a7f213e108daeda76dc1c5c98c03ae",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "zapier"
+                  },
+                  "can_create_new_urls": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "can_view_transactions": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "expires_in_days": {
+                    "type": "integer",
+                    "example": 90,
+                    "nullable": true
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.api_key.create"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/api-keys/{tokenId}": {
+      "delete": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Revoke generated API key",
+        "operationId": "83346bea1a718ab6f813aed837657798",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "Personal access token id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.api_key.revoke"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/app-data": {
+      "get": {
+        "tags": [
+          "App Data"
+        ],
+        "description": "Application data",
+        "operationId": "f561d6c5372de158cb2ee62ad49f8a25",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.app-data"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/register": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "User registration",
+        "operationId": "8e4e3cb7b46126f4696379d3c7eeb4ad",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "currency_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "user@gmail.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "12345678"
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "example": "John"
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "example": "Doe"
+                  },
+                  "birth_date": {
+                    "type": "string",
+                    "example": "2000-01-30"
+                  },
+                  "iban": {
+                    "type": "string",
+                    "example": "LB20726336321391157874465261"
+                  },
+                  "bic_swift": {
+                    "type": "string",
+                    "example": "null"
+                  },
+                  "bank_data": {
+                    "properties": {
+                      "iban": {
+                        "type": "string",
+                        "example": "127312477423774"
+                      },
+                      "BIC": {
+                        "type": "string",
+                        "example": "3534657343543635"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "address"
+                  },
+                  "master_id": {
+                    "type": "integer",
+                    "example": 15
+                  },
+                  "fee_percentage": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 5.35
+                  },
+                  "is_adult_content": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_verif_age": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "invite_code": {
+                    "type": "string",
+                    "example": "1234a"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.register"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "User login",
+        "operationId": "222b2625838e3c57e017987f73598fda",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "user@gmail.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "12345678"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.login"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/login/batch": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "Batch creator login (account switcher)",
+        "description": "Authenticates up to 10 creator accounts in one request. Each successful row receives a new Sanctum token with name `api`, same as POST /api/login. Failed rows are reported in `failed` without invalidating other successful sessions. Rate limited per IP.",
+        "operationId": "5ea7925a0df54f584f46fa85dfac41f7",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "accounts"
+                ],
+                "properties": {
+                  "accounts": {
+                    "type": "array",
+                    "items": {
+                      "required": [
+                        "email",
+                        "password"
+                      ],
+                      "properties": {
+                        "email": {
+                          "type": "string",
+                          "format": "email",
+                          "example": "creator@example.com"
+                        },
+                        "password": {
+                          "type": "string",
+                          "format": "password",
+                          "example": "secret"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "maxItems": 10,
+                    "minItems": 1
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Partial or full success; check `data.failed` for per-account errors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.login.batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/password": {
+      "patch": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "User updating",
+        "operationId": "5bb9b7e1ca23fbc346fed44f78d105ce",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "password": {
+                    "type": "string",
+                    "example": "SomePas1"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.password.update"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/email/verify": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Send verification email",
+        "operationId": "3b1490963504a1f65b6dcd6211d0a0c6",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "description": "user email",
+            "schema": {
+              "type": "string"
+            },
+            "example": "user@gmail.com"
+          },
+          {
+            "name": "master_id",
+            "in": "query",
+            "description": "referrer user id (from invite deep link)",
+            "schema": {
+              "type": "integer",
+              "nullable": true
+            },
+            "example": 42
+          },
+          {
+            "name": "fee_percentage",
+            "in": "query",
+            "description": "affiliate fee percentage (from invite deep link, optional)",
+            "schema": {
+              "type": "number",
+              "nullable": true
+            },
+            "example": 5.5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.verify.email"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/password/reset": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Send password reset email",
+        "operationId": "77ec90ebd7e1a65cfcded995bd6d6927",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "description": "user email",
+            "schema": {
+              "type": "string"
+            },
+            "example": "user@gmail.com"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.password.reset.email"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Logout",
+        "operationId": "ad65cbbd4e9f201619eae184a5961a98",
+        "parameters": [
+          {
+            "name": "fcm_token",
+            "in": "query",
+            "description": "user fcm token",
+            "schema": {
+              "type": "string"
+            },
+            "example": "long.long.token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.logout"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/collection/profile": {
+      "get": {
+        "tags": [
+          "Collection Profile"
+        ],
+        "description": "Get current creator collection profile metadata",
+        "operationId": "4fdb48c5c44e8c0bf1bd36029e5c24c1",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.collection.profile.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Collection Profile"
+        ],
+        "description": "Update creator collection display name and bio",
+        "operationId": "7755951a822e561a3fab6a7e21e6c39a",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "display_name": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "example": "Creator Name"
+                  },
+                  "bio": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Tell buyers what makes this collection worth exploring."
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.collection.profile.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/collection/profile/image": {
+      "post": {
+        "tags": [
+          "Collection Profile"
+        ],
+        "description": "Upload or replace creator collection profile image",
+        "operationId": "47668b03fd13d6420ba2a765a58b0531",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "profile_image"
+                ],
+                "properties": {
+                  "profile_image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.collection.profile.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Collection Profile"
+        ],
+        "description": "Remove creator collection profile image",
+        "operationId": "ef4c66bb3cccc1d7e4e9f957eba043a4",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.collection.profile.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/consents/store-or-send": {
+      "post": {
+        "tags": [
+          "Consents"
+        ],
+        "summary": "Store consent or send request via email",
+        "operationId": "6b251fd0f4264fdfe40da96cd234d113",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "date",
+                  "product_id"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "date": {
+                    "type": "string",
+                    "example": "2025-12-19"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "user@example.com"
+                  },
+                  "product_id": {
+                    "type": "integer",
+                    "example": 1213
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "errors_message": {
+                      "type": "null",
+                      "example": null
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {},
+                      "example": []
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error processing request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errors_message": {
+                      "type": "string",
+                      "example": "Online or PDF form URL is not configured"
+                    },
+                    "data": {
+                      "type": "null",
+                      "example": null
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/content-folders": {
+      "get": {
+        "tags": [
+          "Content Folders"
+        ],
+        "description": "List content folders for the authenticated creator",
+        "operationId": "5376ea111dec46cd49aa65f1313085d5",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.content.folder.list"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Content Folders"
+        ],
+        "description": "Create a content folder for the authenticated creator",
+        "operationId": "5dc8ed2688acdd8a4af40ff0e64ef73d",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Campaigns"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.content.folder.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/content-folders/{content_folder_id}": {
+      "delete": {
+        "tags": [
+          "Content Folders"
+        ],
+        "description": "Delete a content folder and unassign its products",
+        "operationId": "72420d92d74a468b8831052ea8a7aade",
+        "parameters": [
+          {
+            "name": "content_folder_id",
+            "in": "path",
+            "description": "Content folder id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.content.folder.delete"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Content Folders"
+        ],
+        "description": "Rename a content folder",
+        "operationId": "c3d4b8b4c46301e61d6a7743ea68e699",
+        "parameters": [
+          {
+            "name": "content_folder_id",
+            "in": "path",
+            "description": "Content folder id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "Spring Campaign"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.content.folder.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/creators/search": {
+      "get": {
+        "tags": [
+          "Creators"
+        ],
+        "summary": "Search users for consent tagging",
+        "description": "Search Fangate users by name or email for consent tagging (includes accounts with no products yet).",
+        "operationId": "61c90fd3cc8769b64b73e3c24fa53153",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "exclude_user_id",
+            "in": "query",
+            "description": "Exclude this user (e.g. product owner)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users"
+          }
+        }
+      }
+    },
+    "/api/dashboard/summary/aggregate": {
+      "post": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Aggregate dashboard KPIs across linked sub-accounts",
+        "description": "For accounts with linked sub-accounts, aggregates KPIs across the persisted sub-accounts they linked themselves. Accounts without linked sub-accounts only receive their own metrics. The optional `additional_tokens` body field is ignored when backend-linked accounts are used.",
+        "operationId": "b87ef630271b1c13909aadc0d873e061",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "additional_tokens": {
+                    "description": "Deprecated for accounts with linked sub-accounts. Use persisted linked accounts instead.",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "2|plainTextSanctumToken"
+                    },
+                    "maxItems": 9
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aggregated dashboard summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.dashboard.summary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Wallet unavailable for one or more accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/dashboard/summary": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "description": "Dashboard summary with pre-aggregated KPI data and top-performing items. Response includes `currency_unified` (always true for one account) and `accounts` with per-creator wallet breakdown; use POST /api/dashboard/summary/aggregate to merge multiple creator tokens.",
+        "operationId": "d94b7226889f5f6c6040a63598b838d2",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.dashboard.summary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/fcm": {
+      "post": {
+        "tags": [
+          "FCM Tokens"
+        ],
+        "description": "Store user fcm token",
+        "operationId": "6ea89d97f5cdaacfebe5146d01010c56",
+        "parameters": [
+          {
+            "name": "fcm_token",
+            "in": "query",
+            "description": "user fcm token",
+            "schema": {
+              "type": "string"
+            },
+            "example": "long.long.token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.fcm.store.request"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "FCM Tokens"
+        ],
+        "description": "Delete user fcm token",
+        "operationId": "b16d17a929e513c4be243e68b89576ec",
+        "parameters": [
+          {
+            "name": "fcm_token",
+            "in": "query",
+            "description": "user fcm token",
+            "schema": {
+              "type": "string"
+            },
+            "example": "long.long.token"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.fcm.delete.request"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/feedback": {
+      "post": {
+        "tags": [
+          "Feedback"
+        ],
+        "description": "Store feedback",
+        "operationId": "e09dac8a093abad4f5d7ef9ea379c46e",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "email",
+                  "message",
+                  "topic"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "topic": {
+                    "type": "string"
+                  },
+                  "attachments[]": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.feedback.store"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/linked-accounts": {
+      "get": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "List linked sub-accounts for the authenticated account",
+        "description": "Returns persisted sub-accounts linked by the authenticated account. Each account only sees links it created itself.",
+        "operationId": "380266f0d64bb8fec12db8967757fb1a",
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "Link a sub-account to the authenticated account",
+        "description": "Verifies account credentials and stores a one-way owner/sub-account relationship for faster account switching. Accounts may also be linked elsewhere independently.",
+        "operationId": "dc2bce7f16230ee2e8646ba3d9fb0b6c",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/linked-accounts/{childUserId}": {
+      "delete": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "Remove a linked sub-account",
+        "operationId": "a5950ddcc9dca75dd915ea581bb1edef",
+        "parameters": [
+          {
+            "name": "childUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/linked-accounts/{childUserId}/session": {
+      "post": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "Issue a Sanctum session for a linked sub-account",
+        "description": "Only accounts that directly linked the requested sub-account may request a switch-session token for it.",
+        "operationId": "9ef8de5ce11024665d7bfd235d686e7f",
+        "parameters": [
+          {
+            "name": "childUserId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok"
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/checkout/crypto/nowpayments": {
+      "post": {
+        "tags": [
+          "Checkout"
+        ],
+        "description": "Create a NOWPayments hosted checkout URL for a product purchase",
+        "operationId": "3ec558f01a2207e6d10e9d40554cfc6f",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "product_id"
+                ],
+                "properties": {
+                  "product_id": {
+                    "type": "integer",
+                    "example": 101
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "buyer@example.com"
+                  },
+                  "pay_currency": {
+                    "type": "string",
+                    "example": "btc"
+                  },
+                  "customer_user_id": {
+                    "type": "integer",
+                    "example": null,
+                    "nullable": true
+                  },
+                  "is_avs_confirmed": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.nowpayments.checkout.create"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "validation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "provider error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/checkout/crypto/nowpayments/status/{orderId}": {
+      "get": {
+        "tags": [
+          "Checkout"
+        ],
+        "description": "Read NOWPayments checkout status without finalizing any payment",
+        "operationId": "eac9e17c9436b769295330abc64b5d2c",
+        "parameters": [
+          {
+            "name": "orderId",
+            "in": "path",
+            "description": "Internal FanGate NOWPayments order id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.nowpayments.checkout.status"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/nowpayments": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "description": "NOWPayments IPN callback endpoint. Public endpoint that validates x-nowpayments-sig signature.",
+        "operationId": "fdb4b11d1c0622c18e18746e0234106f",
+        "parameters": [
+          {
+            "name": "x-nowpayments-sig",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "accepted"
+          },
+          "400": {
+            "description": "invalid signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "unknown order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Get product list",
+        "operationId": "d97d1c3727cbac49708b85f7d11f7d58",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Products per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Sort type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "most_earnings",
+                "most_views",
+                "collection"
+              ]
+            }
+          },
+          {
+            "name": "folder_id",
+            "in": "query",
+            "description": "Filter products by assigned folder id",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "folder_state",
+            "in": "query",
+            "description": "Filter by folder assignment state",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "unassigned"
+              ]
+            }
+          },
+          {
+            "name": "filterFolder",
+            "in": "query",
+            "description": "Deprecated compatibility filter. Accepts a folder id or `unassigned`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.list"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Create product",
+        "operationId": "785644b7d7dd38af4b51dafd0fbc1b6d",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "product_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "media": {
+                    "type": "file"
+                  },
+                  "upload_session_id": {
+                    "description": "Attach a previously finalized upload session instead of uploading a new file",
+                    "type": "string"
+                  },
+                  "price": {
+                    "type": "integer",
+                    "example": 550
+                  },
+                  "extension": {
+                    "type": "string",
+                    "example": "mp4"
+                  },
+                  "is_adult_content": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_verif_age": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_should_consent": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "private_description": {
+                    "type": "string"
+                  },
+                  "public_description": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.create"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/collection": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Get product list",
+        "operationId": "30a5bf2dabe6e66413663f8dbf1bfeff",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Products per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.collection.list"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/{product_id}": {
+      "get": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Get product",
+        "operationId": "2c70533b1e605c289c402882b21e13d6",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.show"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Delete product",
+        "operationId": "7fb8dd01fd170f3cb739824465785658",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.delete"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Update product",
+        "operationId": "2b44cbfe2d9184964d1904147d6a6a8a",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "is_adult_content": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_verif_age": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "private_description": {
+                    "type": "string",
+                    "example": "Some description"
+                  },
+                  "public_description": {
+                    "type": "string",
+                    "example": "Some public description"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.update"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/{product_id}/price": {
+      "patch": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Update existing product link price",
+        "operationId": "c7972b227766146aa432b25213980879",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "price": {
+                    "type": "integer",
+                    "example": 1200
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.update"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/{product_id}/price-links": {
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Duplicate product with a new price and short link",
+        "operationId": "cbbd0f150ca0252493f5ab2da344f08f",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "price": {
+                    "type": "integer",
+                    "example": 1200
+                  },
+                  "title": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "private_description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "public_description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.create"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/{product_id}/folder": {
+      "patch": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Assign or unassign a product folder",
+        "operationId": "c357405a0ae822f870ba3e23fc67ad5f",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "folder_id": {
+                    "description": "Set to null to remove the product from its folder",
+                    "type": "integer",
+                    "example": 12,
+                    "nullable": true
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.folder.update"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/{product_id}/collection": {
+      "post": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Product collection toggle",
+        "operationId": "a47b704fa50137ffd600ba585646f3c7",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "description": "Product id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.collection.toggle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/products/media/{media_id}": {
+      "delete": {
+        "tags": [
+          "Products"
+        ],
+        "description": "Delete product media",
+        "operationId": "d82b4c5941f48c89f70470cdd605b6d9",
+        "parameters": [
+          {
+            "name": "media_id",
+            "in": "path",
+            "description": "Media id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.product.update"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/upload-sessions": {
+      "post": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Create an upload session for a direct device upload or a remote import. For device uploads, inspect the returned upload_strategy to decide whether to upload through initial_upload (single_part) or through presigned multipart part instructions.",
+        "operationId": "6491872869b5516f3214ca8e2192b70c",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/upload_session_store_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/upload-sessions/{uploadSession}": {
+      "get": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Read the current state of an upload session. Poll this endpoint after /complete until status becomes ready or failed.",
+        "operationId": "84bc13cbdec7fea5bb2febe240d9c1e6",
+        "parameters": [
+          {
+            "name": "uploadSession",
+            "in": "path",
+            "description": "Upload session id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Abort an upload session and clean up any unfinished staged upload state.",
+        "operationId": "d29e73553bced913140bb823394a1283",
+        "parameters": [
+          {
+            "name": "uploadSession",
+            "in": "path",
+            "description": "Upload session id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/upload-sessions/{uploadSession}/remote": {
+      "post": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Accept a remote-import upload streamed from the Companion server. The request must include a multipart file in files[] and must target a remote_import session.",
+        "operationId": "bd3354a075e3547f34bc0eeab5710bdb",
+        "parameters": [
+          {
+            "name": "uploadSession",
+            "in": "path",
+            "description": "Upload session id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "files"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/upload-sessions/{uploadSession}/parts": {
+      "post": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Return a presigned instruction for uploading a single multipart part. This endpoint is only valid for sessions where upload_strategy=multipart.",
+        "operationId": "180fabdc97dc76b32aa01f77aa82d0fa",
+        "parameters": [
+          {
+            "name": "uploadSession",
+            "in": "path",
+            "description": "Upload session id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/upload_session_part_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session_part"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/upload-sessions/{uploadSession}/complete": {
+      "post": {
+        "tags": [
+          "Upload Sessions"
+        ],
+        "description": "Mark a single_part upload as finished or complete a multipart upload. When the response is 202 Accepted, Fangate has the staged upload and finalization continues asynchronously on the uploads queue; keep polling GET /api/upload-sessions/{uploadSession} until status=ready or failed.",
+        "operationId": "08d5f11222766d1761d4592c7881a945",
+        "parameters": [
+          {
+            "name": "uploadSession",
+            "in": "path",
+            "description": "Upload session id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/upload_session_complete_request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success_upload_session"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user": {
+      "get": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "User data",
+        "operationId": "dd48b9887ac0e98fac70ebd3da3eb645",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.get.user.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Delete user account",
+        "operationId": "44a44e9bd1b21f1f742cb29b3e2d63d0",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.delete.user.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/profile/has-adult": {
+      "patch": {
+        "tags": [
+          "User & Auth"
+        ],
+        "description": "Update user profile",
+        "operationId": "9a885a87faf5541e8c0eadb16e0ef4ab",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": [
+                  "is_adult_content, is_verif_age"
+                ],
+                "properties": {
+                  "is_adult_content": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_verif_age": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "is_update_products": {
+                    "description": "When is_adult_content and is_update_products is true - update all existing products",
+                    "type": "boolean",
+                    "example": false
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.get.user.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/sessions": {
+      "get": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "List creator app sessions",
+        "description": "Returns Sanctum personal access tokens for the current user where token name is `api` (mobile/web app sessions). Does not list integration API keys (`fangate-api-key:*`).",
+        "operationId": "da9a1da9d630189b1ef93565e005ddbb",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.user.sessions.list"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/user/sessions/{tokenId}": {
+      "delete": {
+        "tags": [
+          "User & Auth"
+        ],
+        "summary": "Revoke a creator app session",
+        "description": "Deletes a Sanctum token row with name `api` owned by the current user. Cannot revoke integration API keys.",
+        "operationId": "b84479fab049e0cabf163b7c396319f5",
+        "parameters": [
+          {
+            "name": "tokenId",
+            "in": "path",
+            "description": "Personal access token id from GET /api/user/sessions",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 42
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "errors_message": {
+                      "type": "string",
+                      "example": null,
+                      "nullable": true
+                    },
+                    "data": {
+                      "type": "string",
+                      "example": "Session revoked"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/veriff/create": {
+      "get": {
+        "tags": [
+          "Veriff"
+        ],
+        "description": "Create verification session for authenticated user",
+        "operationId": "c5054923d066ac7f22252b96909a10c5",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.veriff.create.response"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/wallet": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "description": "Get wallet data",
+        "operationId": "c46516e6ae316194282761be57b0a915",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Transactions per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.wallet.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/wallet/affiliate": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "description": "Affiliate transactions list and revenue sum",
+        "operationId": "45efa9e1682cd3bba9eee99abc991438",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Transactions per page",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.affiliate.transactions.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/wallet/cashout": {
+      "post": {
+        "tags": [
+          "Wallet"
+        ],
+        "description": "Cashout available funds",
+        "operationId": "aba3c9caeb4a497371ae32f2e489f231",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/success.wallet.cashout.response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.basic"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "sanctum": []
+          }
+        ]
+      }
+    },
+    "/api/yoti/session/create": {
+      "post": {
+        "tags": [
+          "Yoti Verification"
+        ],
+        "summary": "Create Yoti verification session",
+        "description": "Create a new verification session",
+        "operationId": "a39936656922ba666e815eca78636532",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "user_id": {
+                    "type": "string",
+                    "example": "user_123"
+                  },
+                  "verification_type": {
+                    "type": "string",
+                    "enum": [
+                      "id_verification",
+                      "age_verification"
+                    ],
+                    "example": "id_verification"
+                  },
+                  "minimum_age": {
+                    "type": "integer",
+                    "example": 18
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "session_id": {
+                      "type": "string",
+                      "example": "abc-123-def"
+                    },
+                    "client_session_token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create session"
+          }
+        }
+      }
+    },
+    "/api/yoti/webhook": {
+      "post": {
+        "tags": [
+          "Yoti Verification"
+        ],
+        "summary": "Yoti webhook endpoint",
+        "description": "Webhook endpoint for Yoti notifications",
+        "operationId": "3525eb5ece2b749e1927f3cbf9e73454",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "topic": {
+                    "type": "string",
+                    "example": "session_completion"
+                  },
+                  "session_id": {
+                    "type": "string",
+                    "example": "abc-123-def"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "success.affiliate.users.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "https://fangate.info/applink/test"
+          }
+        },
+        "type": "object"
+      },
+      "success.affiliate.invitation-link.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "https://fangate.info/applink/test"
+          }
+        },
+        "type": "object"
+      },
+      "success.affiliate.invitation-code.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/invitation-code"
+          }
+        },
+        "type": "object"
+      },
+      "invitation-code": {
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "example": "1234s"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.api_key.list": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "name": {
+                  "type": "string",
+                  "example": "fangate-api-key:zapier"
+                },
+                "last_used_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "abilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "example": "api-key:urls.read"
+                  }
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "success.user.api_key.create": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "properties": {
+              "token": {
+                "type": "string",
+                "example": "1|plain-text-token"
+              },
+              "name": {
+                "type": "string",
+                "example": "fangate-api-key:zapier"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "permissions": {
+                "properties": {
+                  "get_existing_urls": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "get_existing_collection_urls": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "create_new_urls": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "view_transactions": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "view_account_settings": {
+                    "type": "boolean",
+                    "example": false
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.api_key.revoke": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "type": "string",
+            "example": "API key revoked"
+          }
+        },
+        "type": "object"
+      },
+      "success.app-data": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "products": {
+                "properties": {
+                  "sort_by": {
+                    "type": "array",
+                    "items": {
+                      "example": [
+                        "newest",
+                        "collection"
+                      ]
+                    }
+                  },
+                  "media": {
+                    "properties": {
+                      "max_mb_size": {
+                        "type": "integer",
+                        "example": 512
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "uploads": {
+                "properties": {
+                  "strategy": {
+                    "type": "string",
+                    "example": "always"
+                  },
+                  "max_file_size_bytes": {
+                    "type": "integer",
+                    "example": 8589934592
+                  },
+                  "part_size_bytes": {
+                    "type": "integer",
+                    "example": 8388608
+                  },
+                  "max_concurrent_parts": {
+                    "type": "integer",
+                    "example": 4
+                  },
+                  "max_parts": {
+                    "type": "integer",
+                    "example": 10000
+                  }
+                },
+                "type": "object"
+              },
+              "feedback": {
+                "properties": {
+                  "topics": {
+                    "type": "array",
+                    "items": {
+                      "example": [
+                        "Registration",
+                        "Link creation"
+                      ]
+                    }
+                  }
+                },
+                "type": "object"
+              },
+              "affiliate": {
+                "properties": {
+                  "default_fee_percentage": {
+                    "type": "string",
+                    "example": "4.5"
+                  }
+                },
+                "type": "object"
+              },
+              "currencies": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "code": {
+                      "type": "string",
+                      "example": "usd"
+                    },
+                    "symbol": {
+                      "type": "string",
+                      "example": "$"
+                    },
+                    "bank_fields": {
+                      "type": "array",
+                      "items": {
+                        "example": [
+                          "iban",
+                          "bic"
+                        ]
+                      }
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "example": "currencies"
+                    },
+                    "is_active": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "settings": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "example": "avs_banner"
+                    },
+                    "value": {
+                      "type": "string",
+                      "example": "1"
+                    },
+                    "type": {
+                      "type": "string",
+                      "example": "boolean"
+                    }
+                  },
+                  "type": "object"
+                },
+                "example": [
+                  {
+                    "name": "avs_banner",
+                    "value": "1",
+                    "type": "boolean"
+                  },
+                  {
+                    "name": "verif_age_banner",
+                    "value": "1",
+                    "type": "boolean"
+                  }
+                ]
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.register": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/user.resource"
+              },
+              "token": {
+                "type": "string",
+                "example": "1|9NasfkKFS32gndslNDKd0323213ldm"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.login": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/user.resource"
+              },
+              "token": {
+                "type": "string",
+                "example": "1|9NasfkKFS32gndslNDKd0323213ldm"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.login.batch": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "properties": {
+              "sessions": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "example": "creator@example.com"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/user.resource"
+                    },
+                    "token": {
+                      "type": "string",
+                      "example": "1|plainTextSanctumToken"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "failed": {
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "email": {
+                      "type": "string",
+                      "example": "other@example.com"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Wrong email or password"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.password.update": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/user.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.verify.email": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Mail was sent"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.password.reset.email": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Mail was sent"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.logout": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Logged out"
+          }
+        },
+        "type": "object"
+      },
+      "success.collection.profile.show": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/collection.profile.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.content.folder.list": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/content.folder"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "success.content.folder.show": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/content.folder"
+          }
+        },
+        "type": "object"
+      },
+      "success.content.folder.delete": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "12"
+              },
+              "deleted": {
+                "type": "boolean",
+                "example": true
+              },
+              "items_unassigned": {
+                "type": "boolean",
+                "example": true
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "dashboard.summary.wallet.balance": {
+        "properties": {
+          "available": {
+            "type": "integer",
+            "example": 12548
+          },
+          "hold": {
+            "type": "integer",
+            "example": 0
+          },
+          "pending": {
+            "type": "integer",
+            "example": 0
+          },
+          "total": {
+            "type": "integer",
+            "example": 12548
+          }
+        },
+        "type": "object"
+      },
+      "dashboard.summary.account": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "example": 7
+          },
+          "email": {
+            "type": "string",
+            "example": "creator@example.com"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Alyssa Creator"
+          },
+          "currency_id": {
+            "type": "integer",
+            "example": 1
+          },
+          "currency_code": {
+            "type": "string",
+            "example": "USD",
+            "nullable": true
+          },
+          "wallet_balance": {
+            "$ref": "#/components/schemas/dashboard.summary.wallet.balance"
+          }
+        },
+        "type": "object"
+      },
+      "dashboard.summary.top.performing.item": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Untitled content"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "example": "https://cdn.example.com/media/previews/abc.jpg",
+            "nullable": true
+          },
+          "price": {
+            "type": "integer",
+            "example": 1000
+          },
+          "unlocks": {
+            "type": "integer",
+            "example": 12
+          },
+          "clicks": {
+            "type": "integer",
+            "example": 35
+          },
+          "revenue": {
+            "type": "integer",
+            "example": 12000
+          },
+          "conversion_rate": {
+            "type": "number",
+            "format": "float",
+            "example": 34.3
+          }
+        },
+        "type": "object"
+      },
+      "dashboard.summary.data": {
+        "properties": {
+          "wallet_balance": {
+            "$ref": "#/components/schemas/dashboard.summary.wallet.balance"
+          },
+          "currency_unified": {
+            "type": "boolean",
+            "example": true
+          },
+          "accounts": {
+            "description": "One entry per creator included in the summary (single-account summary returns one row)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dashboard.summary.account"
+            }
+          },
+          "total_content_items": {
+            "type": "integer",
+            "example": 190
+          },
+          "total_link_clicks": {
+            "type": "integer",
+            "example": 7323
+          },
+          "total_unlocks": {
+            "type": "integer",
+            "example": 119
+          },
+          "total_product_revenue": {
+            "type": "integer",
+            "example": 712675
+          },
+          "overall_conversion_rate": {
+            "type": "number",
+            "format": "float",
+            "example": 1.6
+          },
+          "top_performing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/dashboard.summary.top.performing.item"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "success.dashboard.summary": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "$ref": "#/components/schemas/dashboard.summary.data"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.fcm.store.request": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Stored"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.fcm.delete.request": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Destroyed"
+          }
+        },
+        "type": "object"
+      },
+      "success.feedback.store": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Stored"
+          }
+        },
+        "type": "object"
+      },
+      "success.nowpayments.checkout.create": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "checkout_url": {
+                "type": "string",
+                "example": "https://nowpayments.io/invoice/abc123"
+              },
+              "payment_id": {
+                "type": "integer",
+                "example": 415
+              },
+              "order_id": {
+                "type": "string",
+                "example": "FG-NP-415-JF4K2A9Q7L"
+              },
+              "provider_invoice_id": {
+                "type": "string",
+                "example": "127889001",
+                "nullable": true
+              },
+              "provider_payment_id": {
+                "type": "string",
+                "example": null,
+                "nullable": true
+              },
+              "internal_status": {
+                "type": "string",
+                "example": "pending"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.nowpayments.checkout.status": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "properties": {
+              "order_id": {
+                "type": "string",
+                "example": "FG-NP-415-JF4K2A9Q7L"
+              },
+              "payment_id": {
+                "type": "integer",
+                "example": 415
+              },
+              "provider_status": {
+                "type": "string",
+                "example": "waiting",
+                "nullable": true
+              },
+              "internal_status": {
+                "type": "string",
+                "example": "pending"
+              },
+              "transaction_status": {
+                "type": "string",
+                "example": "pending"
+              },
+              "content_unlocked": {
+                "type": "boolean",
+                "example": false
+              },
+              "checkout_url": {
+                "type": "string",
+                "example": "https://nowpayments.io/invoice/abc123",
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.list": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.list"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.collection.list": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.list"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.show": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.create": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.update": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.folder.update": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.collection.toggle": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.product.delete": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "deleted"
+          }
+        },
+        "type": "object"
+      },
+      "upload_session_uploaded_asset_summary": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "01knyp9pd50ey9xrpgp1nv0jn0"
+              },
+              "status": {
+                "type": "string",
+                "example": "ready"
+              },
+              "attached_product_id": {
+                "type": "integer",
+                "example": 1,
+                "nullable": true
+              },
+              "attached_media_id": {
+                "type": "integer",
+                "example": 1,
+                "nullable": true
+              },
+              "media_url": {
+                "type": "string",
+                "example": "https://fangatedev.s3.amazonaws.com/users/8/products/...",
+                "nullable": true
+              },
+              "preview_url": {
+                "type": "string",
+                "example": "https://fangatedev.s3.amazonaws.com/users/8/products/...",
+                "nullable": true
+              },
+              "preview_blurred_url": {
+                "type": "string",
+                "example": "https://fangatedev.s3.amazonaws.com/users/8/products/...",
+                "nullable": true
+              },
+              "thumbnail_url": {
+                "type": "string",
+                "example": "https://fangatedev.s3.amazonaws.com/users/8/products/...",
+                "nullable": true
+              },
+              "ready_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "failed_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_companion": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "url": {
+                "type": "string",
+                "example": "http://127.0.0.1:3020/companion",
+                "nullable": true
+              },
+              "session_header": {
+                "type": "string",
+                "example": "X-Fangate-Upload-Session"
+              },
+              "allowed_origins": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "example": "http://localhost:3000"
+                }
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_initial_upload": {
+        "description": "Present only when the backend selected the single_part upload strategy.",
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "method": {
+                "type": "string",
+                "example": "PUT"
+              },
+              "url": {
+                "type": "string",
+                "example": "https://fangate-uppy-dev.s3.us-west-1.amazonaws.com/..."
+              },
+              "headers": {
+                "properties": {
+                  "Content-Type": {
+                    "type": "string",
+                    "example": "video/mp4"
+                  }
+                },
+                "type": "object"
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_completed_part": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "part_number": {
+                "type": "integer",
+                "example": 1
+              },
+              "etag": {
+                "type": "string",
+                "example": "etag-value"
+              },
+              "size_bytes": {
+                "type": "integer",
+                "example": 8388608,
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_part_instruction": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "part_number": {
+                "type": "integer",
+                "example": 1
+              },
+              "method": {
+                "type": "string",
+                "example": "PUT"
+              },
+              "url": {
+                "type": "string",
+                "example": "https://fangate-uppy-dev.s3.us-west-1.amazonaws.com/..."
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "schema": "UploadSessionController",
+                  "type": "string",
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/error.basic"
+                    }
+                  ]
+                }
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "UploadSessionController": {
+        "type": "string",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          }
+        ]
+      },
+      "upload_session_resource": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "01knyn6vkpnvh2rzgg9c0n6xz5"
+              },
+              "session_type": {
+                "type": "string",
+                "enum": [
+                  "device_multipart",
+                  "remote_import"
+                ],
+                "example": "device_multipart"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "uploading",
+                  "uploaded",
+                  "finalizing",
+                  "ready",
+                  "failed",
+                  "aborted",
+                  "expired"
+                ],
+                "example": "ready"
+              },
+              "upload_strategy": {
+                "type": "string",
+                "enum": [
+                  "multipart",
+                  "single_part"
+                ],
+                "example": "multipart",
+                "nullable": true
+              },
+              "remote_provider": {
+                "type": "string",
+                "example": "dropbox",
+                "nullable": true
+              },
+              "remote_provider_mode": {
+                "type": "string",
+                "example": "companion",
+                "nullable": true
+              },
+              "asset_kind": {
+                "type": "string",
+                "example": "video",
+                "nullable": true
+              },
+              "file_name": {
+                "type": "string",
+                "example": "sample.mp4",
+                "nullable": true
+              },
+              "file_size_bytes": {
+                "type": "integer",
+                "example": 52428800,
+                "nullable": true
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "video/mp4",
+                "nullable": true
+              },
+              "staging_disk": {
+                "type": "string",
+                "example": "uppy_staging_s3"
+              },
+              "staging_bucket": {
+                "type": "string",
+                "example": "fangate-uppy-dev",
+                "nullable": true
+              },
+              "staging_key": {
+                "type": "string",
+                "example": "users/1/staging/.../sample.mp4",
+                "nullable": true
+              },
+              "staging_read_url": {
+                "type": "string",
+                "example": "https://fangate-uppy-dev.s3.amazonaws.com/users/1/staging/.../sample.mp4",
+                "nullable": true
+              },
+              "multipart_upload_id": {
+                "type": "string",
+                "nullable": true
+              },
+              "part_size_bytes": {
+                "type": "integer",
+                "example": 8388608,
+                "nullable": true
+              },
+              "uploaded_parts": {
+                "description": "Completed multipart parts already visible to the backend. Empty for single_part uploads and before multipart parts are confirmed.",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/upload_session_completed_part"
+                }
+              },
+              "target_product_id": {
+                "type": "integer",
+                "example": 1,
+                "nullable": true
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "upload_completed_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "ready_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "failed_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "aborted_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "last_error_code": {
+                "type": "string",
+                "nullable": true
+              },
+              "last_error_message": {
+                "type": "string",
+                "nullable": true
+              },
+              "remote_provider_file_id": {
+                "type": "string",
+                "nullable": true
+              },
+              "remote_provider_metadata": {
+                "type": "object",
+                "nullable": true
+              },
+              "uploaded_asset": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/upload_session_uploaded_asset_summary"
+                  }
+                ],
+                "nullable": true
+              },
+              "companion": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/upload_session_companion"
+                  }
+                ],
+                "nullable": true,
+                "description": "Present only for remote_import sessions."
+              },
+              "initial_upload": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/upload_session_initial_upload"
+                  }
+                ],
+                "nullable": true,
+                "description": "Present only when upload_strategy=single_part."
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_store_request": {
+        "required": [
+          "session_type"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "session_type": {
+                "description": "Use device_multipart for direct browser/device uploads. The response upload_strategy decides whether the client performs multipart part uploads or a single direct upload.",
+                "type": "string",
+                "enum": [
+                  "device_multipart",
+                  "remote_import"
+                ],
+                "example": "device_multipart"
+              },
+              "product_id": {
+                "type": "integer",
+                "example": 1,
+                "nullable": true
+              },
+              "asset_kind": {
+                "type": "string",
+                "enum": [
+                  "image",
+                  "video"
+                ],
+                "example": "video",
+                "nullable": true
+              },
+              "file_name": {
+                "type": "string",
+                "example": "sample.mp4",
+                "nullable": true
+              },
+              "file_size_bytes": {
+                "type": "integer",
+                "example": 52428800,
+                "nullable": true
+              },
+              "mime_type": {
+                "type": "string",
+                "example": "video/mp4",
+                "nullable": true
+              },
+              "remote_provider": {
+                "type": "string",
+                "example": "dropbox",
+                "nullable": true
+              },
+              "remote_provider_file_id": {
+                "type": "string",
+                "nullable": true
+              },
+              "remote_provider_metadata": {
+                "type": "object",
+                "nullable": true
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_part_request": {
+        "required": [
+          "part_number"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "part_number": {
+                "type": "integer",
+                "example": 1
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "upload_session_complete_request": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "parts": {
+                "description": "Required only when session_type=device_multipart and upload_strategy=multipart. Omit for single_part uploads and remote imports.",
+                "type": "array",
+                "items": {
+                  "properties": {
+                    "part_number": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "etag": {
+                      "type": "string",
+                      "example": "etag-value"
+                    },
+                    "size_bytes": {
+                      "type": "integer",
+                      "example": 8388608,
+                      "nullable": true
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "success_upload_session": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "example": true
+              },
+              "errors_message": {
+                "type": "string",
+                "example": null,
+                "nullable": true
+              },
+              "data": {
+                "$ref": "#/components/schemas/upload_session_resource"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "success_upload_session_part": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/error.basic"
+          },
+          {
+            "properties": {
+              "success": {
+                "type": "boolean",
+                "example": true
+              },
+              "errors_message": {
+                "type": "string",
+                "example": null,
+                "nullable": true
+              },
+              "data": {
+                "properties": {
+                  "session": {
+                    "$ref": "#/components/schemas/upload_session_resource"
+                  },
+                  "part": {
+                    "$ref": "#/components/schemas/upload_session_part_instruction"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        ]
+      },
+      "success.get.user.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/user.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.delete.user.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Deleted"
+          }
+        },
+        "type": "object"
+      },
+      "success.patch.user.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/user.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.user.sessions.list": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null,
+            "nullable": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 42
+                },
+                "last_used_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                },
+                "is_current": {
+                  "description": "True when this row is the token used for the request",
+                  "type": "boolean",
+                  "example": true
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "success.veriff.create.response": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "success"
+          },
+          "verification": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "96972fba-3de6-4346-9029-4fdbea684bd3"
+                },
+                "url": {
+                  "type": "string",
+                  "example": "https://alchemy.veriff.com/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc2MzM3MjQsInNlc3Npb25faWQiOiI5Njk3MmZiYS0zZGU2LTQzNDYtOTAyOS00ZmRiZWE2ODRiZDMiLCJpaWQiOiIyOGJmMDM2MC1hMDg0LTRlZTctOTRlYi03NmI5NjM0MDQ4ZDEifQ.09Og75D3FNubWp7v_ZmgcwOexgTcWJFVYDNYfQSnQl4"
+                },
+                "vendorData": {
+                  "type": "string",
+                  "example": "42"
+                },
+                "host": {
+                  "type": "string",
+                  "example": "https://alchemy.veriff.com"
+                },
+                "status": {
+                  "type": "string",
+                  "example": "created"
+                },
+                "sessionToken": {
+                  "type": "string",
+                  "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3Mjc2MzM3MjQsInNlc3Npb25faWQiOiI5Njk3MmZiYS0zZGU2LTQzNDYtOTAyOS00ZmRiZWE2ODRiZDMiLCJpaWQiOiIyOGJmMDM2MC1hMDg0LTRlZTctOTRlYi03NmI5NjM0MDQ4ZDEifQ.09Og75D3FNubWp7v_ZmgcwOexgTcWJFVYDNYfQSnQl4"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "success.wallet.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/wallet.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.affiliate.transactions.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "$ref": "#/components/schemas/affiliate.resource"
+          }
+        },
+        "type": "object"
+      },
+      "success.wallet.cashout.response": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "errors_message": {
+            "type": "string",
+            "example": null
+          },
+          "data": {
+            "type": "string",
+            "example": "Cashout created successfully"
+          }
+        },
+        "type": "object"
+      },
+      "error.basic": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "errors_message": {
+            "type": "string",
+            "example": "Error"
+          },
+          "data": {
+            "type": "string",
+            "example": null
+          }
+        },
+        "type": "object"
+      },
+      "affiliate.resource": {
+        "properties": {
+          "referral_revenue": {
+            "type": "integer",
+            "example": 1052
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/transaction.resource"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "collection.profile.resource": {
+        "properties": {
+          "stage_name": {
+            "type": "string",
+            "example": "Creator Name",
+            "nullable": true
+          },
+          "stage_name_slug": {
+            "type": "string",
+            "example": "creator-name",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "example": "Short public bio",
+            "nullable": true
+          },
+          "follower_count": {
+            "type": "integer",
+            "example": 42
+          },
+          "profile_image_url": {
+            "type": "string",
+            "example": "https://cdn.fangate.app/users/12/collection/profile/avatar.webp",
+            "nullable": true
+          },
+          "profile_image_key": {
+            "type": "string",
+            "example": "users/12/collection/profile/avatar.webp",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "content.folder": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "12"
+          },
+          "name": {
+            "type": "string",
+            "example": "Campaigns"
+          },
+          "items_count": {
+            "type": "integer",
+            "example": 3
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-04-15T12:45:00.000000Z",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "content.folder.reference": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "12"
+          },
+          "name": {
+            "type": "string",
+            "example": "Campaigns"
+          }
+        },
+        "type": "object"
+      },
+      "fee.resource": {
+        "properties": {
+          "fixed": {
+            "type": "string",
+            "example": "2.3"
+          },
+          "percentage": {
+            "type": "string",
+            "example": "0.7"
+          }
+        },
+        "type": "object"
+      },
+      "media.resource": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "video"
+          },
+          "preview": {
+            "type": "string",
+            "example": "http://aws.com/image.png"
+          },
+          "preview_blurred": {
+            "type": "string",
+            "example": "http://aws.com/image-blurred.png"
+          },
+          "veriff_status": {
+            "type": "string",
+            "example": "Unchecked"
+          },
+          "removal_description": {
+            "type": "string",
+            "example": "Some text"
+          },
+          "source": {
+            "type": "string",
+            "example": "http://aws.com/image-blurred.png",
+            "nullable": true
+          }
+        },
+        "type": "object"
+      },
+      "user.private.resource": {
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "example": "Kevin"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Smith"
+          },
+          "birth_date": {
+            "type": "string",
+            "example": "2000-01-15"
+          },
+          "country": {
+            "type": "string",
+            "example": "US"
+          },
+          "city": {
+            "type": "string",
+            "example": null
+          },
+          "street": {
+            "type": "string",
+            "example": null
+          },
+          "building": {
+            "type": "string",
+            "example": null
+          },
+          "postal_code": {
+            "type": "string",
+            "example": null
+          }
+        },
+        "type": "object"
+      },
+      "product.list": {
+        "properties": {
+          "pages_total": {
+            "type": "integer",
+            "example": 1
+          },
+          "collection_link": {
+            "type": "string",
+            "example": "http://site.com/safsafas"
+          },
+          "data": {
+            "$ref": "#/components/schemas/product.resource"
+          }
+        },
+        "type": "object"
+      },
+      "product.resource": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "video"
+          },
+          "title": {
+            "type": "string",
+            "example": "Nullable title"
+          },
+          "preview": {
+            "type": "string",
+            "example": "http://aws.com/image.png"
+          },
+          "preview_blurred": {
+            "type": "string",
+            "example": "http://aws.com/image-blurred.png"
+          },
+          "price": {
+            "type": "integer",
+            "example": 235
+          },
+          "in_collection": {
+            "type": "boolean",
+            "example": false
+          },
+          "link": {
+            "type": "string",
+            "example": "http://site.com/safsafas"
+          },
+          "link_clicks": {
+            "type": "integer",
+            "example": 155
+          },
+          "unlocks": {
+            "type": "integer",
+            "example": 1
+          },
+          "total_earnings": {
+            "type": "integer",
+            "example": 52
+          },
+          "folder_id": {
+            "type": "string",
+            "example": "12",
+            "nullable": true
+          },
+          "folder": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/content.folder.reference"
+              }
+            ],
+            "nullable": true
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/media.resource"
+            }
+          },
+          "is_adult_content": {
+            "type": "boolean",
+            "example": true
+          },
+          "is_verif_age": {
+            "type": "boolean",
+            "example": true
+          },
+          "is_should_consent": {
+            "type": "boolean",
+            "example": true
+          },
+          "is_accessible": {
+            "description": "True when moderation and consent allow purchase (purchasability matrix).",
+            "type": "boolean",
+            "example": true
+          },
+          "private_description": {
+            "type": "string",
+            "example": "Nullable description"
+          },
+          "public_description": {
+            "type": "string",
+            "example": "Nullable description"
+          }
+        },
+        "type": "object"
+      },
+      "user.resource": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "business"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@gmail.com"
+          },
+          "first_name": {
+            "type": "string",
+            "example": "John"
+          },
+          "last_name": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "birth_date": {
+            "type": "string",
+            "example": "2000-01-30"
+          },
+          "stripe_url": {
+            "type": "string",
+            "example": "https://connect.stripe.com/setup/s/acct_1PBt44P2yYqJtHK8/JjKWZbCCGy34"
+          },
+          "fee": {
+            "$ref": "#/components/schemas/fee.resource"
+          },
+          "iban": {
+            "type": "string",
+            "example": "LU150103994632856918"
+          },
+          "bic_swift": {
+            "type": "string",
+            "example": "UNJSUAUK154"
+          },
+          "bank_data": {
+            "properties": {
+              "iban": {
+                "type": "string",
+                "example": "127312477423774"
+              },
+              "bic": {
+                "type": "string",
+                "example": "3534657343543635"
+              }
+            },
+            "type": "object"
+          },
+          "address": {
+            "type": "string",
+            "example": "some address"
+          },
+          "is_adult_content": {
+            "type": "boolean",
+            "example": true
+          },
+          "is_verif_age": {
+            "type": "boolean",
+            "example": true
+          },
+          "currency_id": {
+            "type": "integer",
+            "example": 1
+          }
+        },
+        "type": "object"
+      },
+      "wallet.resource": {
+        "properties": {
+          "available": {
+            "type": "integer",
+            "example": 251
+          },
+          "hold": {
+            "type": "integer",
+            "example": 1250
+          },
+          "pending": {
+            "type": "integer",
+            "example": 3378
+          },
+          "total": {
+            "type": "integer",
+            "example": 4879
+          },
+          "referral_revenue": {
+            "type": "integer",
+            "example": 3629
+          },
+          "cashout_available": {
+            "type": "boolean",
+            "example": true
+          },
+          "transactions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/transaction.resource"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "transaction.resource": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "amount": {
+            "type": "integer",
+            "example": 387
+          },
+          "type": {
+            "type": "string",
+            "example": "affiliate_earning"
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2024-05-06 15:00:34"
+          },
+          "available_at": {
+            "type": "string",
+            "example": "2024-05-20 15:00:34",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "example": "Money for a photo"
+          }
+        },
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "sanctum": {
+        "type": "apiKey",
+        "description": "Enter token in format (Bearer <token>)",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Affiliate",
+      "description": "Affiliate"
+    },
+    {
+      "name": "User & Auth",
+      "description": "User & Auth"
+    },
+    {
+      "name": "App Data",
+      "description": "App Data"
+    },
+    {
+      "name": "Collection Profile",
+      "description": "Collection Profile"
+    },
+    {
+      "name": "Consents",
+      "description": "Consents"
+    },
+    {
+      "name": "Content Folders",
+      "description": "Content Folders"
+    },
+    {
+      "name": "Creators",
+      "description": "Creators"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard"
+    },
+    {
+      "name": "FCM Tokens",
+      "description": "FCM Tokens"
+    },
+    {
+      "name": "Feedback",
+      "description": "Feedback"
+    },
+    {
+      "name": "Checkout",
+      "description": "Checkout"
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhooks"
+    },
+    {
+      "name": "Products",
+      "description": "Products"
+    },
+    {
+      "name": "Upload Sessions",
+      "description": "Upload Sessions"
+    },
+    {
+      "name": "Veriff",
+      "description": "Veriff"
+    },
+    {
+      "name": "Wallet",
+      "description": "Wallet"
+    },
+    {
+      "name": "Yoti Verification",
+      "description": "Yoti Verification"
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://fangate.info",
+      "description": "Production"
+    },
+    {
+      "url": "https://fangate.co",
+      "description": "Development"
+    }
+  ]
+}

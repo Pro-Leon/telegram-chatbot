@@ -1,0 +1,354 @@
+{% extends "dashboard.html" %}
+{% block nav_fangate %}active{% endblock %}
+{% block page_title %}DropFans{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+
+    .fangate-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 1024px) { .fangate-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .fangate-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .stat-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px;
+        width: 80px; height: 80px; border-radius: 50%;
+        filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .stat-card.purple::after { background: var(--accent-purple); }
+    .stat-card.green::after  { background: var(--accent-green); }
+    .stat-card.orange::after { background: var(--accent-orange); }
+    .stat-card.red::after    { background: var(--accent-red); }
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); }
+    .stat-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .stat-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .stat-icon.green  { background: rgba(74,222,128,0.15);  color: var(--accent-green); }
+    .stat-icon.orange { background: rgba(251,146,60,0.15);  color: var(--accent-orange); }
+    .stat-icon.red    { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .stat-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .section-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden; margin-bottom: 20px;
+    }
+    .section-header {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .status-badge.active { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.error { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 14px; }
+    .empty-state .empty-sub { font-size: 12px; margin-top: 4px; color: var(--text-tertiary); }
+
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+    .error-state {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+        color: var(--accent-red); padding: 12px 16px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px;
+    }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--bg-card); color: var(--text-primary); transition: all 0.15s;
+    }
+    .btn-sync:hover { background: rgba(0,0,0,0.04); }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .btn-action.primary { background: var(--accent-purple); color: white; }
+    .btn-action.primary:hover { background: var(--accent-purple-light); }
+    .btn-action.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+        padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); transition: all 0.3s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .toast.success { background: var(--accent-green); color: #fff; }
+    .toast.error { background: var(--accent-red); color: #fff; }
+    .toast.info { background: var(--accent-purple); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="dropfansApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>DropFans Integration</h2>
+        <p>Connect your DropFans API key to enable autonomous commerce.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <div x-show="!loading && creatorId === 0" class="empty-state">
+        <i class="fas fa-store"></i>
+        <p style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No creator configured</p>
+        <p class="empty-sub">Create a creator to get started.</p>
+    </div>
+
+    <template x-if="creatorId > 0">
+        <div>
+            <!-- Connection Status -->
+            <div class="section-card" style="max-width:720px;">
+                <div class="section-header">
+                    <h2>Connection Status</h2>
+                    <button @click="loadDropfansStatus()" class="btn-sync" :disabled="dropfansStatusLoading">
+                        <i class="fas" :class="dropfansStatusLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                    </button>
+                </div>
+                <div x-show="dropfansStatusLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                <div x-show="!dropfansStatusLoading && dropfansStatus" class="fangate-grid">
+                    <div class="stat-card" :class="dropfansConnected ? 'green' : 'red'">
+                        <div class="stat-top">
+                            <span class="stat-label">Status</span>
+                            <div class="stat-icon" :class="dropfansConnected ? 'green' : 'red'"><i class="fas" :class="dropfansConnected ? 'fa-check-circle' : 'fa-times-circle'"></i></div>
+                        </div>
+                        <div>
+                            <span class="status-badge" :class="dropfansConnected ? 'active' : 'error'"
+                                  x-text="dropfansConnected ? 'Connected' : 'Not Connected'"></span>
+                        </div>
+                    </div>
+                    <div class="stat-card purple" x-show="dropfansConnected">
+                        <div class="stat-top">
+                            <span class="stat-label">Creator ID</span>
+                            <div class="stat-icon purple"><i class="fas fa-fingerprint"></i></div>
+                        </div>
+                        <div class="stat-value" style="font-size:16px;word-break:break-all;" x-text="dropfansIdentity?.dropfans_creator_id || '-'"></div>
+                    </div>
+                    <div class="stat-card orange" x-show="dropfansConnected">
+                        <div class="stat-top">
+                            <span class="stat-label">Username</span>
+                            <div class="stat-icon orange"><i class="fas fa-at"></i></div>
+                        </div>
+                        <div class="stat-value" style="font-size:16px;" x-text="dropfansIdentity?.username || '-'"></div>
+                        <div class="stat-sub" x-text="dropfansIdentity?.display_name || ''"></div>
+                    </div>
+                    <div class="stat-card" :class="dropfansHealthOk ? 'green' : 'red'" x-show="dropfansConnected">
+                        <div class="stat-top">
+                            <span class="stat-label">Health</span>
+                            <div class="stat-icon" :class="dropfansHealthOk ? 'green' : 'red'"><i class="fas" :class="dropfansHealthOk ? 'fa-heartbeat' : 'fa-heart-broken'"></i></div>
+                        </div>
+                        <div>
+                            <span class="status-badge" :class="dropfansHealthOk ? 'active' : 'error'"
+                                  x-text="dropfansHealthOk ? 'Healthy' : 'Unreachable'"></span>
+                        </div>
+                    </div>
+                </div>
+                <div x-show="!dropfansStatusLoading && !dropfansStatus" class="empty-state" style="padding:32px;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:24px;"></i>
+                    <p>DropFans not configured</p>
+                    <p class="empty-sub">Enter your DropFans API key below to connect.</p>
+                </div>
+                <div x-show="dropfansIdentity?.action === 'reconnect_required'" class="error-state" style="margin-top:12px;">
+                    <i class="fas fa-key"></i>
+                    <span>Credential revoked — reconnect required. Enter a new API key below.</span>
+                    <div style="font-size:12px;opacity:0.8;margin-top:4px;" x-text="dropfansIdentity?.last_error || ''"></div>
+                </div>
+                <div x-show="dropfansIdentity?.action === 'suspended'" class="error-state" style="margin-top:12px;">
+                    <i class="fas fa-ban"></i>
+                    <span>DropFans app suspended — contact DropFans support, then reconnect below.</span>
+                    <div style="font-size:12px;opacity:0.8;margin-top:4px;" x-text="dropfansIdentity?.last_error || ''"></div>
+                </div>
+            </div>
+
+            <!-- Connect / Reconnect Form -->
+            <div class="section-card" style="max-width:720px;">
+                <div class="section-header">
+                    <h2 x-text="dropfansConnected ? 'Reconnect DropFans' : 'Connect DropFans'"></h2>
+                </div>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+                    Enter your DropFans API key to connect or reconnect. The key is encrypted and stored securely. It is never returned in responses or logged.
+                </p>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input x-model="dropfansApiKey" type="password" placeholder="dpfn_..."
+                           @keydown.enter="connectDropfans()"
+                           style="flex:1;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);font-family:monospace;" />
+                    <button @click="connectDropfans()" class="btn-action primary" :disabled="dropfansConnecting || !dropfansApiKey" style="padding:10px 20px;">
+                        <i class="fas" :class="dropfansConnecting ? 'fa-spinner fa-spin' : 'fa-plug'"></i> Connect
+                    </button>
+                </div>
+                <div x-show="dropfansConnectError" class="error-state" x-text="dropfansConnectError" style="margin-top:12px;"></div>
+                <div x-show="dropfansConnectSuccess" style="color:var(--accent-green);font-size:13px;margin-top:12px;display:flex;align-items:center;gap:8px;">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Connected successfully as <strong x-text="dropfansConnectIdentity?.display_name || dropfansConnectIdentity?.username || 'unknown'"></strong></span>
+                </div>
+                <div x-show="dropfansConnected && !dropfansConnectSuccess" style="margin-top:12px;font-size:12px;color:var(--text-tertiary);">
+                    <i class="fas fa-shield-alt" style="margin-right:4px;"></i>
+                    Connected as <strong x-text="dropfansIdentity?.display_name || dropfansIdentity?.username || 'unknown'"></strong>
+                    (ID: <span x-text="dropfansIdentity?.dropfans_creator_id || '-'"></span>)
+                </div>
+            </div>
+
+            <!-- Autonomous Commerce Readiness -->
+            <div class="section-card" style="max-width:720px;" x-show="dropfansConnected">
+                <div class="section-header">
+                    <h2>Autonomous Commerce Readiness</h2>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;background:rgba(74,222,128,0.08);">
+                        <i class="fas fa-check-circle" style="color:var(--accent-green);"></i>
+                        <span style="font-size:13px;">DropFans creator connected</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:12px;border-radius:8px;" :style="{ background: dropfansProductCount > 0 ? 'rgba(74,222,128,0.08)' : 'rgba(249,115,22,0.08)' }">
+                        <i class="fas" :class="dropfansProductCount > 0 ? 'fa-check-circle' : 'fa-exclamation-triangle'" :style="{ color: dropfansProductCount > 0 ? 'var(--accent-green)' : 'var(--accent-orange)' }"></i>
+                        <span style="font-size:13px;" x-text="dropfansProductCount > 0 ? dropfansProductCount + ' accessible product(s)' : 'No accessible products'"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+function dropfansApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: false,
+        error: null,
+
+        dropfansStatusLoading: false,
+        dropfansStatus: null,
+        dropfansConnected: false,
+        dropfansIdentity: null,
+        dropfansHealthOk: false,
+        dropfansProductCount: 0,
+        dropfansApiKey: '',
+        dropfansConnecting: false,
+        dropfansConnectError: null,
+        dropfansConnectSuccess: false,
+        dropfansConnectIdentity: null,
+
+        async init() {
+            if (this.creatorId === 0) return;
+            await this.loadDropfansStatus();
+        },
+
+        async apiGet(path) {
+            const resp = await fetch(path);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.detail || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        async loadDropfansStatus() {
+            this.dropfansStatusLoading = true;
+            this.dropfansConnectError = null;
+            this.dropfansConnectSuccess = false;
+            try {
+                const data = await this.apiGet(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.dropfansStatus = data.status;
+                this.dropfansConnected = !!(data.status && data.status.dropfans_creator_id);
+                this.dropfansIdentity = data.status || null;
+                if (this.dropfansConnected) {
+                    await this.checkDropfansHealth();
+                    await this.countDropfansProducts();
+                }
+            } catch (e) {
+                this.dropfansConnected = false;
+                this.dropfansIdentity = null;
+            } finally {
+                this.dropfansStatusLoading = false;
+            }
+        },
+
+        async checkDropfansHealth() {
+            try {
+                const data = await this.apiGet(`/api/fangate/creators/${this.creatorId}/dropfans-vault`);
+                this.dropfansHealthOk = !!(data && data.items);
+            } catch (e) {
+                this.dropfansHealthOk = false;
+            }
+        },
+
+        async countDropfansProducts() {
+            try {
+                const data = await this.apiGet(`/api/fangate/creators/${this.creatorId}/products`);
+                const items = data.items || [];
+                this.dropfansProductCount = items.filter(p =>
+                    p.product_type === 'dropfans' && p.is_accessible
+                ).length;
+            } catch (e) {
+                this.dropfansProductCount = 0;
+            }
+        },
+
+        async connectDropfans() {
+            this.dropfansConnecting = true;
+            this.dropfansConnectError = null;
+            this.dropfansConnectSuccess = false;
+            this.dropfansConnectIdentity = null;
+            try {
+                const resp = await fetch(`/api/fangate/creators/${this.creatorId}/dropfans-integrate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: this.dropfansApiKey }),
+                });
+                const body = await resp.json().catch(() => ({}));
+                if (!resp.ok) {
+                    throw new Error(body.message || body.detail || `HTTP ${resp.status}`);
+                }
+                if (body.ok) {
+                    this.dropfansConnectSuccess = true;
+                    this.dropfansConnectIdentity = {
+                        dropfans_creator_id: body.dropfans_creator_id,
+                        username: body.username,
+                        display_name: body.display_name,
+                    };
+                    this.dropfansApiKey = '';
+                    await this.loadDropfansStatus();
+                    this.showToast('DropFans connected successfully', 'success');
+                } else {
+                    throw new Error(body.message || 'Connection failed');
+                }
+            } catch (e) {
+                this.dropfansConnectError = 'Connection failed: ' + e.message;
+            } finally {
+                this.dropfansConnecting = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

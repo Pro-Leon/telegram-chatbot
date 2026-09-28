@@ -1,0 +1,26 @@
+{
+  "fan_id": 999990,
+  "creator_id": 1,
+  "started_at": "2026-09-21T07:38:46.151546+00:00",
+  "ended_at": "2026-09-21T07:38:57.252375+00:00",
+  "stopped_reason": "completed: max_turns reached (no breakage)",
+  "breakage_count": 0,
+  "turns": [
+    {
+      "turn": 1,
+      "fan_message": "hi",
+      "system_stage": "commerce (quarantined)",
+      "system_response": "How's your day going?",
+      "breakage": null,
+      "details": {
+        "lock": "acquired",
+        "upsert": "ok",
+        "creator": "ready",
+        "context_len": 1903,
+        "llm_len": 21,
+        "opportunity": "no_offer (RELATIONSHIP_BUILDING v1)"
+      },
+      "ts": "2026-09-21T07:38:46.861679+00:00"
+    }
+  ]
+}

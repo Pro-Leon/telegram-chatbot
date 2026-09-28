@@ -1,0 +1,23 @@
+{
+  "fan_id": 999992,
+  "creator_id": 1,
+  "started_at": "2026-09-21T07:44:18.235965+00:00",
+  "ended_at": "2026-09-21T07:44:50.550088+00:00",
+  "stopped_reason": "breakage at turn 1: fan experienced breakage",
+  "breakage_count": 1,
+  "turns": [
+    {
+      "turn": 1,
+      "fan_sent": "hi",
+      "fan_saw": "",
+      "wait_ms": 31440,
+      "system_stage": "timeout",
+      "breakage": "breakage: fan waited 31439ms — Fan waited 15s for reply — lock/LLM hang (P1.6 lock ttl 300s, llama timeout 12s) (lock/LLM hang, fan sees typing... then nothing)",
+      "details": {
+        "telegram_message_id": 594058,
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64\\Lib\\asyncio\\tasks.py\", line 488, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"E:\\chatbot\\workers\\llm_worker.py\", line 2544, in process_message\n    _context_engine_observation = await _observe_ce(\n                                  ^^^^^^^^^^^^^^^^^^\n    ...<8 lines>...\n    )\n    ^\n  Fil"
+      },
+      "ts": "2026-09-21T07:44:50.550042+00:00"
+    }
+  ]
+}

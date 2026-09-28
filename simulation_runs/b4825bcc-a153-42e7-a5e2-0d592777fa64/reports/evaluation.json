@@ -1,0 +1,94 @@
+{
+  "as_of": "2026-09-20T21:21:34.564374+03:00",
+  "baselines": {
+    "creator_rate": 0.06666666666666667,
+    "fan_recent_rate": 0.06666666666666667,
+    "global_rate": 0.06666666666666667,
+    "offer_type_mean_rate": 0.1325,
+    "offer_type_most_frequent_rate": 0.5
+  },
+  "by_cohort": {
+    "HIGH": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "MID": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 6
+    },
+    "lifecycle:cold": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 4
+    },
+    "lifecycle:warm": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 4
+    },
+    "offer:CORE_BUNDLE": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 1
+    },
+    "offer:PREMIUM": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 4
+    },
+    "offer:SINGLE": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "offer:SMALL_BUNDLE": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 1
+    },
+    "price:HIGH": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 2
+    },
+    "price:MID": {
+      "brier": 0.25,
+      "log_loss": 0.6931471805599453,
+      "n": 6
+    }
+  },
+  "calibration": null,
+  "code_revision": "19e18841",
+  "counterfactual": null,
+  "dataset_hash": "d2ec5bc611e75b9d",
+  "metrics": {
+    "accuracy": 0.375,
+    "brier": 0.25,
+    "calibration_gap": 0.125,
+    "coverage": 1.0,
+    "log_loss": 0.6931471805599453,
+    "mean_predicted": 0.5,
+    "n": 8,
+    "observed_rate": 0.375,
+    "precision": 0.375,
+    "recall": 1.0
+  },
+  "optimizer_version": "p356.offline.proto.v1",
+  "scenario_id": "balanced",
+  "scenario_version": "v1",
+  "seed": 11,
+  "simulation_id": "b4825bcc-a153-42e7-a5e2-0d592777fa64",
+  "strategy_id": "balanced",
+  "stress": {
+    "30": {
+      "brier": 0.25,
+      "dataset_hash": "d2ec5bc611e75b9d",
+      "log_loss": 0.6931471805599453
+    }
+  },
+  "test_n": 8,
+  "train_n": 15,
+  "valid_n": 7
+}

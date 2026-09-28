@@ -1,0 +1,595 @@
+{
+  "contract": {
+    "path": "docs\\integrations\\fangate\\openapi.json",
+    "sha256": "bd574ce85685f62e5ea52c0809c3848fb02faab8567d91ff3eb9c7c698caa1f0",
+    "openapi_version": "3.0.0",
+    "document_version": "1.0.0",
+    "fetched_at": "2026-08-22T21:02:14.760926Z"
+  },
+  "summary": {
+    "total_openapi_operations": 23,
+    "total_repo_endpoints": 23,
+    "confirmed": 17,
+    "partial": 0,
+    "unverified": 6,
+    "missing_from_repo": 49
+  },
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/api/products",
+      "repository_method": "list_products",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 221
+    },
+    {
+      "method": "GET",
+      "path": "/api/products/{product_id}",
+      "repository_method": "get_product",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 227
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/products/{product_id}",
+      "repository_method": "update_product",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 259
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/products/{product_id}/price",
+      "repository_method": "update_product_price",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 266
+    },
+    {
+      "method": "POST",
+      "path": "/api/products/{product_id}/collection",
+      "repository_method": "toggle_product_collection",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 272
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/products/{product_id}/folder",
+      "repository_method": "update_product_folder",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 279
+    },
+    {
+      "method": "POST",
+      "path": "/api/products/{product_id}/price-links",
+      "repository_method": "create_price_link",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 301
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/products/{product_id}",
+      "repository_method": "delete_product",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 425
+    },
+    {
+      "method": "POST",
+      "path": "/api/products",
+      "repository_method": "create_product",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 468
+    },
+    {
+      "method": "GET",
+      "path": "/api/content-folders",
+      "repository_method": "list_content_folders",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 314
+    },
+    {
+      "method": "POST",
+      "path": "/api/content-folders",
+      "repository_method": "create_content_folder",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 320
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/content-folders/{folder_id}",
+      "repository_method": "update_content_folder",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 326
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/content-folders/{folder_id}",
+      "repository_method": "delete_content_folder",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 332
+    },
+    {
+      "method": "GET",
+      "path": "/api/dashboard/summary",
+      "repository_method": "get_dashboard_summary",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 340
+    },
+    {
+      "method": "GET",
+      "path": "/api/wallet",
+      "repository_method": "get_wallet",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 348
+    },
+    {
+      "method": "POST",
+      "path": "/api/webhooks",
+      "repository_method": "create_webhook",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 369
+    },
+    {
+      "method": "GET",
+      "path": "/api/webhooks",
+      "repository_method": "list_webhooks",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 383
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/webhooks/{webhook_id}",
+      "repository_method": "update_webhook",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 416
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/webhooks/{webhook_id}",
+      "repository_method": "delete_webhook",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 422
+    },
+    {
+      "method": "POST",
+      "path": "/api/products/{product_id}/media",
+      "repository_method": "upload_product_media",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 486
+    },
+    {
+      "method": "POST",
+      "path": "/api/products/{product_id}/media",
+      "repository_method": "attach_product_media",
+      "classification": "UNVERIFIED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 497
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/products/media/{media_id}",
+      "repository_method": "delete_product_media",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 514
+    },
+    {
+      "method": "GET",
+      "path": "/api/products/collection",
+      "repository_method": "list_product_collection",
+      "classification": "CONFIRMED",
+      "differences": [],
+      "source_file": "client.py",
+      "source_line": 521
+    },
+    {
+      "method": "GET",
+      "path": "/api/affiliate/invited",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/affiliate/invitation",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/affiliate/invitation/code",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/api-keys",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/api-keys",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/api-keys/{tokenId}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/app-data",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/register",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/login",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/login/batch",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/user/password",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/email/verify",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/password/reset",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/logout",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/collection/profile",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/collection/profile",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/collection/profile/image",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collection/profile/image",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/consents/store-or-send",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/content-folders/{content_folder_id}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/content-folders/{content_folder_id}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/creators/search",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/summary/aggregate",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/fcm",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/fcm",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/feedback",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/linked-accounts",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/linked-accounts",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/linked-accounts/{childUserId}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/user/linked-accounts/{childUserId}/session",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/checkout/crypto/nowpayments",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/checkout/crypto/nowpayments/status/{orderId}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/webhooks/nowpayments",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload-sessions",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/upload-sessions/{uploadSession}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/upload-sessions/{uploadSession}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload-sessions/{uploadSession}/remote",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload-sessions/{uploadSession}/parts",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/upload-sessions/{uploadSession}/complete",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/user",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/user/profile/has-adult",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/user/sessions",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/user/sessions/{tokenId}",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/veriff/create",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "GET",
+      "path": "/api/wallet/affiliate",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/wallet/cashout",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/yoti/session/create",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    },
+    {
+      "method": "POST",
+      "path": "/api/yoti/webhook",
+      "repository_method": "",
+      "classification": "MISSING_FROM_REPO",
+      "differences": []
+    }
+  ],
+  "schema_drift": [
+    {
+      "schema": "FangateProduct",
+      "field": "is_downloadable",
+      "contract_type": null,
+      "repo_type": "any",
+      "classification": "UNVERIFIED"
+    },
+    {
+      "schema": "FangateProduct",
+      "field": "is_epoch_enabled",
+      "contract_type": null,
+      "repo_type": "any",
+      "classification": "UNVERIFIED"
+    }
+  ],
+  "security": {
+    "has_security_schemes": true,
+    "schemes": [
+      "sanctum"
+    ],
+    "global_security": false,
+    "auth_type": "apiKey",
+    "auth_location": "header",
+    "matches_client": true
+  }
+}

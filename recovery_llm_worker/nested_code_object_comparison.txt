@@ -1,0 +1,52 @@
+======================================================================
+NESTED CODE OBJECT COMPARISON
+======================================================================
+
+--- <module> nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- _parse_worker_preferred_index nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- _try_commerce_draft nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- _worker_cleanup nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- generate_draft nested code objects ---
+  .pyc nested: ['<genexpr>']
+  src nested:  ['<genexpr>']
+    ✓ <genexpr>: MATCH (args=1/1, locals=2/2)
+
+--- generate_draft_with_tools nested code objects ---
+  .pyc nested: ['<genexpr>']
+  src nested:  ['<genexpr>']
+    ✓ <genexpr>: MATCH (args=1/1, locals=2/2)
+
+--- main nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- notify_operators nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- post_process nested code objects ---
+  .pyc nested: []
+  src nested:  []
+
+--- process_message nested code objects ---
+  .pyc nested: ['<genexpr>', '<genexpr>#2']
+  src nested:  ['<genexpr>', '<genexpr>#2']
+    ~ <genexpr>: PARTIAL (args=1/1, locals=2/2)
+    ~ <genexpr>#2: PARTIAL (args=1/1, locals=2/2)
+
+--- run_worker nested code objects ---
+  .pyc nested: ['<lambda>']
+  src nested:  ['<lambda>']
+    ✓ <lambda>: MATCH (args=0/0, locals=0/0)

@@ -1,0 +1,62 @@
+{% extends "dashboard.html" %}
+{% block nav_settings %}active{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:20px;">
+        <h2 style="font-size:18px; font-weight:600; color:#111827; margin-bottom:16px;">Application Settings</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Auto Approve Threshold</label>
+                <input type="number" step="0.01" readonly
+                       value="{{ settings.auto_approve_threshold }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Model Name</label>
+                <input type="text" readonly value="{{ settings.model_name }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Debounce Window (s)</label>
+                <input type="number" readonly value="{{ settings.debounce_window_seconds }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Rate Limit (per min)</label>
+                <input type="number" readonly value="{{ settings.rate_limit_per_minute }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+        </div>
+    </div>
+
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:20px;">
+        <h2 style="font-size:18px; font-weight:600; color:#111827; margin-bottom:16px;">MTProto Configuration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">API ID</label>
+                <input type="text" readonly value="{{ settings.api_id }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+            <div>
+                <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Phone Number</label>
+                <input type="text" readonly value="{{ settings.phone_number }}"
+                       style="width:100%; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:#111827; padding:8px 12px; box-sizing:border-box;">
+            </div>
+        </div>
+    </div>
+
+    <div style="background:#fff; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:20px;">
+        <h2 style="font-size:18px; font-weight:600; color:#111827; margin-bottom:16px;">Database</h2>
+        <div style="margin-bottom:12px;">
+            <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">PostgreSQL DSN</label>
+            <code style="display:block; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; padding:8px 12px; color:#6B7280; font-family:monospace; word-break:break-all;">{{ settings.postgres_dsn }}</code>
+        </div>
+        <div>
+            <label style="display:block; font-size:14px; font-weight:500; color:#6B7280; margin-bottom:4px;">Redis URL</label>
+            <code style="display:block; background:#F8F8F5; border:1px solid rgba(0,0,0,0.08); border-radius:8px; padding:8px 12px; color:#6B7280; font-family:monospace;">{{ settings.redis_url }}</code>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{
+  "source_url": "https://docs.fangate.app/openapi.json",
+  "fetched_at": "2026-08-22T21:02:14.760926Z",
+  "sha256": "bd574ce85685f62e5ea52c0809c3848fb02faab8567d91ff3eb9c7c698caa1f0",
+  "openapi_version": "3.0.0",
+  "spec_title": "Fangate",
+  "spec_version": "1.0.0",
+  "total_paths": 52,
+  "total_schemas": 70,
+  "servers": [
+    {
+      "url": "https://fangate.info",
+      "description": "Production"
+    },
+    {
+      "url": "https://fangate.co",
+      "description": "Development"
+    }
+  ]
+}

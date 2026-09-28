@@ -1,0 +1,318 @@
+{% extends "dashboard.html" %}
+{% block nav_dropfans %}active{% endblock %}
+{% block page_title %}DropFans Settings{% endblock %}
+
+{% block extra_head %}
+<style>
+    .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .status-badge.healthy { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.error { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .status-badge.warning { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .status-badge.connected { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .status-badge.disconnected { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+
+    .health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .health-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-primary); border-radius: 8px; }
+    .health-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .health-dot.green { background: var(--accent-green); }
+    .health-dot.red { background: var(--accent-red); }
+    .health-dot.orange { background: var(--accent-orange); }
+
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input {
+        width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px;
+        font-size: 14px; background: var(--bg-primary); color: var(--text-primary); box-sizing: border-box;
+    }
+    .form-input:focus { outline: none; border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(108,99,255,0.1); }
+    .form-help { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .btn-primary {
+        display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+        border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+        background: var(--accent-purple); color: white; border: none; transition: all 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger {
+        display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+        border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+        background: var(--accent-red); color: white; border: none; transition: all 0.15s;
+    }
+    .btn-danger:hover { opacity: 0.9; }
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+        border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer;
+        background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.15s;
+    }
+    .btn-sync:hover { border-color: var(--accent-purple); }
+
+    .loading-text { color: var(--text-tertiary); font-size: 13px; padding: 20px; text-align: center; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .error-state { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 8px; padding: 12px 16px; color: var(--accent-red); font-size: 13px; margin-bottom: 16px; }
+    .success-state { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); border-radius: 8px; padding: 12px 16px; color: var(--accent-green); font-size: 13px; margin-bottom: 16px; }
+
+    .identity-card { display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--bg-primary); border-radius: 8px; }
+    .identity-avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 600; }
+    .identity-info { flex: 1; }
+    .identity-name { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .identity-meta { font-size: 12px; color: var(--text-tertiary); }
+
+    .workspace-nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .workspace-nav a {
+        display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+        border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none;
+        background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary);
+        transition: all 0.2s;
+    }
+    .workspace-nav a:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+    .workspace-nav a i { font-size: 12px; }
+
+    .toast {
+        position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 8px;
+        font-size: 13px; font-weight: 500; z-index: 9999; display: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: var(--accent-green); color: white; }
+    .toast.error { background: var(--accent-red); color: white; }
+    .toast.info { background: var(--accent-purple); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="settingsApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>DropFans Settings</h2>
+        <p>Manage your DropFans API connection and provider health.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+    <div x-show="success" class="success-state" x-text="success"></div>
+
+    <!-- Workspace Navigation -->
+    <div class="workspace-nav">
+        <a href="/dashboard/dropfans"><i class="fas fa-th-large"></i> Overview</a>
+        <a href="/dashboard/drops"><i class="fas fa-box"></i> Drops</a>
+        <a href="/dashboard/posts"><i class="fas fa-file-alt"></i> Posts</a>
+        <a href="/dashboard/earnings"><i class="fas fa-dollar-sign"></i> Earnings</a>
+        <a href="/dashboard/links"><i class="fas fa-link"></i> Links</a>
+        <a href="/dashboard/vault"><i class="fas fa-lock"></i> Vault</a>
+        <a href="/dashboard/notifications"><i class="fas fa-bell"></i> Notifications</a>
+        <a href="/dashboard/dropfans/settings"><i class="fas fa-cog"></i> Settings</a>
+    </div>
+
+    <div x-show="loading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading settings...</div>
+
+    <template x-if="!loading">
+        <div>
+            <!-- Connection Status -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Connection Status</h2>
+                    <button @click="refreshHealth()" class="btn-sync" :disabled="healthLoading">
+                        <i class="fas" :class="healthLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh Health
+                    </button>
+                </div>
+                <div class="health-grid" x-show="status">
+                    <div class="health-item">
+                        <div class="health-dot" :class="connected ? 'green' : 'red'"></div>
+                        <div>
+                            <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Connection</div>
+                            <div style="font-size:11px;color:var(--text-tertiary);" x-text="connected ? 'Connected' : 'Disconnected'"></div>
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <div class="health-dot" :class="healthStatus === 'HEALTHY' ? 'green' : healthStatus === 'NOT_CONFIGURED' ? 'red' : 'orange'"></div>
+                        <div>
+                            <div style="font-size:13px;font-weight:500;color:var(--text-primary);">Health</div>
+                            <div style="font-size:11px;color:var(--text-tertiary);" x-text="healthStatus || 'Unknown'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Identity -->
+                <div class="identity-card" x-show="connected && status" style="margin-top:12px;">
+                    <div class="identity-avatar" x-text="(status?.display_name || status?.username || '?')[0]?.toUpperCase()"></div>
+                    <div class="identity-info">
+                        <div class="identity-name" x-text="status?.display_name || status?.username || 'Unknown'"></div>
+                        <div class="identity-meta">
+                            <span x-text="'@' + (status?.username || 'unknown')"></span>
+                            <span style="margin:0 6px;">|</span>
+                            <span x-text="'Creator ID: ' + (status?.dropfans_creator_id || '-')"></span>
+                        </div>
+                    </div>
+                    <span class="status-badge connected">Connected</span>
+                </div>
+                <div x-show="!connected" style="padding:16px;background:var(--bg-primary);border-radius:8px;margin-top:12px;">
+                    <div style="font-size:13px;color:var(--text-tertiary);">No DropFans API key configured. Connect below to get started.</div>
+                </div>
+            </div>
+
+            <!-- Connect / Reconnect -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2 x-text="connected ? 'Reconnect API Key' : 'Connect DropFans'"></h2>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">API Key</label>
+                    <input x-model="apiKey" type="password" class="form-input" placeholder="dpfn_..." @keydown.enter="connect()">
+                    <div class="form-help">Your DropFans API key. It will be encrypted at rest and never exposed to the browser.</div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button @click="connect()" class="btn-primary" :disabled="connecting || !apiKey.trim()">
+                        <i class="fas" :class="connecting ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
+                        <span x-text="connected ? 'Reconnect' : 'Connect'"></span>
+                    </button>
+                    <button x-show="connected" @click="disconnect()" class="btn-danger" :disabled="disconnecting">
+                        <i class="fas" :class="disconnecting ? 'fa-spinner fa-spin' : 'fa-unplug'"></i> Disconnect
+                    </button>
+                </div>
+            </div>
+
+            <!-- Health Details -->
+            <div class="section-card" x-show="healthResult">
+                <div class="section-header">
+                    <h2>Health Check Details</h2>
+                </div>
+                <div x-show="healthLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Checking provider health...</div>
+                <div x-show="!healthLoading && healthResult">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div style="padding:12px;background:var(--bg-primary);border-radius:8px;">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Status</div>
+                            <span class="status-badge" :class="healthResult?.health === 'HEALTHY' ? 'healthy' : healthResult?.health === 'AUTHENTICATION_ERROR' ? 'error' : 'warning'"
+                                  x-text="healthResult?.health || 'Unknown'"></span>
+                        </div>
+                        <div style="padding:12px;background:var(--bg-primary);border-radius:8px;">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Message</div>
+                            <div style="font-size:13px;color:var(--text-primary);" x-text="healthResult?.message || 'All systems operational'"></div>
+                        </div>
+                        <div style="padding:12px;background:var(--bg-primary);border-radius:8px;" x-show="healthResult?.account">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">API Tier</div>
+                            <div style="font-size:13px;color:var(--text-primary);" x-text="healthResult?.account?.tier || 'Unknown'"></div>
+                        </div>
+                        <div style="padding:12px;background:var(--bg-primary);border-radius:8px;" x-show="healthResult?.account">
+                            <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px;">Account Type</div>
+                            <div style="font-size:13px;color:var(--text-primary);" x-text="healthResult?.account?.account_type || 'Unknown'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</div>
+
+<script>
+function settingsApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+        success: null,
+        status: null,
+        connected: false,
+        apiKey: '',
+        connecting: false,
+        disconnecting: false,
+        healthResult: null,
+        healthStatus: null,
+        healthLoading: false,
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.loadStatus();
+            await this.refreshHealth();
+            this.loading = false;
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        async loadStatus() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.status = data.status;
+                this.connected = !!(data.status && data.status.dropfans_creator_id);
+            } catch (e) {
+                this.connected = false;
+            }
+        },
+
+        async refreshHealth() {
+            this.healthLoading = true;
+            this.error = null;
+            try {
+                this.healthResult = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-health`);
+                this.healthStatus = this.healthResult?.health;
+            } catch (e) {
+                this.healthStatus = 'UNREACHABLE';
+                this.healthResult = { health: 'UNREACHABLE', message: e.message };
+            } finally {
+                this.healthLoading = false;
+            }
+        },
+
+        async connect() {
+            if (!this.apiKey.trim()) return;
+            this.connecting = true;
+            this.error = null;
+            this.success = null;
+            try {
+                await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-integrate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: this.apiKey.trim() }),
+                });
+                this.apiKey = '';
+                this.success = 'DropFans API key connected successfully.';
+                this.showToast('Connected!', 'success');
+                await this.loadStatus();
+                await this.refreshHealth();
+            } catch (e) {
+                this.error = 'Connection failed: ' + e.message;
+            } finally {
+                this.connecting = false;
+            }
+        },
+
+        async disconnect() {
+            if (!confirm('Disconnect DropFans? You will need to re-enter your API key.')) return;
+            this.disconnecting = true;
+            this.error = null;
+            this.success = null;
+            try {
+                // Store current key, then reconnect with empty to clear
+                // Actually, we need a dedicated disconnect endpoint
+                // For now, show instructions
+                this.success = 'To disconnect, revoke your API key in DropFans settings, then click Reconnect with a new key.';
+            } finally {
+                this.disconnecting = false;
+            }
+        },
+    };
+}
+</script>
+{% endblock %}

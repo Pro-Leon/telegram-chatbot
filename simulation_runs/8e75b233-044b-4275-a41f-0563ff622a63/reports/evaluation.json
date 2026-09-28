@@ -1,0 +1,184 @@
+{
+  "as_of": "2026-09-20T21:34:36.217695+03:00",
+  "baselines": {
+    "creator_rate": 0.25,
+    "fan_recent_rate": 0.25,
+    "global_rate": 0.25,
+    "offer_type_mean_rate": 0.2375,
+    "offer_type_most_frequent_rate": 0.2
+  },
+  "by_cohort": {
+    "HIGH": {
+      "brier": 0.19595450360211375,
+      "log_loss": 0.6052106546510047,
+      "n": 6
+    },
+    "MID": {
+      "brier": 0.17914494849765925,
+      "log_loss": 0.5414181801331717,
+      "n": 9
+    },
+    "lifecycle:cold": {
+      "brier": 0.32036808349246076,
+      "log_loss": 0.9189572815408485,
+      "n": 5
+    },
+    "lifecycle:warm": {
+      "brier": 0.1186191140629312,
+      "log_loss": 0.390924114140033,
+      "n": 10
+    },
+    "offer:CORE_BUNDLE": {
+      "brier": 0.3087467138278967,
+      "log_loss": 0.8794242953039955,
+      "n": 5
+    },
+    "offer:PREMIUM": {
+      "brier": 0.016056425774503075,
+      "log_loss": 0.13310933301166455,
+      "n": 5
+    },
+    "offer:SINGLE": {
+      "brier": 0.08441428396419277,
+      "log_loss": 0.32743375079605863,
+      "n": 2
+    },
+    "offer:SMALL_BUNDLE": {
+      "brier": 0.33172909738374373,
+      "log_loss": 0.9288306353113852,
+      "n": 3
+    },
+    "price:HIGH": {
+      "brier": 0.19595450360211375,
+      "log_loss": 0.6052106546510047,
+      "n": 6
+    },
+    "price:MID": {
+      "brier": 0.17914494849765925,
+      "log_loss": 0.5414181801331717,
+      "n": 9
+    }
+  },
+  "calibration": null,
+  "code_revision": "19e18841",
+  "counterfactual": [
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          45328,
+          1,
+          0.2852656373006379
+        ]
+      ],
+      "creator_id": 978374,
+      "deltas": [
+        {
+          "definition_id": 45328,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.2852656373006379,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9252250,
+      "primary_definition": [
+        45328,
+        1
+      ],
+      "primary_prob": 0.2852656373006379,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          2400,
+          1,
+          0.11604945303192113
+        ]
+      ],
+      "creator_id": 978374,
+      "deltas": [
+        {
+          "definition_id": 2400,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.11604945303192113,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9457452,
+      "primary_definition": [
+        2400,
+        1
+      ],
+      "primary_prob": 0.11604945303192113,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          55146,
+          1,
+          0.37405056444660806
+        ]
+      ],
+      "creator_id": 978374,
+      "deltas": [
+        {
+          "definition_id": 55146,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.37405056444660806,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9201136,
+      "primary_definition": [
+        55146,
+        1
+      ],
+      "primary_prob": 0.37405056444660806,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    }
+  ],
+  "dataset_hash": "01243a53914888b9",
+  "metrics": {
+    "accuracy": 0.8,
+    "brier": 0.18586877053944104,
+    "calibration_gap": 0.07458198571373253,
+    "coverage": 1.0,
+    "log_loss": 0.5669351699403048,
+    "mean_predicted": 0.19208468095293413,
+    "n": 15,
+    "observed_rate": 0.26666666666666666,
+    "precision": 1.0,
+    "recall": 0.25
+  },
+  "optimizer_version": "p356.offline.proto.v1",
+  "scenario_id": "temporal_drift",
+  "scenario_version": "v1",
+  "seed": 42,
+  "simulation_id": "8e75b233-044b-4275-a41f-0563ff622a63",
+  "strategy_id": "temporal_drift",
+  "stress": {
+    "60": {
+      "brier": 0.18586877053944104,
+      "dataset_hash": "01243a53",
+      "log_loss": 0.5669351699403048
+    },
+    "90": {
+      "brier": 0.18586877053944104,
+      "dataset_hash": "01243a53914888b9",
+      "log_loss": 0.5669351699403048
+    }
+  },
+  "test_n": 15,
+  "train_n": 60,
+  "valid_n": 15
+}

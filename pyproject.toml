@@ -9,11 +9,16 @@ dependencies = [
     "uvicorn>=0.22",
     "asyncpg>=0.27",
     "redis>=4.5",
-    "openai>=1.0",
-    "groq>=0.9",
+    "httpx>=0.27",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "tiktoken>=0.4",
+    "telethon>=1.34",
+    "jinja2>=3.1",
+    "python-multipart>=0.0.6",
+    "cryptography>=41.0",
+    "rapidfuzz>=3.0",
+    "sentence-transformers>=3.0",
 ]
 
 [project.optional-dependencies]
@@ -28,10 +33,22 @@ requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["core", "db", "ingestion", "memory", "workers", "operator_dashboard"]
+packages = ["core", "db", "memory", "workers", "chatbotv2", "chatbotv2.dashboard", "integrations", "integrations.fangate", "commerce", "vault", "context_engine", "segments", "agent", "relationship_v2", "relationship_v2.domain", "relationship_v2.persistence", "relationship_v2.services"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Unit tests (no external infra required)",
+    "integration: Integration tests (requires real PostgreSQL + Redis)",
+    "live: Live qualification tests (requires llama.cpp server)",
+]
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint.isort]
-known-first-party = ["ingestion", "workers", "memory", "operator_dashboard", "db", "core"]
+known-first-party = ["ingestion", "workers", "memory", "operator_dashboard", "db", "core", "integrations", "commerce"]
+
+[tool.ruff.lint.per-file-ignores]
+"chatbotv2/dashboard/app.py" = ["B008", "BLE001"]
+"chatbotv2/dashboard/auth.py" = ["B008"]
+"chatbotv2/dashboard/ws_manager.py" = ["SIM114"]

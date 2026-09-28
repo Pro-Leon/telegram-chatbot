@@ -1,0 +1,170 @@
+﻿{% extends "dashboard.html" %}
+{% block nav_queue %}active{% endblock %}
+{% block page_title %}Operator Queue{% endblock %}
+
+{% block content %}
+<div class="app-card" style="padding: 0; overflow: hidden;">
+    <div style="padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+        <h2 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">
+            Pending Approvals <span style="color: var(--text-tertiary); font-weight: 400;">({{ items | length }})</span>
+        </h2>
+    </div>
+
+    {% if not items %}
+    <div style="padding: 48px 20px; text-align: center;">
+        <div style="width: 56px; height: 56px; margin: 0 auto 16px; background: rgba(74, 222, 128, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-check-circle" style="font-size: 24px; color: var(--accent-green);"></i>
+        </div>
+        <p style="font-size: 14px; color: var(--text-secondary);">No items pending approval</p>
+    </div>
+    {% else %}
+    <div>
+        {% for item in items %}
+        <div style="padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.08); transition: background 0.15s ease;" onmouseover="this.style.background='rgba(0,0,0,0.02)'" onmouseout="this.style.background='transparent'">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap;">
+                        <span style="display: inline-flex; align-items: center; padding: 4px 12px; background: rgba(108, 99, 255, 0.15); color: var(--accent-purple); border-radius: 9999px; font-size: 12px; font-weight: 600;">
+                            User {{ item.user_id }}
+                        </span>
+                        <span style="font-size: 13px; color: var(--text-tertiary);">
+                            Score: <span style="color: var(--text-secondary); font-weight: 500;">{{ item.confidence_score | default(0, true) | round(2) }}</span>
+                        </span>
+                        {% if item.flags %}
+                        <span style="display: inline-flex; align-items: center; padding: 3px 10px; background: rgba(248, 113, 113, 0.15); color: var(--accent-red); border-radius: 6px; font-size: 11px; font-weight: 600;">
+                            {{ item.flags | join(', ') if item.flags is iterable and item.flags is not string else item.flags }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p style="font-size: 14px; color: var(--text-primary); line-height: 1.6; margin-bottom: 12px;">{{ item.draft_content }}</p>
+                    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--text-tertiary);">
+                        <span style="display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-user" style="font-size: 12px;"></i>
+                            {{ item.first_name or 'Unknown' }}
+                        </span>
+                        <span style="display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-clock" style="font-size: 12px;"></i>
+                            {{ item.created_at }}
+                        </span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+                    <button onclick="sendQueue({{ item.id }})"
+                            class="btn-primary" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-check" style="font-size: 12px;"></i> Approve
+                    </button>
+                    <button onclick="openEditModal({{ item.id }}, {{ (item.draft_content or '') | tojson }})"
+                            class="btn-secondary" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-edit" style="font-size: 12px;"></i> Edit &amp; Send
+                    </button>
+                    <button onclick="resolveQueue({{ item.id }}, 'rejected', null)"
+                            class="btn-danger" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; font-size: 13px;">
+                        <i class="fas fa-times" style="font-size: 12px;"></i> Reject
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<div id="edit-modal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; z-index: 50;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 640px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 28px; box-shadow: 0 24px 48px rgba(0,0,0,0.1);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+            <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary);">Edit Message</h3>
+            <button onclick="closeEditModal()" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--text-tertiary); transition: all 0.15s ease; border: none; background: transparent; cursor: pointer;"
+                    onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='var(--text-primary)'"
+                    onmouseout="this.style.background='transparent'; this.style.color='var(--text-tertiary)'">
+                <i class="fas fa-times" style="font-size: 14px;"></i>
+            </button>
+        </div>
+        <form id="edit-form">
+            <input type="hidden" id="edit-queue-id">
+            <textarea id="edit-content" rows="6" style="width: 100%; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); font-size: 14px; line-height: 1.6; resize: vertical; font-family: inherit; transition: border-color 0.2s ease, box-shadow 0.2s ease; margin-bottom: 20px;"
+                      onfocus="this.style.borderColor='var(--accent-purple)'; this.style.boxShadow='0 0 0 2px rgba(108,99,255,0.3)'"
+                      onblur="this.style.borderColor='var(--border-color)'; this.style.boxShadow='none'"
+                      placeholder="Enter message content..."></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeEditModal()"
+                        class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="btn-primary" style="padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-paper-plane" style="font-size: 12px;"></i> Edit &amp; Send
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+var rt = new RealtimeClient();
+
+rt.on('operator_queue.updated', function(evt) {
+    location.reload();
+});
+
+rt.on('suggestion.created', function(evt) {
+    location.reload();
+});
+
+async function sendQueue(id) {
+    const resp = await fetch(`/api/suggestions/${id}/send`, { method: 'POST' });
+    if (resp.ok) {
+        if (!rt.isConnected()) location.reload();
+    } else {
+        alert('Failed to send suggestion');
+    }
+}
+
+async function resolveQueue(id, status, content) {
+    const formData = new FormData();
+    formData.append('status', status);
+    if (content !== null) formData.append('content', content);
+
+    const resp = await fetch(`/api/queue/${id}/resolve`, {
+        method: 'POST',
+        body: formData
+    });
+    if (resp.ok) {
+        if (!rt.isConnected()) location.reload();
+    } else {
+        alert('Failed to resolve queue item');
+    }
+}
+
+function openEditModal(id, content) {
+    document.getElementById('edit-queue-id').value = id;
+    document.getElementById('edit-content').value = content;
+    document.getElementById('edit-modal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+}
+
+document.getElementById('edit-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('edit-queue-id').value;
+    const content = document.getElementById('edit-content').value;
+    const formData = new FormData();
+    formData.append('status', 'approved');
+    formData.append('content', content);
+    const resp = await fetch(`/api/suggestions/${id}/send`, { method: 'POST', body: formData });
+    if (resp.ok) {
+        closeEditModal();
+        if (!rt.isConnected()) location.reload();
+    } else {
+        alert('Failed to send edited suggestion');
+    }
+});
+
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+});
+</script>
+{% endblock %}
+
+<script>setInterval(function(){if(window.rt&&window.rt.isPollingActive&&window.rt.isPollingActive()){fetch('/api/queue/pending').then(r=>r.json()).then(d=>{var c=d.length||0;}).catch(()=>{});}},15000);</script>

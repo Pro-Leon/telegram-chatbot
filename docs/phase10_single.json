@@ -1,0 +1,10 @@
+{
+  "net_ms": 1266.4345000084722,
+  "lat": 55.38931879999291,
+  "usage": {
+    "prompt_tokens": 23,
+    "completion_tokens": 276,
+    "total_tokens": 299
+  },
+  "txt": "OK"
+}

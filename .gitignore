@@ -1,3 +1,6 @@
+# Telegram Sessions
+*.session
+
 # Python
 __pycache__/
 *.py[cod]
@@ -24,3 +27,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local safe-keep restores (not part of the repo)
+_safe/

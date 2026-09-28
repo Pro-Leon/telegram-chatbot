@@ -1,0 +1,506 @@
+{% extends "dashboard.html" %}
+{% block nav_earnings %}active{% endblock %}
+{% block page_title %}DropFans Earnings{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+
+    .earnings-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 1024px) { .earnings-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .earnings-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .stat-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px;
+        width: 80px; height: 80px; border-radius: 50%;
+        filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .stat-card.purple::after { background: var(--accent-purple); }
+    .stat-card.green::after  { background: var(--accent-green); }
+    .stat-card.orange::after { background: var(--accent-orange); }
+    .stat-card.blue::after   { background: #3B82F6; }
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); }
+    .stat-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .stat-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .stat-icon.green  { background: rgba(74,222,128,0.15);  color: var(--accent-green); }
+    .stat-icon.orange { background: rgba(251,146,60,0.15);  color: var(--accent-orange); }
+    .stat-icon.blue   { background: rgba(59,130,246,0.15);  color: #3B82F6; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .stat-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .section-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden; margin-bottom: 20px;
+    }
+    .section-header {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 14px; }
+    .empty-state .empty-sub { font-size: 12px; margin-top: 4px; color: var(--text-tertiary); }
+
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+    .error-state {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+        color: var(--accent-red); padding: 12px 16px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px;
+    }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--bg-card); color: var(--text-primary); transition: all 0.15s;
+    }
+    .btn-sync:hover { background: rgba(0,0,0,0.04); }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .btn-action.primary { background: var(--accent-purple); color: white; }
+    .btn-action.primary:hover { background: var(--accent-purple-light); }
+    .btn-action.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-action.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .btn-action.secondary:hover { background: rgba(0,0,0,0.04); }
+
+    .toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+        padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); transition: all 0.3s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .toast.success { background: var(--accent-green); color: #fff; }
+    .toast.error { background: var(--accent-red); color: #fff; }
+    .toast.info { background: var(--accent-purple); color: #fff; }
+
+    /* Date range picker */
+    .date-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .date-range input, .date-range select {
+        padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px;
+        font-size: 12px; background: var(--bg-primary); color: var(--text-primary);
+    }
+
+    /* Chart placeholder */
+    .chart-area {
+        height: 200px; background: var(--bg-primary); border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden;
+    }
+    .chart-bar {
+        position: absolute; bottom: 0; background: var(--accent-purple); border-radius: 4px 4px 0 0;
+        opacity: 0.8; transition: opacity 0.15s;
+    }
+    .chart-bar:hover { opacity: 1; }
+
+    /* Transaction table */
+    .tx-row { border-bottom: 1px solid var(--border-color); }
+    .tx-row:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="earningsApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header">
+        <h2>Earnings & Balance</h2>
+        <p>Track your revenue, transactions, and wallet balance.</p>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <div x-show="!loading && creatorId === 0" class="empty-state">
+        <i class="fas fa-dollar-sign"></i>
+        <p style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No creator configured</p>
+        <p class="empty-sub">Create a creator on the <a href="/dashboard/fangate" style="color:var(--accent-purple);">DropFans page</a> first.</p>
+    </div>
+
+    <template x-if="creatorId > 0">
+        <div>
+            <!-- Connection check banner -->
+            <div x-show="!loading && !earningsConnected" class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:8px;background:rgba(251,146,60,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-plug" style="color:var(--accent-orange);"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">DropFans not connected</div>
+                        <div style="font-size:12px;color:var(--text-tertiary);">Connect your DropFans API key to view earnings and balance.</div>
+                    </div>
+                    <a href="/dashboard/fangate" class="btn-action primary"><i class="fas fa-plug"></i> Connect DropFans</a>
+                </div>
+            </div>
+
+            <!-- Local sales mirror (shown when not connected) -->
+            <div x-show="!loading && !earningsConnected && localSales" class="section-card" style="margin-bottom:16px;">
+                <div class="section-header">
+                    <h2>Recorded Sales (Local Mirror)</h2>
+                    <button @click="loadLocalSales()" class="btn-sync" :disabled="localSalesLoading">
+                        <i class="fas" :class="localSalesLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                    </button>
+                </div>
+                <div x-show="localSalesLoading" class="loading-text"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                <div x-show="!localSalesLoading">
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+                        <div class="stat-card purple">
+                            <div class="stat-top"><span class="stat-label">Total Sales</span></div>
+                            <div class="stat-value" x-text="localSales?.total || 0"></div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-top"><span class="stat-label">Total Earnings</span></div>
+                            <div class="stat-value" x-text="formatCents(localSales?.total_earnings_cents)"></div>
+                        </div>
+                        <div class="stat-card orange">
+                            <div class="stat-top"><span class="stat-label">Avg per Sale</span></div>
+                            <div class="stat-value" x-text="localSales?.total ? formatCents(Math.round(localSales.total_earnings_cents / localSales.total)) : '$0.00'"></div>
+                        </div>
+                    </div>
+                    <template x-if="localSales?.sales?.length">
+                        <div>
+                            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Recent Transactions</div>
+                            <template x-for="tx in localSales.sales" :key="tx.id">
+                                <div class="tx-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+                                    <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(74,222,128,0.15);">
+                                        <i class="fas fa-check" style="color:var(--accent-green);font-size:12px;"></i>
+                                    </div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;font-weight:500;color:var(--text-primary);" x-text="tx.buyer_email || 'Unknown buyer'"></div>
+                                        <div style="font-size:11px;color:var(--text-tertiary);" x-text="tx.paid_at ? new Date(tx.paid_at).toLocaleDateString() : '—'"></div>
+                                    </div>
+                                    <div style="font-size:14px;font-weight:600;color:var(--accent-green);" x-text="'+' + formatCents(tx.amount_cents)"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                    <div x-show="!localSales?.sales?.length" style="text-align:center;padding:20px;color:var(--text-tertiary);font-size:13px;">
+                        No recorded sales yet. Sales are recorded automatically when detected via polling.
+                    </div>
+                </div>
+            </div>
+
+            <!-- DropFans connected content -->
+            <template x-if="earningsConnected">
+                <div>
+                    <!-- Date Range -->
+                    <div class="section-card" style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                    <div class="date-range">
+                        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Range:</label>
+                        <select x-model="preset" @change="applyPreset()" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-primary);color:var(--text-primary);">
+                            <option value="7d">Last 7 days</option>
+                            <option value="30d">Last 30 days</option>
+                            <option value="90d">Last 90 days</option>
+                            <option value="365d">Last year</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <input x-show="preset === 'custom'" x-model="startDate" type="date" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-primary);color:var(--text-primary);">
+                        <span x-show="preset === 'custom'" style="color:var(--text-tertiary);">to</span>
+                        <input x-show="preset === 'custom'" x-model="endDate" type="date" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:12px;background:var(--bg-primary);color:var(--text-primary);">
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button @click="loadEarnings()" class="btn-sync" :disabled="earningsLoading">
+                            <i class="fas" :class="earningsLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                        </button>
+                        <button @click="loadBalance()" class="btn-sync" :disabled="balanceLoading">
+                            <i class="fas" :class="balanceLoading ? 'fa-spinner fa-spin' : 'fa-wallet'"></i> Balance
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Cards -->
+            <div class="earnings-grid" style="margin-bottom:20px;">
+                <div class="stat-card green">
+                    <div class="stat-top">
+                        <span class="stat-label">Available</span>
+                        <div class="stat-icon green"><i class="fas fa-wallet"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="'$' + (balance?.available || 0).toFixed(2)"></div>
+                    <div class="stat-sub">Ready to withdraw</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-top">
+                        <span class="stat-label">Pending</span>
+                        <div class="stat-icon orange"><i class="fas fa-hourglass-half"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="'$' + (balance?.pending || 0).toFixed(2)"></div>
+                    <div class="stat-sub">Processing</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-top">
+                        <span class="stat-label">Processing</span>
+                        <div class="stat-icon purple"><i class="fas fa-cog"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="'$' + (balance?.processing || 0).toFixed(2)"></div>
+                    <div class="stat-sub">In transit</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-top">
+                        <span class="stat-label">Paid Out</span>
+                        <div class="stat-icon blue"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="'$' + (balance?.paid_out || 0).toFixed(2)"></div>
+                    <div class="stat-sub">Total withdrawn</div>
+                </div>
+            </div>
+
+            <!-- Earnings Stats -->
+            <div class="earnings-grid" style="margin-bottom:20px;">
+                <div class="stat-card purple">
+                    <div class="stat-top">
+                        <span class="stat-label">Net Earnings</span>
+                        <div class="stat-icon purple"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="formatCents(earnings?.stats?.total_earnings_cents)"></div>
+                    <div class="stat-sub" x-text="earnings?.stats?.transaction_count + ' transactions'"></div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-top">
+                        <span class="stat-label">Gross</span>
+                        <div class="stat-icon green"><i class="fas fa-arrow-up"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="formatCents(earnings?.stats?.gross_earnings_cents)"></div>
+                    <div class="stat-sub">Before fees</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-top">
+                        <span class="stat-label">Avg Transaction</span>
+                        <div class="stat-icon orange"><i class="fas fa-receipt"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="formatCents(earnings?.stats?.avg_transaction_cents)"></div>
+                    <div class="stat-sub">Per sale</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-top">
+                        <span class="stat-label">Customers</span>
+                        <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="earnings?.stats?.unique_customers || 0"></div>
+                    <div class="stat-sub">Unique buyers</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar" style="color:var(--accent-purple);margin-right:8px;"></i>Earnings Chart</h2>
+                    <span style="font-size:12px;color:var(--text-tertiary);" x-text="earnings?.chart?.labels?.length + ' data points'"></span>
+                </div>
+                <div x-show="earningsLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div x-show="!earningsLoading && (!earnings?.chart?.values || earnings.chart.values.length === 0)" class="empty-state" style="padding:24px;">
+                    <p>No chart data for this period</p>
+                </div>
+                <div x-show="!earningsLoading && earnings?.chart?.values?.length > 0" class="chart-area" id="earningsChart">
+                    <template x-for="(val, idx) in (earnings?.chart?.values || [])" :key="idx">
+                        <div class="chart-bar"
+                             :style="'left:' + (idx * (100 / (earnings.chart.values.length || 1))) + '%;width:' + (100 / (earnings.chart.values.length || 1)) + '%;height:' + chartHeight(val) + '%;'"
+                             :title="earnings.chart.labels?.[idx] + ': ' + formatCents(val)">
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-receipt" style="color:var(--accent-green);margin-right:8px;"></i>Recent Transactions</h2>
+                    <span style="font-size:12px;color:var(--text-tertiary);" x-text="(earnings?.transactions?.length || 0) + ' transactions'"></span>
+                </div>
+                <div x-show="earningsLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+                <div x-show="!earningsLoading && (!earnings?.transactions || earnings.transactions.length === 0)" class="empty-state" style="padding:24px;">
+                    <i class="fas fa-receipt" style="font-size:24px;"></i>
+                    <p>No transactions in this period</p>
+                </div>
+                <div x-show="!earningsLoading && earnings?.transactions?.length > 0" style="max-height:400px;overflow-y:auto;">
+                    <template x-for="tx in (earnings?.transactions || [])" :key="tx.id">
+                        <div class="tx-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+                            <div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;"
+                                 :style="tx.type === 'sale' ? 'background:rgba(74,222,128,0.15);color:var(--accent-green)' : 'background:rgba(251,146,60,0.15);color:var(--accent-orange)'">
+                                <i class="fas" :class="tx.type === 'sale' ? 'fa-check' : 'fa-arrow-up'"></i>
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:13px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                     x-text="tx.product_name || tx.product_id || 'Unknown product'"></div>
+                                <div style="font-size:11px;color:var(--text-tertiary);" x-text="tx.buyer_name || tx.buyer_email || 'Anonymous'"></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:14px;font-weight:600;color:var(--accent-green);" x-text="'+' + formatCents(tx.amount_cents)"></div>
+                                <div style="font-size:10px;color:var(--text-tertiary);" x-text="tx.paid_at ? new Date(tx.paid_at).toLocaleDateString() : '—'"></div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+                </div>
+            </template>
+
+        </div>
+    </template>
+</div>
+
+<script>
+function earningsApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+
+        // Date range
+        preset: '30d',
+        startDate: '',
+        endDate: '',
+
+        // Earnings
+        earnings: null,
+        earningsLoading: false,
+        earningsConnected: false,
+
+        // Local sales mirror
+        localSales: null,
+        localSalesLoading: false,
+
+        // Balance
+        balance: null,
+        balanceLoading: false,
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.checkStatus();
+            if (this.earningsConnected) {
+                this.applyPreset();
+                await this.loadBalance();
+            } else {
+                await this.loadLocalSales();
+            }
+            this.loading = false;
+        },
+
+        async checkStatus() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.earningsConnected = !!(data.status && data.status.dropfans_creator_id);
+            } catch (e) {
+                this.earningsConnected = false;
+            }
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        // ── Date presets ───────────────────────────────────────────────
+
+        applyPreset() {
+            const now = new Date();
+            const fmt = d => d.toISOString().split('T')[0];
+            if (this.preset === 'custom') return;
+            const days = parseInt(this.preset) || 30;
+            const start = new Date(now);
+            start.setDate(start.getDate() - days);
+            this.startDate = fmt(start);
+            this.endDate = fmt(now);
+            this.loadEarnings();
+        },
+
+        // ── Earnings ──────────────────────────────────────────────────
+
+        async loadEarnings() {
+            this.earningsLoading = true;
+            this.error = null;
+            try {
+                const params = new URLSearchParams({
+                    start_date: this.startDate,
+                    end_date: this.endDate,
+                });
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-earnings?${params}`);
+                this.earnings = data;
+            } catch (e) {
+                this.error = 'Failed to load earnings: ' + e.message;
+            } finally {
+                this.earningsLoading = false;
+            }
+        },
+
+        // ── Balance ───────────────────────────────────────────────────
+
+        async loadBalance() {
+            this.balanceLoading = true;
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-balance`);
+                this.balance = data;
+            } catch (e) {
+                // Non-fatal
+            } finally {
+                this.balanceLoading = false;
+            }
+        },
+
+        // ── Local sales mirror ──────────────────────────────────────
+
+        async loadLocalSales() {
+            this.localSalesLoading = true;
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-local-earnings`);
+                this.localSales = data;
+            } catch (e) {
+                // Non-fatal
+            } finally {
+                this.localSalesLoading = false;
+            }
+        },
+
+        // ── Helpers ────────────────────────────────────────────────────
+
+        formatCents(cents) {
+            if (cents == null) return '$0.00';
+            return '$' + (cents / 100).toFixed(2);
+        },
+
+        chartHeight(val) {
+            const values = this.earnings?.chart?.values || [];
+            const max = Math.max(...values, 1);
+            return Math.round((val / max) * 90) + 5;
+        },
+    };
+}
+</script>
+{% endblock %}

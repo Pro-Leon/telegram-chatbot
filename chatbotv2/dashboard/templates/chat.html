@@ -1,0 +1,1412 @@
+﻿{% extends "dashboard.html" %}
+{% block nav_chats %}active{% endblock %}
+{% block page_title %}{{ dialog_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .chat-window { display:flex; flex-direction:column; height:calc(100vh - 80px); background:#F8F8F5; overflow:hidden; }
+
+    /* HEADER */
+    .chat-header {
+        height:64px; background:#FFFFFF; border-bottom:1px solid #E5E7EB;
+        padding:0 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+    }
+    .chat-header-left { display:flex; align-items:center; gap:12px; }
+    .chat-header-avatar {
+        width:36px; height:36px; border-radius:50%;
+        background:linear-gradient(135deg,#6C63FF,#8B85FF);
+        display:flex; align-items:center; justify-content:center;
+        font-size:14px; font-weight:600; color:#fff; flex-shrink:0;
+    }
+    .chat-header-name { font-size:16px; font-weight:600; color:#111827; }
+    .chat-header-right { display:flex; align-items:center; gap:8px; }
+
+    .header-btn {
+        padding:6px 14px; border-radius:8px; font-size:13px; font-weight:500;
+        cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:6px;
+        background:transparent; border:1px solid #E5E7EB; color:#6B7280; text-decoration:none;
+    }
+    .header-btn:hover { border-color:#6C63FF; color:#111827; }
+    .header-btn.ai-reply {
+        background:rgba(108,99,255,0.08); border:1px solid rgba(108,99,255,0.25); color:#6C63FF; font-weight:600;
+    }
+    .header-btn.ai-reply:hover { background:rgba(108,99,255,0.15); }
+
+    .auto-toggle { display:flex; align-items:center; gap:8px; margin-left:4px; }
+    .auto-toggle-label { font-size:12px; color:#6B7280; font-weight:500; white-space:nowrap; }
+    .auto-toggle-track {
+        position:relative; width:36px; height:20px; border-radius:10px;
+        background:#D1D5DB; cursor:pointer; transition:background 0.25s;
+    }
+    .auto-toggle-track.on { background:#6C63FF; }
+    .auto-toggle-thumb {
+        position:absolute; top:2px; left:2px; width:16px; height:16px;
+        border-radius:50%; background:#fff; transition:transform 0.25s; box-shadow:0 1px 3px rgba(0,0,0,0.15);
+    }
+    .auto-toggle-track.on .auto-toggle-thumb { transform:translateX(16px); }
+
+    /* MESSAGES */
+    .chat-messages {
+        flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:4px;
+    }
+    .chat-messages::-webkit-scrollbar { width:4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background:#E5E7EB; border-radius:4px; }
+    .chat-messages::-webkit-scrollbar-thumb:hover { background:#D1D5DB; }
+
+    .msg-row { display:flex; flex-direction:column; max-width:100%; }
+    .msg-row.incoming { align-items:flex-start; }
+    .msg-row.outgoing { align-items:flex-end; }
+    .msg-bubble {
+        max-width:65%; padding:10px 14px; font-size:14px; line-height:1.5;
+        white-space:pre-wrap; word-break:break-word;
+    }
+    .msg-bubble.incoming {
+        background:#FFFFFF; border:1px solid #E5E7EB; color:#111827;
+        border-radius:4px 16px 16px 16px;
+    }
+    .msg-bubble.outgoing {
+        background:#6C63FF; color:#FFFFFF;
+        border-radius:16px 4px 16px 16px;
+    }
+    .msg-time {
+        font-size:11px; color:#9CA3AF; margin-top:4px; padding:0 4px;
+    }
+    .msg-time.outgoing { text-align:right; color:#9CA3AF; }
+
+    /* INPUT BAR */
+    .chat-input-bar {
+        background:#FFFFFF; border-top:1px solid #E5E7EB; padding:12px 16px; flex-shrink:0;
+    }
+    .chat-input-row { display:flex; align-items:center; gap:8px; }
+    .chat-icon-btn {
+        width:36px; height:36px; min-width:36px; background:transparent; border:none;
+        color:#9CA3AF; border-radius:8px; cursor:pointer; display:flex;
+        align-items:center; justify-content:center; transition:all 0.15s; font-size:16px;
+    }
+    .chat-icon-btn:hover { background:rgba(0,0,0,0.04); color:#111827; }
+    .chat-text-input {
+        flex:1; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:10px;
+        padding:10px 14px; font-size:14px; color:#111827; outline:none;
+        transition:border-color 0.15s;
+    }
+    .chat-text-input:focus { border-color:#6C63FF; }
+    .chat-text-input::placeholder { color:#9CA3AF; }
+    .chat-send-btn {
+        width:36px; height:36px; min-width:36px; background:#6C63FF; border:none;
+        border-radius:50%; color:#FFFFFF; display:flex; align-items:center;
+        justify-content:center; cursor:pointer; transition:all 0.15s; font-size:16px;
+    }
+    .chat-send-btn:hover { background:#8B85FF; transform:scale(1.05); }
+
+    .file-input-hidden {
+        position:absolute; opacity:0; width:0; height:0; overflow:hidden; pointer-events:none;
+    }
+
+    /* VAULT MODAL */
+    .vault-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000;
+        display:none; align-items:center; justify-content:center;
+    }
+    .vault-overlay.open { display:flex; }
+    .vault-modal {
+        background:#fff; border-radius:16px; width:90vw; max-width:720px; max-height:85vh;
+        display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    }
+    .vault-header {
+        padding:16px 20px; border-bottom:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between;
+    }
+    .vault-header h3 { font-size:16px; font-weight:600; color:#111827; margin:0; }
+    .vault-close {
+        width:32px; height:32px; border:none; background:transparent; border-radius:8px;
+        cursor:pointer; font-size:18px; color:#6B7280; display:flex; align-items:center; justify-content:center;
+    }
+    .vault-close:hover { background:rgba(0,0,0,0.05); }
+    .vault-body { flex:1; overflow-y:auto; padding:16px 20px; }
+    .vault-footer {
+        padding:12px 20px; border-top:1px solid #E5E7EB; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .vault-product-grid {
+        display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:12px;
+    }
+    .vault-product-card {
+        border:2px solid #E5E7EB; border-radius:12px; padding:8px; cursor:pointer; transition:all 0.15s;
+        position:relative; overflow:hidden;
+    }
+    .vault-product-card:hover { border-color:#6C63FF; }
+    .vault-product-card.selected { border-color:#6C63FF; background:rgba(108,99,255,0.05); }
+    .vault-product-thumb {
+        width:100%; aspect-ratio:1; border-radius:8px; background:#F3F4F6;
+        display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:6px;
+    }
+    .vault-product-thumb img { width:100%; height:100%; object-fit:cover; }
+    .vault-product-thumb i { font-size:24px; color:#D1D5DB; }
+    .vault-product-title {
+        font-size:12px; font-weight:500; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .vault-product-price {
+        font-size:11px; color:#6C63FF; font-weight:600; margin-top:2px;
+    }
+    .vault-product-check {
+        position:absolute; top:6px; right:6px; width:20px; height:20px; border-radius:50%;
+        background:#6C63FF; color:#fff; display:none; align-items:center; justify-content:center; font-size:10px;
+    }
+    .vault-product-card.selected .vault-product-check { display:flex; }
+    .ppv-config {
+        margin-top:16px; padding:16px; background:#F9FAFB; border-radius:12px; border:1px solid #E5E7EB;
+    }
+    .ppv-config h4 { font-size:14px; font-weight:600; color:#111827; margin:0 0 12px 0; }
+    .ppv-field { margin-bottom:12px; }
+    .ppv-field label { display:block; font-size:12px; font-weight:500; color:#6B7280; margin-bottom:4px; }
+    .ppv-field input, .ppv-field textarea, .ppv-field select {
+        width:100%; padding:8px 12px; border:1px solid #E5E7EB; border-radius:8px;
+        font-size:13px; color:#111827; background:#fff; outline:none; box-sizing:border-box;
+    }
+    .ppv-field input:focus, .ppv-field textarea:focus, .ppv-field select:focus { border-color:#6C63FF; }
+    .ppv-field textarea { resize:vertical; min-height:60px; }
+    .ppv-blur-row { display:flex; align-items:center; gap:12px; }
+    .ppv-blur-row input[type=range] { flex:1; }
+    .ppv-blur-val { font-size:12px; color:#6B7280; min-width:30px; }
+    .ppv-send-btn {
+        padding:10px 24px; border:none; border-radius:10px; background:#6C63FF; color:#fff;
+        font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:8px;
+    }
+    .ppv-send-btn:hover { background:#5B54E6; }
+    .ppv-send-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .ppv-preview {
+        margin-top:12px; padding:12px; background:#fff; border:1px solid #E5E7EB; border-radius:8px;
+        font-size:13px; color:#111827; white-space:pre-wrap; max-height:120px; overflow-y:auto;
+    }
+
+    /* VAULT TOOLBAR */
+    .vault-toolbar {
+        padding:12px 20px; border-bottom:1px solid #E5E7EB; display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .vault-search-input {
+        flex:1; min-width:120px; padding:8px 12px; border:1px solid #E5E7EB; border-radius:8px;
+        font-size:13px; color:#111827; background:#fff; outline:none;
+    }
+    .vault-search-input:focus { border-color:#6C63FF; }
+    .vault-filter-select {
+        padding:8px 12px; border:1px solid #E5E7EB; border-radius:8px;
+        font-size:13px; color:#111827; background:#fff; outline:none; cursor:pointer;
+    }
+    .vault-filter-select:focus { border-color:#6C63FF; }
+    .vault-nav-btn {
+        width:32px; height:32px; border:none; background:transparent; border-radius:8px;
+        cursor:pointer; font-size:14px; color:#6B7280; display:flex; align-items:center; justify-content:center;
+    }
+    .vault-nav-btn:hover { background:rgba(0,0,0,0.05); }
+    .vault-delivered-badge {
+        position:absolute; bottom:6px; left:6px; padding:2px 8px; border-radius:6px;
+        background:#22C55E; color:#fff; font-size:10px; font-weight:600; pointer-events:none;
+    }
+    .vault-media-info {
+        display:flex; gap:12px; align-items:flex-start;
+    }
+    .vault-media-info-thumb {
+        width:80px; height:80px; border-radius:8px; background:#F3F4F6;
+        display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;
+    }
+    .vault-media-info-thumb img { width:100%; height:100%; object-fit:cover; }
+    .vault-media-info-thumb i { font-size:24px; color:#D1D5DB; }
+    .vault-media-info-details { flex:1; font-size:13px; color:#111827; }
+    .vault-media-info-details .label { font-size:11px; color:#6B7280; }
+    .vault-send-state {
+        padding:6px 12px; border-radius:8px; font-size:12px; font-weight:500; display:inline-flex; align-items:center; gap:6px;
+    }
+    .vault-send-state.sending { background:#FEF3C7; color:#D97706; }
+    .vault-send-state.sent { background:#D1FAE5; color:#059669; }
+    .vault-send-state.failed { background:#FEE2E2; color:#DC2626; }
+
+    /* EMOJI PANEL */
+    .emoji-panel {
+        position:absolute; bottom:70px; right:60px; background:#FFFFFF;
+        border:1px solid #E5E7EB; border-radius:12px; padding:12px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.1); display:none; z-index:10;
+    }
+    .emoji-panel.open { display:block; }
+    .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; }
+    .emoji-btn {
+        width:36px; height:36px; background:transparent; border:none; border-radius:6px;
+        font-size:20px; cursor:pointer; transition:background 0.1s; display:flex;
+        align-items:center; justify-content:center;
+    }
+    .emoji-btn:hover { background:rgba(0,0,0,0.04); }
+
+    /* SUGGESTIONS */
+    .suggestions-bar { padding:0 16px 8px; display:flex; flex-wrap:wrap; gap:6px; }
+    .suggestion-chip {
+        padding:6px 12px; border-radius:8px; font-size:12px; color:#6B7280;
+        background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); cursor:pointer;
+        max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        transition:all 0.15s; display:inline-flex; align-items:center; gap:6px;
+    }
+    .suggestion-chip:hover { background:rgba(108,99,255,0.08); color:#6C63FF; border-color:rgba(108,99,255,0.25); }
+    .sug-score-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .sug-flag-pill { font-size:10px; font-weight:600; padding:1px 5px; border-radius:6px; background:rgba(248,113,113,0.12); color:#DC2626; white-space:nowrap; flex-shrink:0; }
+
+    /* AI-native badges */
+    .ai-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; padding:2px 6px; border-radius:6px; line-height:1.2; }
+    .ai-badge.auto { background:#D1FAE5; color:#059669; }
+    .ai-badge.edited { background:#DBEAFE; color:#2563EB; }
+    .ai-badge.manual { background:rgba(0,0,0,0.06); color:#6B7280; }
+    .ai-badge.low { background:#FEF3C7; color:#D97706; }
+    .ai-badge.inbound { background:rgba(0,0,0,0.06); color:#6B7280; }
+    .conf-pct { font-size:11px; font-weight:600; color:#6B7280; margin-left:4px; }
+    .flag-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#EF4444; margin-left:4px; }
+    .ai-meta-line { font-size:11px; color:#9CA3AF; margin-top:4px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .gen-status { font-size:12px; color:#6B7280; padding:6px 12px; background:rgba(108,99,255,0.06); border-radius:8px; display:flex; align-items:center; gap:8px; }
+    .gen-status strong { color:#6C63FF; }
+
+    /* ANALYTICS TRAY */
+    .analytics-tray {
+        width:0; overflow:hidden; flex-shrink:0; transition:width 0.3s cubic-bezier(0.4,0,0.2,1);
+        background:#FFFFFF; border-left:1px solid #E5E7EB;
+    }
+    .analytics-tray.open { width:320px; }
+    .analytics-inner { width:320px; height:100%; overflow-y:auto; display:flex; flex-direction:column; }
+    .analytics-header {
+        padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
+        border-bottom:1px solid #E5E7EB; flex-shrink:0;
+    }
+    .analytics-close {
+        background:none; border:none; color:#9CA3AF; cursor:pointer; font-size:14px;
+        padding:4px; transition:color 0.15s;
+    }
+    .analytics-close:hover { color:#111827; }
+    .analytics-body { padding:20px; display:flex; flex-direction:column; gap:16px; }
+    .analytics-user-row {
+        display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid #E5E7EB;
+    }
+    .analytics-avatar {
+        width:40px; height:40px; border-radius:50%;
+        background:linear-gradient(135deg,#6C63FF,#8B85FF);
+        display:flex; align-items:center; justify-content:center;
+        font-weight:700; font-size:15px; color:#fff; flex-shrink:0;
+    }
+    .analytics-metrics { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .analytics-metric-card {
+        background:rgba(0,0,0,0.03); border-radius:10px; padding:14px; text-align:center;
+    }
+    .analytics-metric-value { font-size:22px; font-weight:700; color:#111827; }
+    .analytics-metric-label { font-size:11px; color:#9CA3AF; margin-top:2px; }
+    .analytics-detail-row {
+        display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(0,0,0,0.04);
+    }
+    .analytics-detail-row:last-child { border-bottom:none; }
+    .analytics-detail-label { font-size:12px; color:#9CA3AF; }
+    .analytics-detail-value { font-size:12px; font-weight:500; color:#111827; }
+    .analytics-section-title {
+        font-size:11px; font-weight:600; color:#9CA3AF; text-transform:uppercase;
+        letter-spacing:1px; margin-bottom:10px;
+    }
+    .analytics-actions { display:flex; gap:8px; padding-top:8px; }
+    .analytics-action-btn {
+        flex:1; padding:8px; border-radius:8px; font-size:12px; font-weight:500;
+        cursor:pointer; transition:all 0.15s; border:none; text-decoration:none; text-align:center;
+    }
+    .analytics-action-btn.outline {
+        color:#6B7280; background:rgba(0,0,0,0.03); border:1px solid #E5E7EB;
+    }
+    .analytics-action-btn.outline:hover { background:rgba(0,0,0,0.06); color:#111827; }
+    .analytics-action-btn.primary { color:#FFFFFF; background:#6C63FF; }
+    .analytics-action-btn.primary:hover { background:#8B85FF; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex; gap:0; height:calc(100vh - 80px);">
+  <!-- Chat Panel -->
+  <div style="flex:1; display:flex; flex-direction:column; background:#F8F8F5; overflow:hidden; min-width:0;">
+
+    <!-- Chat Header -->
+    <div id="execution-stage-bar" class="execution-stage-bar" style="display:none;"><span class="stage-dot" id="stage-dot"></span><span id="stage-text">WAITING</span><span style="margin-left:auto; font-size:11px; color:#9CA3AF;" id="stage-generation"></span></div><div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-header-avatar">{{ dialog_name[0].upper() }}</div>
+        <div class="chat-header-name">{{ dialog_name }}</div>
+        {% if unread_count and unread_count > 0 %}
+        <span style="font-size:11px; color:#6C63FF; font-weight:500;">{{ unread_count }} unread</span>
+        {% endif %}
+        <div id="chat-segment-badges" style="display:flex;gap:4px;margin-left:8px;"></div>
+      </div>
+      <div class="chat-header-right">
+        <button id="block-user-btn" onclick="toggleBlockUser()" class="header-btn">
+          <i class="fas fa-ban" style="font-size:11px;"></i> <span id="block-user-label">Block</span>
+        </button>
+        <a href="/dashboard/profile/{{ dialog_id }}" class="header-btn">
+          <i class="fas fa-user" style="font-size:11px;"></i> Profile
+        </a>
+        <button id="ai-reply-btn" onclick="generateAiReply()" class="header-btn ai-reply">
+          <i class="fas fa-robot" style="font-size:11px;"></i> AI Reply
+        </button>
+        <button id="open-analytics-tray" class="header-btn">
+          <i class="fas fa-chart-bar" style="font-size:11px;"></i> Analytics
+        </button>
+        <div class="auto-toggle">
+          <span class="auto-toggle-label">Auto</span>
+          <div id="auto-toggle-track" class="auto-toggle-track on" onclick="toggleAutoReply()">
+            <div class="auto-toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI-native suggestions (server-rendered initial) -->
+    {% if pending_suggestions %}
+    <div id="ai-suggestions-initial" class="suggestions-bar">
+      {% for s in pending_suggestions %}
+      <button type="button" class="suggestion-chip" data-draft="{{ s.draft_content | e }}" onclick="document.getElementById('message-input').value=this.getAttribute('data-draft');document.getElementById('ai-suggestions').style.display='none';var _el=document.getElementById('ai-suggestions-initial');if(_el)_el.style.display='none';">
+        <span class="sug-score-dot" style="background: {{ '#EF4444' if s.confidence_score is not none and s.confidence_score < 0.6 else ('#F59E0B' if s.confidence_score is not none and s.confidence_score < 0.80 else '#22C55E') }};"></span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.draft_content[:60] }}{% if s.draft_content|length > 60 %}â€¦{% endif %}</span>
+        {% if s.confidence_score is not none %}<span style="font-size:10px;font-weight:700;color:#6B7280;">{{ (s.confidence_score*100)|int }}%</span>{% endif %}
+        {% if s.flags %}<span class="sug-flag-pill">{{ s.flags[0] if s.flags is iterable and s.flags is not string else s.flags }}</span>{% endif %}
+      </button>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+     <!-- AI-native system bar: live generation + last routing -->
+    <div id="ai-native-bar" style="display:none; padding:6px 12px; background:rgba(108,99,255,0.06); border-bottom:1px solid rgba(108,99,255,0.12); font-size:11px; color:#6B7280; align-items:center; gap:8px; flex-wrap:wrap;"></div>
+
+     <!-- Messages -->
+    <div class="chat-messages" id="chat-messages">
+      {% for m in messages %}
+      <div class="msg-row {% if m.is_outgoing %}outgoing{% else %}incoming{% endif %}">
+          {% if m.media_path and m.media_path.startswith('https://') %}
+          <div class="msg-bubble {% if m.is_outgoing %}outgoing{% else %}incoming{% endif %}" style="padding:4px;">
+            {% if m.media_type == 'photo' %}
+              <img src="{{ m.media_path }}" alt="Media" style="max-width:240px; max-height:180px; border-radius:8px; display:block;">
+            {% elif m.media_type == 'video' %}
+              <video src="{{ m.media_path }}" controls style="max-width:240px; max-height:180px; border-radius:8px; display:block;"></video>
+            {% else %}
+              <a href="{{ m.media_path }}" target="_blank" rel="noopener" style="color:#6C63FF; text-decoration:underline;">View attachment</a>
+            {% endif %}
+            {% if m.text %}
+            <div style="padding:6px 8px 2px; font-size:13px; line-height:1.35;">{{ m.text }}</div>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="msg-bubble {% if m.is_outgoing %}outgoing{% else %}incoming{% endif %}">{{ m.text or '(media message)' }}</div>
+          {% endif %}
+          <div class="msg-time {% if m.is_outgoing %}outgoing{% endif %}">
+            {% if m.date %}
+              {% if 'T' in m.date %}
+                {{ m.date.split('T')[1][:5] }}
+              {% endif %}
+            {% endif %}
+            {% if m.is_outgoing %}
+              <i class="fas {% if m.sent_at %}fa-check-double{% else %}fa-check{% endif %}" style="margin-left:4px;"></i>
+            {% endif %}
+          </div>
+          {% if m.is_outgoing %}
+          <div class="ai-meta-line">
+            {% if m.was_auto_approved %}<span class="ai-badge auto"><i class="fas fa-robot" style="font-size:9px;"></i> AI auto</span>
+            {% elif m.was_edited %}<span class="ai-badge edited"><i class="fas fa-edit" style="font-size:9px;"></i> AI edited</span>
+            {% else %}<span class="ai-badge manual"><i class="fas fa-user" style="font-size:9px;"></i> Manual</span>{% endif %}
+            {% if m.confidence_score is not none %}<span class="conf-pct">{{ (m.confidence_score*100)|int }}%</span>{% endif %}
+          </div>
+          {% endif %}
+      </div>
+      {% endfor %}
+      <div style="height:4px;"></div>
+    </div>
+
+    <!-- Suggestions (realtime) -->
+    <div id="ai-generation-status" style="display:none; padding:4px 16px;"></div>
+    <div id="ai-suggestions" class="suggestions-bar" style="display:none;"></div>
+
+    <!-- Input Bar -->
+    <div class="chat-input-bar" style="position:relative;">
+      <form id="send-message-form" class="chat-input-row">
+        <button type="button" class="chat-icon-btn" id="vault-trigger-btn" title="Open Vault â€” send PPV">
+          <i class="fas fa-paperclip"></i>
+        </button>
+        <input type="text" id="message-input" class="chat-text-input" placeholder="Type a message..." autocomplete="off">
+        <button type="button" class="chat-icon-btn" id="emoji-btn" title="Emoji">
+          <i class="far fa-smile"></i>
+        </button>
+        <button type="submit" class="chat-send-btn" id="send-btn" title="Send">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+
+      <!-- Emoji Panel -->
+      <div id="emoji-panel" class="emoji-panel">
+        <div class="emoji-grid">
+          <button type="button" class="emoji-btn" data-emoji="ðŸ‘">ðŸ‘</button>
+          <button type="button" class="emoji-btn" data-emoji="â¤ï¸">â¤ï¸</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ˜‚">ðŸ˜‚</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ˜®">ðŸ˜®</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ˜¢">ðŸ˜¢</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ‘">ðŸ‘</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸŽ‰">ðŸŽ‰</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ¤”">ðŸ¤”</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ™">ðŸ™</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ”¥">ðŸ”¥</button>
+          <button type="button" class="emoji-btn" data-emoji="âœ…">âœ…</button>
+          <button type="button" class="emoji-btn" data-emoji="âŒ">âŒ</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ’ª">ðŸ’ª</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ¤">ðŸ¤</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ’¯">ðŸ’¯</button>
+          <button type="button" class="emoji-btn" data-emoji="ðŸ‘€">ðŸ‘€</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vault Modal -->
+  <div id="vault-overlay" class="vault-overlay">
+    <div class="vault-modal">
+      <div class="vault-header">
+        <h3><i class="fas fa-vault" style="margin-right:8px; color:#6C63FF;"></i>Vault</h3>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="vault-nav-btn" id="vault-back-btn" style="display:none;" title="Back"><i class="fas fa-arrow-left"></i></button>
+          <button class="vault-close" id="vault-close-btn"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+
+      <!-- Toolbar: search + filter -->
+      <div id="vault-toolbar" class="vault-toolbar" style="display:none;">
+        <input id="vault-search" type="text" placeholder="Search media..." class="vault-search-input" />
+        <select id="vault-filter-type" class="vault-filter-select">
+          <option value="">All types</option>
+          <option value="image">Images</option>
+          <option value="video">Videos</option>
+        </select>
+        <select id="vault-filter-product" class="vault-filter-select">
+          <option value="">All products</option>
+        </select>
+      </div>
+
+      <div class="vault-body">
+        <!-- Loading state -->
+        <div id="vault-loading" style="text-align:center; padding:40px; color:#9CA3AF;">
+          <i class="fas fa-spinner fa-spin" style="font-size:20px;"></i>
+          <p style="margin-top:8px;">Loading vault media...</p>
+        </div>
+        <!-- Empty state -->
+        <div id="vault-empty" style="display:none; text-align:center; padding:40px; color:#9CA3AF;">
+          <i class="fas fa-box-open" style="font-size:24px;"></i>
+          <p style="margin-top:8px;">No media in vault. Sync products from DropFans first.</p>
+        </div>
+        <!-- Error state -->
+        <div id="vault-error" style="display:none; text-align:center; padding:40px; color:#EF4444;">
+          <i class="fas fa-exclamation-triangle" style="font-size:24px;"></i>
+          <p id="vault-error-msg" style="margin-top:8px;">Something went wrong.</p>
+        </div>
+        <!-- Product grid -->
+        <div id="vault-products" class="vault-product-grid" style="display:none;"></div>
+        <!-- Media grid (inside a product) -->
+        <div id="vault-media-grid" class="vault-product-grid" style="display:none;"></div>
+
+        <!-- Send Configuration (shown after media selection) -->
+        <div id="ppv-config" class="ppv-config" style="display:none;">
+          <div id="ppv-media-info" style="margin-bottom:12px;"></div>
+          <div class="ppv-field">
+            <label>Caption (optional)</label>
+            <textarea id="ppv-caption" placeholder="Add a caption..."></textarea>
+          </div>
+          <div id="ppv-sent-status" style="font-size:12px; color:#9CA3AF; margin-top:4px;"></div>
+        </div>
+      </div>
+      <div class="vault-footer">
+        <span id="vault-status" style="font-size:12px; color:#9CA3AF;"></span>
+        <button class="ppv-send-btn" id="ppv-send-btn" disabled>
+          <i class="fas fa-paper-plane"></i> Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics Tray -->
+  <div id="analytics-tray" class="analytics-tray">
+    <div class="analytics-inner">
+      <div class="analytics-header">
+        <span style="font-size:14px; font-weight:600; color:#111827;">Analytics</span>
+        <button id="close-analytics-tray" class="analytics-close"><i class="fas fa-times"></i></button>
+      </div>
+
+      <div class="analytics-body">
+        <div class="analytics-user-row">
+          <div class="analytics-avatar">{{ dialog_name[0].upper() }}</div>
+          <div>
+            <div style="font-size:14px; font-weight:600; color:#111827;">{{ dialog_name }}</div>
+            <div id="analytics-username" style="font-size:12px; color:#9CA3AF;"></div>
+          </div>
+        </div>
+
+        <div class="analytics-metrics">
+          <div class="analytics-metric-card">
+            <div id="analytics-total-messages" class="analytics-metric-value">0</div>
+            <div class="analytics-metric-label">Messages</div>
+          </div>
+          <div class="analytics-metric-card">
+            <div id="analytics-response-rate" class="analytics-metric-value">&mdash;</div>
+            <div class="analytics-metric-label">Response</div>
+          </div>
+          <div class="analytics-metric-card">
+            <div id="analytics-confidence" class="analytics-metric-value">&mdash;</div>
+            <div class="analytics-metric-label">Confidence</div>
+          </div>
+          <div class="analytics-metric-card">
+            <div id="analytics-rank" class="analytics-metric-value">&mdash;</div>
+            <div class="analytics-metric-label">Rank</div>
+          </div>
+        </div>
+
+        <div>
+          <div class="analytics-detail-row">
+            <span class="analytics-detail-label">First text</span>
+            <span id="analytics-first-text" class="analytics-detail-value">&mdash;</span>
+          </div>
+          <div class="analytics-detail-row">
+            <span class="analytics-detail-label">Last seen</span>
+            <span id="analytics-last-seen" class="analytics-detail-value">&mdash;</span>
+          </div>
+          <div class="analytics-detail-row">
+            <span class="analytics-detail-label">Percentile</span>
+            <span id="analytics-percentile" class="analytics-detail-value">&mdash;</span>
+          </div>
+          <div class="analytics-detail-row">
+            <span class="analytics-detail-label">Auto-approved</span>
+            <span id="analytics-auto-approved" class="analytics-detail-value">&mdash;</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="analytics-section-title">30-Day Activity</div>
+          <div id="analytics-timeline" style="display:flex; align-items:flex-end; gap:3px; height:64px;">
+            <span style="font-size:11px; color:#9CA3AF;">Loading...</span>
+          </div>
+        </div>
+
+        <!-- AI-native -->
+        <div>
+          <div class="analytics-section-title" style="display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-robot" style="color:#6C63FF;"></i> AI
+            <span id="ai-funnel-badge" style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(108,99,255,0.12);color:#6C63FF;display:none;"></span>
+          </div>
+          <div id="ai-intel-loading" style="font-size:12px;color:#9CA3AF;">Loading AI stateâ€¦</div>
+          <div id="ai-intel" style="display:none;">
+            <div class="analytics-detail-row"><span class="analytics-detail-label">Outbound</span><span id="ai-stat-outbound" class="analytics-detail-value">â€”</span></div>
+            <div class="analytics-detail-row"><span class="analytics-detail-label">Auto-sent</span><span id="ai-stat-auto" class="analytics-detail-value">â€”</span></div>
+            <div class="analytics-detail-row"><span class="analytics-detail-label">Avg confidence</span><span id="ai-stat-avgconf" class="analytics-detail-value">â€”</span></div>
+            <div class="analytics-detail-row"><span class="analytics-detail-label">Pending suggestions</span><span id="ai-stat-pending-sugs" class="analytics-detail-value">â€”</span></div>
+            <div class="analytics-detail-row"><span class="analytics-detail-label">Last routing</span><span id="ai-stat-last-routing" class="analytics-detail-value">â€”</span></div>
+          </div>
+        </div>
+
+        <div class="analytics-actions">
+          <button id="toggle-exclusion-btn" onclick="toggleAutoReplyExclusion()" class="analytics-action-btn outline">
+            <i class="fas fa-bell" style="margin-right:4px;"></i> Exclude
+          </button>
+          <a href="/dashboard/profile/{{ dialog_id }}" class="analytics-action-btn primary">
+            <i class="fas fa-user" style="margin-right:4px;"></i> Profile
+          </a>
+        </div>
+
+        <div>
+          <div class="analytics-section-title">Operator Notes</div>
+          <textarea id="user-notes" class="ppv-field" style="width:100%;padding:8px 12px;border:1px solid #E5E7EB;border-radius:8px;font-size:13px;color:#111827;background:#fff;outline:none;box-sizing:border-box;min-height:80px;resize:vertical;font-family:inherit;" placeholder="Add private notes about this user..."></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+            <button id="save-notes-btn" onclick="saveUserNotes()" class="analytics-action-btn primary" style="flex:none;padding:6px 16px;">
+              <i class="fas fa-save" style="margin-right:4px;"></i> Save Notes
+            </button>
+          </div>
+          <div id="notes-status" style="font-size:11px;color:#9CA3AF;margin-top:4px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const dialogId = {{ dialog_id }};
+let globalAutoReplyEnabled = true;
+var rt = new RealtimeClient();(function(){var bar=document.getElementById("execution-stage-bar"),txt=document.getElementById("stage-text"),dot=document.getElementById("stage-dot"),gen=document.getElementById("stage-generation");function setStage(s,g){if(!bar)return;bar.style.display="flex";txt.textContent=s;gen.textContent=g?g.substring(0,8):"";dot.className="stage-dot "+(s==="FAILED"?"failed":s==="SENT"||s==="OUTCOME"?"done":"active");}rt.on("message.created",function(e){setStage("RECEIVED",e.generation_id);});rt.on("ai.generation_started",function(e){setStage("PROCESSING",e.generation_id);});rt.on("ai.generation_completed",function(e){var d=e.data||{};setStage(d.was_auto_approved?"SEND_QUEUED":"WAITING",e.generation_id);});rt.on("message.sent",function(e){setStage("SENT",e.generation_id);});rt.on("message.send_failed",function(e){setStage("FAILED",e.generation_id);});rt.on("ai.generation_failed",function(e){setStage("FAILED",e.generation_id);});rt.on("commerce.offer_created",function(e){setStage("COMMERCE",e.generation_id);});rt.on("commerce.sale_recorded",function(e){setStage("OUTCOME",e.generation_id);});})();
+var _activeGenerationId = null;
+var _aiBtnCheckTimeout = null;
+
+async function loadChatSegmentBadges() {
+    try {
+        const resp = await fetch('/api/user/' + dialogId + '/segments');
+        if (!resp.ok) return;
+        const segments = await resp.json();
+        const container = document.getElementById('chat-segment-badges');
+        if (!container || segments.length === 0) return;
+        container.innerHTML = segments
+            .filter(s => s.is_member)
+            .map(s => '<span style="background:rgba(108,99,255,0.12);color:#6C63FF;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500;">' + s.name + '</span>')
+            .join('');
+    } catch (e) {}
+}
+loadChatSegmentBadges();
+
+function formatChatTime(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    const now = new Date();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mm = String(d.getMinutes()).padStart(2,'0');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const mon = months[d.getMonth()];
+    const day = d.getDate();
+    const isToday = d.toDateString() === now.toDateString();
+    const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 7);
+    if (isToday) return hh + ':' + mm;
+    if (d > weekAgo) return mon + ' ' + day + ' ' + hh + ':' + mm;
+    if (d.getFullYear() === now.getFullYear()) return mon + ' ' + day;
+    return mon + ' ' + day + ', ' + d.getFullYear();
+}
+
+function _aiBadgeHtml(wasAuto, wasEdited, score) {
+    var badge = '';
+    if (wasAuto) badge = '<span class="ai-badge auto"><i class="fas fa-robot" style="font-size:9px;"></i> AI auto</span>';
+    else if (wasEdited) badge = '<span class="ai-badge edited"><i class="fas fa-edit" style="font-size:9px;"></i> AI edited</span>';
+    else badge = '<span class="ai-badge manual"><i class="fas fa-user" style="font-size:9px;"></i> Manual</span>';
+    var pct = (score != null) ? ' <span class="conf-pct">' + Math.round(score*100) + '%</span>' : '';
+    return '<div class="ai-meta-line">' + badge + pct + '</div>';
+}
+
+function appendMessage(text, isOutgoing, timeStr, aiMeta) {
+    var container = document.getElementById('chat-messages');
+    var existing = container.querySelectorAll('.msg-row');
+    for (var i = 0; i < existing.length; i++) {
+        var bubble = existing[i].querySelector('.msg-bubble');
+        if (bubble && bubble.textContent === text) return;
+    }
+    var row = document.createElement('div');
+    row.className = 'msg-row ' + (isOutgoing ? 'outgoing' : 'incoming');
+    var metaLine = '';
+    if (isOutgoing && aiMeta) metaLine = _aiBadgeHtml(!!aiMeta.was_auto_approved, !!aiMeta.was_edited, aiMeta.confidence_score);
+    row.innerHTML = '<div class="msg-bubble ' + (isOutgoing ? 'outgoing' : 'incoming') + '">' + text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><div class="msg-time ' + (isOutgoing ? 'outgoing' : '') + '">' + timeStr + (isOutgoing ? ' <i class="fas fa-check" style="margin-left:4px;"></i>' : '') + '</div>' + metaLine;
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+}
+
+rt.on('message.created', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    var d = evt.data;
+    var time = '';
+    if (evt.timestamp_ms) {
+        var dt = new Date(evt.timestamp_ms);
+        time = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    }
+    appendMessage(d.content, d.direction === 'outbound', time);
+});
+
+rt.on('message.sent', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    var d = evt.data;
+    var time = '';
+    if (evt.timestamp_ms) {
+        var dt = new Date(evt.timestamp_ms);
+        time = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    }
+    appendMessage(d.content, true, time + ' <i class="fas fa-check-double" style="margin-left:4px;"></i>', d);
+});
+
+rt.on('ai.generation_started', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    _activeGenerationId = evt.generation_id;
+    var btn = document.getElementById('ai-reply-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    var st = document.getElementById('ai-generation-status');
+    if (st) { st.style.display = 'block'; st.innerHTML = '<div class="gen-status"><i class="fas fa-spinner fa-spin" style="color:#6C63FF;"></i> Generating&hellip;</div>'; }
+    var bar = document.getElementById('ai-native-bar');
+    if (bar) { bar.style.display = 'flex'; bar.innerHTML = '<i class="fas fa-robot" style="color:#6C63FF;"></i> AI is drafting a reply&hellip;'; }
+});
+
+function _renderGenStatus(d) {
+    var score = (d.score != null) ? Math.round(d.score*100) : null;
+    var routed = d.was_auto_approved ? 'auto-approved' : 'queued for review';
+    var routedCls = d.was_auto_approved ? '#059669' : '#D97706';
+    var scoreCls = (d.score != null && d.score >= 0.80) ? '#22C55E' : (d.score != null && d.score < 0.5 ? '#EF4444' : '#F59E0B');
+    var flagsHtml = (d.flags && d.flags.length) ? ' <span style="background:rgba(248,113,113,0.12);color:#DC2626;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;">' + d.flags.join(', ') + '</span>' : '';
+    var scoreHtml = (score != null) ? '<strong style="color:' + scoreCls + ';">' + score + '%</strong>' : '';
+    return '<div class="gen-status">Scored ' + scoreHtml + ' &middot; <span style="color:' + routedCls + ';font-weight:600;">' + routed + '</span>' + flagsHtml + '</div>';
+}
+
+rt.on('ai.generation_completed', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    if (evt.generation_id !== _activeGenerationId) return;
+    _activeGenerationId = null;
+    var btn = document.getElementById('ai-reply-btn');
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    if (_aiBtnCheckTimeout) clearTimeout(_aiBtnCheckTimeout);
+    _aiBtnCheckTimeout = setTimeout(function() { btn.innerHTML = '<i class="fas fa-robot" style="margin-right:6px;"></i> AI Reply'; btn.disabled = false; }, 1200);
+    var st = document.getElementById('ai-generation-status');
+    if (st && evt.data) { st.style.display = 'block'; st.innerHTML = _renderGenStatus(evt.data); setTimeout(function(){ if(st) st.style.display='none'; }, 6000); }
+    var bar = document.getElementById('ai-native-bar');
+    if (bar && evt.data) {
+        var d = evt.data;
+        var score = (d.score != null) ? Math.round(d.score*100) : '?';
+        var routed = d.was_auto_approved ? 'auto-sent' : 'queued for review';
+        var flags = (d.flags && d.flags.length) ? ' Â· ' + d.flags.join(', ') : '';
+        bar.innerHTML = '<i class="fas fa-check-circle" style="color:#22C55E;"></i> Scored ' + score + '% Â· ' + routed + flags;
+        bar.style.display = 'flex';
+        setTimeout(function(){ if(bar) bar.style.display='none'; }, 6000);
+    }
+    loadSuggestions();
+});
+
+rt.on('ai.generation_failed', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    if (evt.generation_id !== _activeGenerationId) return;
+    _activeGenerationId = null;
+    var btn = document.getElementById('ai-reply-btn');
+    btn.innerHTML = '<i class="fas fa-robot" style="margin-right:6px;"></i> AI Reply';
+    btn.disabled = false;
+    var st = document.getElementById('ai-generation-status');
+    if (st) { st.style.display = 'block'; st.innerHTML = '<div class="gen-status" style="background:rgba(239,68,68,0.06);"><i class="fas fa-exclamation-triangle" style="color:#EF4444;"></i> Generation failed</div>'; setTimeout(function(){ if(st) st.style.display='none'; }, 4000); }
+    var bar = document.getElementById('ai-native-bar');
+    if (bar) { bar.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#EF4444;"></i> AI generation failed'; bar.style.display = 'flex'; setTimeout(function(){ if(bar) bar.style.display='none'; }, 4000); }
+});
+
+rt.on('message.send_failed', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    var err = (evt.data && evt.data.error) || 'Unknown error';
+    showToast('Send failed: ' + err, 'error');
+});
+
+rt.on('suggestion.created', function(evt) {
+    if (evt.dialog_id !== dialogId) return;
+    loadSuggestions();
+});
+
+async function loadGlobalAutoReply() {
+    try {
+        const resp = await fetch('/api/settings/auto-reply');
+        const data = await resp.json();
+        globalAutoReplyEnabled = data.auto_reply_enabled;
+        updateAutoToggle();
+    } catch (err) {}
+}
+
+function updateAutoToggle() {
+    const track = document.getElementById('auto-toggle-track');
+    if (globalAutoReplyEnabled) {
+        track.classList.add('on');
+    } else {
+        track.classList.remove('on');
+    }
+}
+
+function toggleAutoReply() {
+    globalAutoReplyEnabled = !globalAutoReplyEnabled;
+    updateAutoToggle();
+    const formData = new FormData();
+    formData.append('enabled', globalAutoReplyEnabled);
+    fetch('/api/settings/auto-reply', { method: 'POST', body: formData }).catch(() => {
+        globalAutoReplyEnabled = !globalAutoReplyEnabled;
+        updateAutoToggle();
+    });
+}
+
+async function generateAiReply() {
+    const btn = document.getElementById('ai-reply-btn');
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+        const resp = await fetch('/api/dialogs/' + dialogId + '/ai-reply', { method: 'POST' });
+        const data = await resp.json();
+        if (data.ok) {
+            if (rt.isConnected()) return;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; loadSuggestions(); }, 1200);
+        } else { btn.innerHTML = orig; btn.disabled = false; }
+    } catch (err) { btn.innerHTML = orig; btn.disabled = false; }
+}
+
+loadGlobalAutoReply();
+document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
+
+document.getElementById('send-message-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const input = document.getElementById('message-input');
+    const btn = document.getElementById('send-btn');
+    const text = input.value.trim();
+    if (!text) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const formData = new FormData();
+    formData.append('content', text);
+    try {
+        const resp = await fetch('/api/dialogs/' + dialogId + '/send', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.ok) {
+            input.value = '';
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            appendMessage(text, true, timeStr + ' <i class="fas fa-check" style="margin-left:4px;"></i>');
+        }
+    } catch (err) {}
+    finally { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; input.focus(); }
+});
+
+document.getElementById('emoji-btn').addEventListener('click', function() {
+    document.getElementById('emoji-panel').classList.toggle('open');
+});
+document.querySelectorAll('[data-emoji]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.getElementById('message-input').value += this.getAttribute('data-emoji');
+        document.getElementById('message-input').focus();
+        document.getElementById('emoji-panel').classList.remove('open');
+    });
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') document.getElementById('emoji-panel').classList.remove('open');
+});
+
+let analyticsCache = null;
+let analyticsOpen = false;
+
+async function loadAiIntel() {
+    try {
+        const resp = await fetch('/api/dialogs/' + dialogId + '/ai-intel');
+        if (!resp.ok) throw new Error();
+        const d = await resp.json();
+        var s = d.stats || {};
+        var last = d.last_outbound;
+        var funnel = (d.user && d.user.funnel_stage) || '';
+        var fb = document.getElementById('ai-funnel-badge');
+        if (fb && funnel) { fb.textContent = funnel.replace(/_/g,' '); fb.style.display = 'inline-flex'; }
+        document.getElementById('ai-stat-outbound').textContent = s.outbound_total + ' / ' + s.total;
+        document.getElementById('ai-stat-auto').textContent = s.auto_approved + (s.outbound_total ? ' (' + Math.round(s.auto_approved/Math.max(1,s.outbound_total)*100) + '%)' : '');
+        document.getElementById('ai-stat-avgconf').textContent = (s.avg_confidence != null) ? Math.round(s.avg_confidence*100) + '%' : 'â€”';
+        document.getElementById('ai-stat-pending-sugs').textContent = String((d.suggestions||[]).length);
+        if (last && last.confidence_score != null) {
+            var pct = Math.round(last.confidence_score*100) + '%';
+            var tag = last.was_auto_approved ? 'auto' : (last.was_edited ? 'edited' : 'manual');
+            document.getElementById('ai-stat-last-routing').innerHTML = pct + ' Â· ' + tag;
+        } else {
+            document.getElementById('ai-stat-last-routing').textContent = 'â€”';
+        }
+        document.getElementById('ai-intel-loading').style.display = 'none';
+        document.getElementById('ai-intel').style.display = 'block';
+    } catch (e) {
+        var el = document.getElementById('ai-intel-loading');
+        if (el) el.textContent = 'AI state unavailable';
+    }
+}
+
+document.getElementById('open-analytics-tray').addEventListener('click', async function() {
+    const tray = document.getElementById('analytics-tray');
+    if (analyticsOpen) { tray.classList.remove('open'); analyticsOpen = false; return; }
+    tray.classList.add('open');
+    analyticsOpen = true;
+    if (!analyticsCache) analyticsCache = await loadAnalytics();
+    if (analyticsCache) { renderAnalytics(analyticsCache); renderTimeline(analyticsCache); }
+    loadAiIntel();
+});
+document.getElementById('close-analytics-tray').addEventListener('click', function() {
+    document.getElementById('analytics-tray').classList.remove('open');
+    analyticsOpen = false;
+});
+
+async function loadAnalytics() {
+    try {
+        const resp = await fetch('/api/user/' + dialogId + '/analytics');
+        if (!resp.ok) return null;
+        return await resp.json();
+    } catch (err) { return null; }
+}
+
+function renderAnalytics(data) {
+    const a = data.analytics || {};
+    const u = data.user || {};
+    const el = function(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
+    if (a.first_text_at) el('analytics-first-text', formatChatTime(a.first_text_at));
+    el('analytics-total-messages', a.total_messages || 0);
+    el('analytics-response-rate', a.inbound_count > 0 ? ((a.outbound_count / a.inbound_count) * 100).toFixed(1) + '%' : '0%');
+    el('analytics-confidence', a.avg_confidence ? (a.avg_confidence * 100).toFixed(1) + '%' : 'N/A');
+    el('analytics-rank', a.engagement_rank ? '#' + (a.engagement_rank + 1) : '\u2014');
+    el('analytics-percentile', a.percentile ? a.percentile.toFixed(0) + 'th' : '\u2014');
+    el('analytics-auto-approved', a.total_messages > 0 ? ((a.auto_approved_count / a.total_messages) * 100).toFixed(1) + '%' : '0%');
+    el('analytics-username', u.username ? '@' + u.username : '');
+    if (u.last_seen) el('analytics-last-seen', formatChatTime(u.last_seen));
+    else el('analytics-last-seen', 'Never');
+    var btn = document.getElementById('toggle-exclusion-btn');
+    if (btn) btn.innerHTML = a.do_not_auto_reply ? '<i class="fas fa-bell-slash" style="margin-right:4px;"></i>Remove' : '<i class="fas fa-bell" style="margin-right:4px;"></i>Exclude';
+}
+
+function renderTimeline(data) {
+    var timeline = data.timeline || [];
+    var c = document.getElementById('analytics-timeline');
+    if (!c) return;
+    if (!timeline.length) { c.innerHTML = '<span style="font-size:11px; color:#9CA3AF;">No activity</span>'; return; }
+    var max = Math.max.apply(null, timeline.map(function(t) { return t.total; }));
+    c.innerHTML = timeline.map(function(t) {
+        var h = max > 0 ? Math.max((t.total / max) * 56, 2) : 2;
+        var bg = 'rgba(0,0,0,0.06)';
+        if (t.inbound > 0 && t.outbound > 0) bg = '#6C63FF';
+        else if (t.inbound > 0) bg = 'rgba(108,99,255,0.4)';
+        else if (t.outbound > 0) bg = '#22C55E';
+        var d = new Date(t.date);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var label = months[d.getMonth()] + ' ' + d.getDate();
+        return '<div style="flex:1; display:flex; flex-direction:column; align-items:center;">' +
+            '<div style="width:100%; border-radius:3px 3px 0 0; background:' + bg + '; height:' + h + 'px; cursor:pointer;" title="' + t.inbound + ' in, ' + t.outbound + ' out" onclick="alert(\'' + label + '\\n' + t.inbound + ' in / ' + t.outbound + ' out\')"></div>' +
+            '<span style="font-size:9px; color:#9CA3AF; margin-top:4px;">' + label + '</span></div>';
+    }).join('');
+}
+
+async function toggleAutoReplyExclusion() {
+    try {
+        var resp = await fetch('/api/user/' + dialogId + '/auto-reply');
+        var data = await resp.json();
+        var cur = data.do_not_auto_reply;
+        var fd = new FormData(); fd.append('enabled', cur ? '0' : '1');
+        await fetch('/api/user/' + dialogId + '/auto-reply', { method: 'POST', body: fd });
+        analyticsCache = null;
+        if (analyticsOpen) { analyticsCache = await loadAnalytics(); renderAnalytics(analyticsCache); }
+    } catch (err) {}
+}
+
+async function loadSuggestions() {
+    try {
+        var resp = await fetch('/api/dialogs/' + dialogId + '/suggestions');
+        var data = await resp.json();
+        var container = document.getElementById('ai-suggestions');
+        var init = document.getElementById('ai-suggestions-initial');
+        if (data.length > 0) {
+            if (init) init.style.display = 'none';
+            container.style.display = 'flex';
+            container.innerHTML = '';
+            data.forEach(function(item) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'suggestion-chip';
+                var score = item.confidence_score;
+                var scoreColor = (score != null && score < 0.6) ? '#EF4444' : (score != null && score < 0.80 ? '#F59E0B' : '#22C55E');
+                var pct = (score != null) ? ' <span style="font-size:10px;font-weight:700;color:#6B7280;">' + Math.round(score*100) + '%</span>' : '';
+                var flagsArr = item.flags;
+                var flags = (flagsArr && flagsArr.length) ? ' <span class="sug-flag-pill">' + (Array.isArray(flagsArr) ? flagsArr[0] : flagsArr) + '</span>' : '';
+                btn.innerHTML = '<span class="sug-score-dot" style="background:' + scoreColor +';"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (item.draft_content||'').slice(0,60) + ((item.draft_content||'').length>60?'â€¦':'') + '</span>' + pct + flags;
+                btn.title = item.draft_content + (score!=null ? ' (' + Math.round(score*100) + '%, flags: '+(flagsArr||[]).join(', ')+')' : '');
+                btn.onclick = function() { document.getElementById('message-input').value = item.draft_content; container.innerHTML = ''; container.style.display = 'none'; };
+                container.appendChild(btn);
+            });
+        } else {
+            container.style.display = 'none';
+            if (init) init.style.display = 'none';
+        }
+    } catch (err) {}
+}
+
+loadSuggestions();
+setInterval(function() { if (rt.isPollingActive()) loadSuggestions(); }, 10000);
+
+// â”€â”€ Block / Unblock User â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+let userIsBlocked = false;
+
+async function loadBlockState() {
+    try {
+        var resp = await fetch('/api/user/' + dialogId);
+        if (!resp.ok) return;
+        var user = await resp.json();
+        userIsBlocked = !!user.is_blocked;
+        updateBlockButton();
+    } catch (e) {}
+}
+
+function updateBlockButton() {
+    var label = document.getElementById('block-user-label');
+    var btn = document.getElementById('block-user-btn');
+    if (userIsBlocked) {
+        label.textContent = 'Unblock';
+        btn.style.borderColor = 'rgba(248,113,113,0.4)';
+        btn.style.color = '#DC2626';
+    } else {
+        label.textContent = 'Block';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+    }
+}
+
+async function toggleBlockUser() {
+    var endpoint = userIsBlocked ? '/api/user/' + dialogId + '/unblock' : '/api/user/' + dialogId + '/block';
+    try {
+        var resp = await fetch(endpoint, { method: 'POST' });
+        if (resp.ok) {
+            userIsBlocked = !userIsBlocked;
+            updateBlockButton();
+        }
+    } catch (e) {}
+}
+
+loadBlockState();
+
+// â”€â”€ User Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function showToast(msg, type) {
+    var toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:all 0.3s;opacity:0;transform:translateY(20px);';
+    if (type === 'error') { toast.style.background = '#FEE2E2'; toast.style.color = '#991B1B'; }
+    else { toast.style.background = '#D1FAE5'; toast.style.color = '#065F46'; }
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; });
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; setTimeout(function() { toast.remove(); }, 300); }, 3000);
+}
+async function loadUserNotes() {
+    try {
+        var resp = await fetch('/api/user/' + dialogId);
+        if (!resp.ok) return;
+        var user = await resp.json();
+        var el = document.getElementById('user-notes');
+        if (el) el.value = user.notes || '';
+    } catch (e) {}
+}
+
+async function saveUserNotes() {
+    var el = document.getElementById('user-notes');
+    var statusEl = document.getElementById('notes-status');
+    var btn = document.getElementById('save-notes-btn');
+    if (!el) return;
+    btn.disabled = true;
+    statusEl.textContent = 'Saving...';
+    try {
+        var fd = new FormData();
+        fd.append('notes', el.value);
+        var resp = await fetch('/api/user/' + dialogId + '/notes', { method: 'POST', body: fd });
+        if (resp.ok) {
+            statusEl.textContent = 'Saved';
+            setTimeout(function() { statusEl.textContent = ''; }, 2000);
+        } else {
+            statusEl.textContent = 'Failed to save';
+        }
+    } catch (e) {
+        statusEl.textContent = 'Error saving notes';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+loadUserNotes();
+
+// â”€â”€ Vault Modal (Full Operator Workflow) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+(function() {
+    var overlay = document.getElementById('vault-overlay');
+    var closeBtn = document.getElementById('vault-close-btn');
+    var triggerBtn = document.getElementById('vault-trigger-btn');
+    var backBtn = document.getElementById('vault-back-btn');
+    var loadingEl = document.getElementById('vault-loading');
+    var emptyEl = document.getElementById('vault-empty');
+    var errorEl = document.getElementById('vault-error');
+    var errorMsgEl = document.getElementById('vault-error-msg');
+    var productsEl = document.getElementById('vault-products');
+    var mediaGridEl = document.getElementById('vault-media-grid');
+    var configEl = document.getElementById('ppv-config');
+    var mediaInfoEl = document.getElementById('ppv-media-info');
+    var sendBtn = document.getElementById('ppv-send-btn');
+    var statusEl = document.getElementById('vault-status');
+    var sentStatusEl = document.getElementById('ppv-sent-status');
+    var toolbarEl = document.getElementById('vault-toolbar');
+    var searchEl = document.getElementById('vault-search');
+    var filterTypeEl = document.getElementById('vault-filter-type');
+    var filterProductEl = document.getElementById('vault-filter-product');
+
+    var allProducts = [];
+    var allMedia = [];
+    var currentProduct = null;
+    var selectedMedia = null;
+    var deliveredIds = new Set();
+    var sendState = null;
+
+    function openVault() {
+        overlay.classList.add('open');
+        resetVault();
+        loadVaultProducts();
+    }
+    function closeVault() {
+        overlay.classList.remove('open');
+        resetVault();
+    }
+    function resetVault() {
+        currentProduct = null;
+        selectedMedia = null;
+        sendState = null;
+        configEl.style.display = 'none';
+        mediaGridEl.style.display = 'none';
+        sendBtn.disabled = true;
+        statusEl.textContent = '';
+        sentStatusEl.textContent = '';
+        toolbarEl.style.display = 'none';
+        searchEl.value = '';
+        filterTypeEl.value = '';
+        filterProductEl.value = '';
+        backBtn.style.display = 'none';
+        showLoading();
+    }
+
+    function showLoading() {
+        loadingEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        errorEl.style.display = 'none';
+        productsEl.style.display = 'none';
+        mediaGridEl.style.display = 'none';
+    }
+    function showEmpty() {
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'block';
+        errorEl.style.display = 'none';
+        productsEl.style.display = 'none';
+        mediaGridEl.style.display = 'none';
+    }
+    function showError(msg) {
+        loadingEl.style.display = 'none';
+        emptyEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorMsgEl.textContent = msg || 'Something went wrong.';
+        productsEl.style.display = 'none';
+        mediaGridEl.style.display = 'none';
+    }
+
+    triggerBtn.addEventListener('click', openVault);
+    closeBtn.addEventListener('click', closeVault);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) closeVault(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeVault(); });
+    backBtn.addEventListener('click', function() {
+        if (currentProduct) { currentProduct = null; showProductGrid(); }
+    });
+
+    searchEl.addEventListener('input', debounce(applyFilters, 200));
+    filterTypeEl.addEventListener('change', applyFilters);
+    filterProductEl.addEventListener('change', applyFilters);
+
+    function debounce(fn, ms) {
+        var t; return function() { clearTimeout(t); var args = arguments; var ctx = this; t = setTimeout(function() { fn.apply(ctx, args); }, ms); };
+    }
+
+    async function loadVaultProducts() {
+        showLoading();
+        try {
+            var resp = await fetch('/api/vault/products?limit=200');
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            var data = await resp.json();
+            allProducts = data.items || [];
+        } catch (e) { allProducts = []; }
+        loadingEl.style.display = 'none';
+        if (allProducts.length === 0) { showEmpty(); return; }
+        populateProductFilter();
+        showProductGrid();
+    }
+
+    function populateProductFilter() {
+        filterProductEl.innerHTML = '<option value="">All products</option>';
+        allProducts.forEach(function(p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = (p.title || 'Untitled') + ' (' + (p.media_count || 0) + ')';
+            filterProductEl.appendChild(opt);
+        });
+    }
+
+    function showProductGrid() {
+        productsEl.innerHTML = '';
+        productsEl.style.display = 'grid';
+        mediaGridEl.style.display = 'none';
+        toolbarEl.style.display = 'none';
+        backBtn.style.display = 'none';
+        configEl.style.display = 'none';
+        statusEl.textContent = allProducts.length + ' products';
+        allProducts.forEach(function(p) {
+            var card = document.createElement('div');
+            card.className = 'vault-product-card';
+            var thumb = p.preview;
+            var thumbHtml = thumb ? '<img src="' + thumb + '" alt="">' : '<i class="fas fa-photo-video"></i>';
+            var priceText = p.price_minor != null ? '$' + (p.price_minor / 100).toFixed(2) : 'Free';
+            card.innerHTML =
+                '<div class="vault-product-thumb">' + thumbHtml + '</div>' +
+                '<div class="vault-product-title" title="' + esc(p.title || 'Untitled') + '">' + esc(p.title || 'Untitled') + '</div>' +
+                '<div class="vault-product-price">' + priceText + ' Â· ' + (p.media_count || 0) + ' media</div>';
+            card.addEventListener('click', function() { selectProduct(p); });
+            productsEl.appendChild(card);
+        });
+    }
+
+    async function selectProduct(p) {
+        currentProduct = p;
+        showLoading();
+        toolbarEl.style.display = 'none';
+        backBtn.style.display = 'flex';
+        try {
+            var resp = await fetch('/api/vault/products/' + p.id);
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            var product = await resp.json();
+            var mediaList = (product.raw && product.raw.media) || [];
+            allMedia = mediaList.filter(function(m) { return m && m.id; });
+
+            await loadDeliveredIds();
+
+            loadingEl.style.display = 'none';
+            if (allMedia.length === 0) {
+                statusEl.textContent = 'No media in this product.';
+                return;
+            }
+            populateProductFilter();
+            toolbarEl.style.display = 'flex';
+            showMediaGrid(allMedia);
+        } catch (e) {
+            showError('Error loading media: ' + e.message);
+        }
+    }
+
+    async function loadDeliveredIds() {
+        deliveredIds = new Set();
+        try {
+            var resp = await fetch('/api/vault/media?user_id=' + dialogId + '&limit=200');
+            if (!resp.ok) return;
+            var data = await resp.json();
+            (data.items || []).forEach(function(item) {
+                if (item.delivery_count > 0) deliveredIds.add(item.media_id);
+            });
+        } catch (e) {}
+    }
+
+    function showMediaGrid(mediaList) {
+        mediaGridEl.innerHTML = '';
+        mediaGridEl.style.display = 'grid';
+        productsEl.style.display = 'none';
+        configEl.style.display = 'none';
+        sendBtn.disabled = true;
+        statusEl.textContent = mediaList.length + ' items' + (currentProduct ? ' in ' + (currentProduct.title || 'Untitled') : '');
+
+        mediaList.forEach(function(m) {
+            var card = document.createElement('div');
+            card.className = 'vault-product-card';
+            card.dataset.mediaId = m.id;
+            var thumb = m.preview || m.preview_blurred;
+            var thumbHtml = thumb ? '<img src="' + thumb + '" alt="">' : '<i class="fas fa-photo-video"></i>';
+            var typeLabel = (m.type || 'media');
+            var delivered = deliveredIds.has(m.id);
+            card.innerHTML =
+                '<div class="vault-product-thumb">' + thumbHtml +
+                (delivered ? '<div class="vault-delivered-badge">Sent</div>' : '') +
+                '</div>' +
+                '<div class="vault-product-title">' + typeLabel + ' #' + m.id + '</div>';
+            card.addEventListener('click', function() { selectMedia(currentProduct, m, card); });
+            mediaGridEl.appendChild(card);
+        });
+    }
+
+    function applyFilters() {
+        var q = searchEl.value.toLowerCase().trim();
+        var typeFilter = filterTypeEl.value;
+        var productFilter = filterProductEl.value;
+
+        var filtered = allMedia.filter(function(m) {
+            if (typeFilter && m.type !== typeFilter) return false;
+            if (productFilter && currentProduct && String(currentProduct.id) !== productFilter) return false;
+            if (q) {
+                var searchable = ((m.type || '') + ' #' + m.id).toLowerCase();
+                if (searchable.indexOf(q) === -1) return false;
+            }
+            return true;
+        });
+        showMediaGrid(filtered);
+    }
+
+    function selectMedia(product, media, card) {
+        document.querySelectorAll('#vault-media-grid .vault-product-card.selected').forEach(function(c) { c.classList.remove('selected'); });
+        card.classList.add('selected');
+        selectedMedia = { product: product, media: media };
+
+        var thumb = media.preview || media.preview_blurred;
+        var thumbHtml = thumb
+            ? '<div class="vault-media-info-thumb"><img src="' + thumb + '" alt=""></div>'
+            : '<div class="vault-media-info-thumb"><i class="fas fa-photo-video"></i></div>';
+        var delivered = deliveredIds.has(media.id);
+        mediaInfoEl.innerHTML =
+            '<div class="vault-media-info">' + thumbHtml +
+            '<div class="vault-media-info-details">' +
+            '<div><span class="label">Type:</span> ' + esc(media.type || 'media') + '</div>' +
+            '<div><span class="label">ID:</span> ' + media.id + '</div>' +
+            '<div><span class="label">Product:</span> ' + esc(product.title || 'Untitled') + '</div>' +
+            (delivered ? '<div style="color:#059669;font-weight:600;">Already sent to this fan</div>' : '') +
+            '</div></div>';
+
+        configEl.style.display = 'block';
+        sendBtn.disabled = false;
+        sentStatusEl.textContent = '';
+        statusEl.textContent = 'Selected: ' + (product.title || 'Untitled') + ' â€” ' + (media.type || 'media') + ' #' + media.id;
+    }
+
+    sendBtn.addEventListener('click', sendMedia);
+
+    async function sendMedia() {
+        if (!selectedMedia) return;
+        var caption = document.getElementById('ppv-caption').value || '';
+        sendBtn.disabled = true;
+        sendState = 'sending';
+        sentStatusEl.innerHTML = '<span class="vault-send-state sending"><i class="fas fa-spinner fa-spin"></i> Sending...</span>';
+        statusEl.textContent = 'Enqueueing media for delivery...';
+        try {
+            var resp = await fetch('/api/vault/send-media', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: parseInt(dialogId),
+                    media_type: selectedMedia.media.type === 'video' ? 'video' : 'photo',
+                    media_path: selectedMedia.media.preview,
+                    fangate_media_id: selectedMedia.media.id,
+                    product_id: selectedMedia.product.id,
+                    caption: caption
+                })
+            });
+            if (!resp.ok) {
+                var errData = await resp.json().catch(function() { return {}; });
+                throw new Error(errData.error || errData.detail || 'Send failed (HTTP ' + resp.status + ')');
+            }
+            sendState = 'sent';
+            sentStatusEl.innerHTML = '<span class="vault-send-state sent"><i class="fas fa-check"></i> Queued for delivery</span>';
+            statusEl.textContent = 'Media queued. It will be delivered via Telegram.';
+            deliveredIds.add(selectedMedia.media.id);
+            updateCardDeliveredState(selectedMedia.media.id);
+        } catch (e) {
+            sendState = 'failed';
+            sentStatusEl.innerHTML = '<span class="vault-send-state failed"><i class="fas fa-times"></i> ' + esc(e.message) + '</span>';
+            statusEl.textContent = 'Send failed. You can try again.';
+            sendBtn.disabled = false;
+        }
+    }
+
+    function updateCardDeliveredState(mediaId) {
+        var card = mediaGridEl.querySelector('[data-media-id="' + mediaId + '"]');
+        if (card && !card.querySelector('.vault-delivered-badge')) {
+            var thumb = card.querySelector('.vault-product-thumb');
+            if (thumb) {
+                var badge = document.createElement('div');
+                badge.className = 'vault-delivered-badge';
+                badge.textContent = 'Sent';
+                thumb.appendChild(badge);
+            }
+        }
+    }
+
+    function esc(s) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(s));
+        return d.innerHTML;
+    }
+
+    // â”€â”€ Realtime: vault.media_sent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    rt.on('vault.media_sent', function(evt) {
+        if (evt.dialog_id !== dialogId) return;
+        var d = evt.data;
+        if (d && d.fangate_media_id) {
+            var mid = parseInt(d.fangate_media_id);
+            deliveredIds.add(mid);
+            updateCardDeliveredState(mid);
+            if (selectedMedia && selectedMedia.media.id === mid) {
+                sentStatusEl.innerHTML = '<span class="vault-send-state sent"><i class="fas fa-check"></i> Delivered</span>';
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}
+
+

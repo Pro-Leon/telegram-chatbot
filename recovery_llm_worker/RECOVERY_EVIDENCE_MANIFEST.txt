@@ -1,0 +1,40 @@
+RECOVERY EVIDENCE MANIFEST
+===========================
+Generated: 2026-09-01
+
+Python Environment:
+  Version: 3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)]
+  Implementation: cpython
+  Executable: C:\Users\User\AppData\Local\Python\pythoncore-3.14-64\python.exe
+  MAGIC_NUMBER: 2b0e0d0a
+
+Evidence Files:
+
+1. recovery_llm_worker/llm_worker.cpython-314.pyc
+   Size: 90970 bytes
+   Mtime: Tue Sep  1 18:32:12 2026
+   SHA256: 9ca6d765c3d11286e862b9e9177fa49afd60503f2f23f34b34541beb4c969946
+
+2. recovery_llm_worker/llm_worker_disassembly.txt
+   Size: 548862 bytes
+   Mtime: Tue Sep  1 18:48:16 2026
+   SHA256: b35c72fa55882bec595aa25395c0372f17cfe8d4235ad79bd1fd24fa0aa94fd9
+
+3. recovery_llm_worker/llm_worker_181_current.py
+   Size: 5534 bytes
+   Mtime: Tue Sep  1 18:32:13 2026
+   SHA256: 29d6b206e04a5d30d3c5fd58abef4633cec1ac2fd4f13c280f308b0c9530c322
+
+4. recovery_llm_worker/llm_worker_bc4f0a856c7f81dd430829ff48957dcc6290cd2c.py
+   Size: 15592 bytes
+   Mtime: Tue Sep  1 18:45:22 2026
+   SHA256: 01e1eec14b279c93199350e06c1afac9928859b9bfcefa074b2c5ec7c082ad42
+
+Python Compatibility:
+  .pyc magic: 2b0e0d0a
+  Interpreter magic: 2b0e0d0a
+  COMPATIBLE: Yes (same Python 3.14 bytecode format)
+
+Production Worker Status:
+  workers/llm_worker.py: REVERTED to 181-line original (5534 bytes)
+  .pyc corresponds to: ~1904-line advanced worker (90970 bytes compiled)

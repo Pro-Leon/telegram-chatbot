@@ -1,0 +1,58 @@
+{
+  "phase": "P4.3.1",
+  "title": "Live Fangate API Conformance Verification",
+  "date": "2026-08-23",
+  "status": "COMPLETE",
+  "execution": {
+    "credential_available": true,
+    "credential_source": "database (creator_integrations.encrypted_api_key, decrypted in-memory)",
+    "probe_executed": true,
+    "probe_safety_verified": true,
+    "live_api_reachable": true,
+    "base_url": "https://fangate.info/api",
+    "phases_executed": 3,
+    "total_probes": 24
+  },
+  "phase_1_results": {
+    "description": "Probe all 8 unverified endpoints with fake ID 999999999",
+    "product_id_used": 999999999,
+    "results": [
+      {"method": "GET", "path": "/products/999999999/analytics", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "POST", "path": "/webhooks/test", "status": 405, "classification": "METHOD_NOT_ALLOWED", "route_exists": "YES", "supported_methods": "PATCH, DELETE"},
+      {"method": "POST", "path": "/products/999999999/offers", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "POST", "path": "/products/999999999/offers/999999999/send", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "PATCH", "path": "/products/999999999/offers/999999999", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "DELETE", "path": "/products/999999999/offers/999999999", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "POST", "path": "/products/999999999/media/blur", "status": 405, "classification": "METHOD_NOT_ALLOWED", "route_exists": "YES", "supported_methods": "DELETE"},
+      {"method": "POST", "path": "/products/999999999/epoch", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "POST", "path": "/products/999999999/media", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"},
+      {"method": "GET", "path": "/products/999999999/offers", "status": 404, "classification": "NOT_FOUND_OR_ROUTE_MISSING", "route_exists": "AMBIGUOUS"}
+    ]
+  },
+  "phase_2_results": {
+    "description": "Test ambiguous 404 endpoints with REAL product ID (10425) from fangate_products table",
+    "product_id_used": 10425,
+    "results": [
+      {"method": "GET", "path": "/products/10425/analytics", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "POST", "path": "/products/10425/offers", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "POST", "path": "/products/10425/epoch", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "POST", "path": "/products/10425/media", "status": 422, "classification": "ROUTE_EXISTS_VALIDATION_ERROR", "route_exists": "YES", "evidence": "422 validation error confirms route exists and validates media_ids field"},
+      {"method": "GET", "path": "/products/10425/offers", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "POST", "path": "/products/10425/offers/999999999/send", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "PATCH", "path": "/products/10425/offers/999999999", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"},
+      {"method": "DELETE", "path": "/products/10425/offers/999999999", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "404 persists with real product ID — route does not exist"}
+    ]
+  },
+  "phase_3_results": {
+    "description": "Test method-correct endpoints and media validation edge cases",
+    "product_id_used": 10425,
+    "results": [
+      {"method": "DELETE", "path": "/products/10425/media/blur", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "DELETE method returns 404 with real product — route does not exist"},
+      {"method": "PATCH", "path": "/webhooks/test", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "PATCH method returns 404 — route does not exist"},
+      {"method": "DELETE", "path": "/webhooks/test", "status": 404, "classification": "NOT_FOUND", "route_exists": "NO", "evidence": "DELETE method returns 404 — route does not exist"},
+      {"method": "GET", "path": "/products/10425/media/blur", "status": 405, "classification": "METHOD_NOT_ALLOWED", "route_exists": "YES", "supported_methods": "DELETE", "evidence": "GET returns 405 saying DELETE is the only supported method"},
+      {"method": "POST", "path": "/products/10425/media", "status": 422, "classification": "ROUTE_EXISTS_VALIDATION_ERROR", "route_exists": "YES", "validation_message": "The media ids field is required.", "evidence": "Empty body triggers validation — media_ids is required field"},
+      {"method": "POST", "path": "/products/10425/media", "status": 422, "classification": "ROUTE_EXISTS_VALIDATION_ERROR", "route_exists": "YES", "validation_message": "The media ids field is required.", "evidence": "Empty array triggers validation — media_ids is required field"}
+    ]
+  }
+}

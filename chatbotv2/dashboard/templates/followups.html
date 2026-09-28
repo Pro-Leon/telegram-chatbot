@@ -1,0 +1,288 @@
+{% extends "dashboard.html" %}
+{% block nav_followups %}active{% endblock %}
+{% block page_title %}Follow-Ups{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+    .fu-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 1024px) { .fu-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .fu-grid { grid-template-columns: 1fr; } }
+    .sc { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; position: relative; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .sc:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .sc::after { content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; filter: blur(32px); opacity: 0.18; pointer-events: none; }
+    .sc.purple::after { background: var(--accent-purple); }
+    .sc.green::after { background: var(--accent-green); }
+    .sc.orange::after { background: var(--accent-orange); }
+    .sc.red::after { background: var(--accent-red); }
+    .sc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .sc-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); }
+    .sc-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .sc-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .sc-icon.green { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .sc-icon.orange { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .sc-icon.red { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .sc-val { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .sc-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+    .sec-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; overflow: hidden; margin-bottom: 20px; }
+    .sec-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .sec-hdr h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .fbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .fbtn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); transition: all 0.15s; }
+    .fbtn:hover { background: rgba(0,0,0,0.04); }
+    .fbtn.active { background: rgba(108,99,255,0.1); color: var(--accent-purple); border-color: rgba(108,99,255,0.3); }
+    .sb { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .sb.pending { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .sb.processing { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .sb.completed { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .sb.failed { background: rgba(248,113,113,0.15); color: var(--accent-red); }
+    .sb.cancelled { background: rgba(156,163,175,0.15); color: var(--text-tertiary); }
+    .ba { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .ba.cancel { background: rgba(248,113,113,0.12); color: var(--accent-red); }
+    .ba.cancel:hover { background: rgba(248,113,113,0.25); }
+    .ba.detail { background: rgba(108,99,255,0.1); color: var(--accent-purple); }
+    .ba.detail:hover { background: rgba(108,99,255,0.2); }
+    .ba:disabled { opacity: 0.5; cursor: not-allowed; }
+    .empty { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .empty p { font-size: 14px; }
+    .pg { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; }
+    .pg button { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); transition: all 0.15s; }
+    .pg button:hover { background: rgba(0,0,0,0.04); }
+    .pg button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .pg span { font-size: 12px; color: var(--text-tertiary); }
+    .toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: rgba(74,222,128,0.95); color: #065f46; }
+    .toast.error { background: rgba(248,113,113,0.95); color: #991b1b; }
+    .dm-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    .dm { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; width: 480px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+    .dm h3 { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 16px; }
+    .dr { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(42,45,62,0.6); }
+    .dl { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-tertiary); }
+    .dv { font-size: 13px; color: var(--text-primary); text-align: right; max-width: 60%; word-break: break-word; }
+    .dct { font-size: 13px; color: var(--text-secondary); background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; margin-top: 8px; white-space: pre-wrap; }
+    .dcl { margin-top: 16px; width: 100%; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); transition: all 0.15s; }
+    .dcl:hover { background: rgba(0,0,0,0.04); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="followupsApp()" x-init="init()">
+    <div class="page-header">
+        <h2>Scheduled Follow-Ups</h2>
+        <p>View and manage scheduled follow-up messages</p>
+    </div>
+
+    <div class="fu-grid">
+        <div class="sc purple">
+            <div class="sc-top"><span class="sc-label">Total</span><div class="sc-icon purple"><i class="fas fa-clock"></i></div></div>
+            <div class="sc-val" x-text="stats.total || 0"></div>
+            <div class="sc-sub">All scheduled messages</div>
+        </div>
+        <div class="sc orange">
+            <div class="sc-top"><span class="sc-label">Pending</span><div class="sc-icon orange"><i class="fas fa-hourglass-half"></i></div></div>
+            <div class="sc-val" x-text="stats.pending || 0"></div>
+            <div class="sc-sub">Awaiting delivery</div>
+        </div>
+        <div class="sc green">
+            <div class="sc-top"><span class="sc-label">Completed</span><div class="sc-icon green"><i class="fas fa-check-circle"></i></div></div>
+            <div class="sc-val" x-text="stats.completed || 0"></div>
+            <div class="sc-sub">Successfully delivered</div>
+        </div>
+        <div class="sc red">
+            <div class="sc-top"><span class="sc-label">Failed</span><div class="sc-icon red"><i class="fas fa-exclamation-circle"></i></div></div>
+            <div class="sc-val" x-text="stats.failed || 0"></div>
+            <div class="sc-sub">Delivery failures</div>
+        </div>
+    </div>
+
+    <!-- Health Status Banner -->
+    <div class="sec-card" style="margin-bottom: 20px;">
+        <div class="sec-hdr">
+            <h2><i class="fas fa-heartbeat" style="color: var(--accent-green); margin-right: 8px;"></i>System Health</h2>
+            <button @click="loadHealth()" class="fbtn" :disabled="healthLoading">
+                <i class="fas" :class="healthLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+            </button>
+        </div>
+        <div x-show="healthLoading" class="loading-text" style="padding: 12px;"><i class="fas fa-spinner fa-spin"></i> Loading health...</div>
+        <div x-show="!healthLoading && health" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px;">Health</div>
+                <span class="sb" :class="health?.status === 'healthy' ? 'completed' : health?.status === 'warning' ? 'pending' : 'failed'" x-text="health?.status || 'unknown'" style="font-size: 14px;"></span>
+            </div>
+            <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px;">Scheduler</div>
+                <span class="sb" :class="health?.scheduler?.health === 'alive' ? 'completed' : health?.scheduler?.health === 'stale' ? 'pending' : 'failed'" x-text="health?.scheduler?.health || 'unknown'" style="font-size: 14px;"></span>
+            </div>
+            <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px;">Lag</div>
+                <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);" x-text="health?.lag?.lag_seconds != null ? health.lag.lag_seconds + 's' : '—'"></div>
+                <div style="font-size: 11px; color: var(--text-tertiary);" x-text="(health?.lag?.pending_count || 0) + ' pending'"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sec-card">
+        <div class="sec-hdr"><h2>Follow-Up Messages</h2></div>
+        <div class="fbar" style="margin-bottom:16px;">
+            <button class="fbtn" :class="{'active':!filterStatus}" @click="setFilter(null)">All</button>
+            <button class="fbtn" :class="{'active':filterStatus==='pending'}" @click="setFilter('pending')"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-orange);"></span> Pending</button>
+            <button class="fbtn" :class="{'active':filterStatus==='processing'}" @click="setFilter('processing')"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-purple);"></span> Processing</button>
+            <button class="fbtn" :class="{'active':filterStatus==='completed'}" @click="setFilter('completed')"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);"></span> Completed</button>
+            <button class="fbtn" :class="{'active':filterStatus==='failed'}" @click="setFilter('failed')"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent-red);"></span> Failed</button>
+            <button class="fbtn" :class="{'active':filterStatus==='cancelled'}" @click="setFilter('cancelled')"><span style="width:6px;height:6px;border-radius:50%;background:var(--text-tertiary);"></span> Cancelled</button>
+        </div>
+
+        <div x-show="loading" class="empty"><i class="fas fa-spinner fa-spin"></i><p>Loading follow-ups...</p></div>
+        <div x-show="!loading && messages.length===0" class="empty"><i class="fas fa-clock"></i><p>No scheduled follow-ups found</p></div>
+
+        <div x-show="!loading && messages.length > 0">
+            <table class="app-table">
+                <thead><tr><th>User</th><th>Message</th><th>Scheduled For</th><th>Status</th><th>Reason</th><th>Actions</th></tr></thead>
+                <tbody>
+                    <template x-for="msg in messages" :key="msg.id">
+                        <tr>
+                            <td>
+                                <div style="font-weight:500;color:var(--text-primary);" x-text="msg.first_name || msg.username || ('User #'+msg.user_id)"></div>
+                                <div style="font-size:12px;color:var(--text-tertiary);" x-text="msg.username ? '@'+msg.username : 'ID: '+msg.user_id"></div>
+                            </td>
+                            <td><div style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" x-text="msg.content"></div></td>
+                            <td style="font-size:12px;color:var(--text-secondary);" x-text="fmtDate(msg.execute_at)"></td>
+                            <td><span class="sb" :class="msg.status" x-text="msg.status"></span></td>
+                            <td style="font-size:12px;color:var(--text-tertiary);" x-text="msg.reason || '-'"></td>
+                            <td>
+                                <div style="display:flex;gap:4px;">
+                                    <button class="ba detail" @click="showDetail(msg)" title="Details"><i class="fas fa-eye"></i></button>
+                                    <button class="ba cancel" x-show="msg.status==='pending'" @click="cancelMsg(msg)" :disabled="msg._cancelling" title="Cancel"><i class="fas fa-times"></i> Cancel</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <div class="pg">
+                <button @click="prevPage()" :disabled="page<=1"><i class="fas fa-chevron-left"></i></button>
+                <span x-text="'Page '+page+' of '+totalPages"></span>
+                <button @click="nextPage()" :disabled="page>=totalPages"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div x-show="showModal" class="dm-overlay" @click.self="showModal=false" style="display:none;">
+        <div class="dm">
+            <h3>Follow-Up Details</h3>
+            <template x-if="detailMsg">
+                <div>
+                    <div class="dr"><span class="dl">ID</span><span class="dv" x-text="detailMsg.id"></span></div>
+                    <div class="dr"><span class="dl">User</span><span class="dv" x-text="detailMsg.first_name || detailMsg.username || ('User #'+detailMsg.user_id)"></span></div>
+                    <div class="dr"><span class="dl">Status</span><span class="dv"><span class="sb" :class="detailMsg.status" x-text="detailMsg.status"></span></span></div>
+                    <div class="dr"><span class="dl">Scheduled For</span><span class="dv" x-text="fmtDate(detailMsg.execute_at)"></span></div>
+                    <div class="dr"><span class="dl">Created</span><span class="dv" x-text="fmtDate(detailMsg.created_at)"></span></div>
+                    <div class="dr" x-show="detailMsg.reason"><span class="dl">Reason</span><span class="dv" x-text="detailMsg.reason || '-'"></span></div>
+                    <div class="dr" x-show="detailMsg.claimed_at"><span class="dl">Claimed</span><span class="dv" x-text="fmtDate(detailMsg.claimed_at)"></span></div>
+                    <div class="dr" x-show="detailMsg.completed_at"><span class="dl">Completed</span><span class="dv" x-text="fmtDate(detailMsg.completed_at)"></span></div>
+                    <div class="dr" x-show="detailMsg.failed_at"><span class="dl">Failed</span><span class="dv" x-text="fmtDate(detailMsg.failed_at)"></span></div>
+                    <div class="dr"><span class="dl">Attempts</span><span class="dv" x-text="detailMsg.attempts || 0"></span></div>
+                    <div class="dr" x-show="detailMsg.last_error"><span class="dl">Last Error</span><span class="dv" x-text="detailMsg.last_error"></span></div>
+                    <div class="dct" x-text="detailMsg.content"></div>
+                    <button class="dcl" @click="showModal=false">Close</button>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <div id="fut" class="toast" x-show="toast.show" :class="toast.type" x-text="toast.message" x-cloak></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function followupsApp() {
+    return {
+        messages: [],
+        stats: {total:0,pending:0,processing:0,completed:0,failed:0,cancelled:0},
+        loading: true, page: 1, totalPages: 1, filterStatus: null,
+        showModal: false, detailMsg: null,
+        toast: {show:false,message:'',type:'success'},
+        healthLoading: false, health: null,
+
+        async init() { await Promise.all([this.loadData(), this.loadHealth()]); },
+
+        async loadData() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({page: this.page, page_size: 20});
+                if (this.filterStatus) params.set('status', this.filterStatus);
+                const resp = await fetch('/api/followups?' + params.toString());
+                if (!resp.ok) throw new Error('Failed to load');
+                const data = await resp.json();
+                this.messages = data.messages || [];
+                this.stats = data.stats || this.stats;
+                this.totalPages = data.pagination?.total_pages || 1;
+            } catch(e) { this.showToast('Failed to load follow-ups', 'error'); }
+            this.loading = false;
+        },
+
+        async loadHealth() {
+            this.healthLoading = true;
+            try {
+                const resp = await fetch('/api/followups/health');
+                if (!resp.ok) throw new Error('Failed to load health');
+                this.health = await resp.json();
+            } catch(e) { /* silent */ }
+            finally { this.healthLoading = false; }
+        },
+
+        setFilter(status) { this.filterStatus = status; this.page = 1; this.loadData(); },
+        prevPage() { if (this.page > 1) { this.page--; this.loadData(); } },
+        nextPage() { if (this.page < this.totalPages) { this.page++; this.loadData(); } },
+
+        showDetail(msg) {
+            this.detailMsg = msg;
+            this.showModal = true;
+            this.fetchDetail(msg.id);
+        },
+
+        async fetchDetail(id) {
+            try {
+                const resp = await fetch('/api/followups/' + id);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (data && this.detailMsg && this.detailMsg.id === id) {
+                    this.detailMsg = Object.assign({}, this.detailMsg, data);
+                }
+            } catch (e) {}
+        },
+
+        async cancelMsg(msg) {
+            msg._cancelling = true;
+            try {
+                const resp = await fetch('/api/followups/' + msg.id + '/cancel', {method:'POST'});
+                const data = await resp.json();
+                if (data.cancelled) {
+                    msg.status = 'cancelled';
+                    this.showToast('Follow-up cancelled', 'success');
+                    this.loadData();
+                } else {
+                    this.showToast(data.reason || 'Cannot cancel', 'error');
+                }
+            } catch(e) { this.showToast('Cancel failed', 'error'); }
+            msg._cancelling = false;
+        },
+
+        fmtDate(iso) {
+            if (!iso) return '-';
+            try { return new Date(iso).toLocaleString(); } catch(e) { return iso; }
+        },
+
+        showToast(msg, type) {
+            this.toast = {show:true, message:msg, type:type};
+            setTimeout(() => { this.toast.show = false; }, 3000);
+        },
+    };
+}
+</script>
+{% endblock %}

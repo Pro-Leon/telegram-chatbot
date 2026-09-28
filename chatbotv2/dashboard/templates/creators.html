@@ -1,0 +1,120 @@
+{% extends "dashboard.html" %}
+{% block nav_creators %}active{% endblock %}
+{% block page_title %}Creators{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+    .section-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; overflow: hidden; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .status-badge.active { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.error { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+    .status-badge.none { background: rgba(156,163,175,0.15); color: var(--text-tertiary); }
+    .btn-action { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-action.primary { background: var(--accent-purple); color: white; }
+    .btn-action.primary:hover { opacity: 0.9; }
+    .btn-action.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .btn-action.secondary:hover { background: rgba(0,0,0,0.04); }
+    .toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; display: none; }
+    .toast.success { background: var(--accent-green); color: #fff; }
+    .toast.error { background: var(--accent-red); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="creatorsApp()" x-init="init()" style="padding: 24px;">
+    <div class="page-header">
+        <h2>Creators</h2>
+        <p>Manage creator accounts and their DropFans integrations</p>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header">
+            <h2>All Creators</h2>
+            <button @click="loadCreators()" class="btn-action secondary" :disabled="loading">
+                <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+            </button>
+        </div>
+
+        <div x-show="loading" class="loading-text">
+            <i class="fas fa-spinner fa-spin"></i> Loading creators...
+        </div>
+        <div x-show="!loading && creators.length === 0" class="empty-state">
+            <i class="fas fa-users"></i>
+            <p>No creators found</p>
+        </div>
+        <div x-show="!loading && creators.length > 0" style="overflow-x: auto;">
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Display Name</th>
+                        <th>Integration</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="c in creators" :key="c.id">
+                        <tr>
+                            <td style="font-family: monospace; font-size: 12px;" x-text="c.id"></td>
+                            <td style="font-weight: 500; color: var(--text-primary);" x-text="c.name || '—'"></td>
+                            <td style="color: var(--text-secondary);" x-text="c.display_name || '—'"></td>
+                            <td>
+                                <span class="status-badge" :class="c.has_integration ? 'active' : 'none'"
+                                      x-text="c.has_integration ? 'Connected' : 'Not Connected'"></span>
+                            </td>
+                            <td style="font-size: 12px; color: var(--text-tertiary);" x-text="c.created_at ? new Date(c.created_at).toLocaleDateString() : '—'"></td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function creatorsApp() {
+    return {
+        creators: [],
+        loading: true,
+
+        async init() { await this.loadCreators(); },
+
+        async loadCreators() {
+            this.loading = true;
+            try {
+                const resp = await fetch('/api/fangate/creators');
+                if (!resp.ok) throw new Error('Failed to load creators');
+                const data = await resp.json();
+                this.creators = data.creators || [];
+            } catch (e) {
+                this.showToast(e.message, 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + type;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+    };
+}
+</script>
+{% endblock %}

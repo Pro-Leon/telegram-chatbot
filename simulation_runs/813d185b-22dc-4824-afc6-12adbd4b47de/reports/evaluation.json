@@ -1,0 +1,189 @@
+{
+  "as_of": "2026-09-20T21:32:56.277745+03:00",
+  "baselines": {
+    "creator_rate": 0.2833333333333333,
+    "fan_recent_rate": 0.2833333333333333,
+    "global_rate": 0.2833333333333333,
+    "offer_type_mean_rate": 0.2727272727272727,
+    "offer_type_most_frequent_rate": 0.36363636363636365
+  },
+  "by_cohort": {
+    "HIGH": {
+      "brier": 0.27631108652478625,
+      "log_loss": 0.7624213598173347,
+      "n": 12
+    },
+    "MID": {
+      "brier": 0.17618512146202933,
+      "log_loss": 0.5391181173780327,
+      "n": 3
+    },
+    "lifecycle:cold": {
+      "brier": 0.27304920326526,
+      "log_loss": 0.7331126879880898,
+      "n": 7
+    },
+    "lifecycle:hot": {
+      "brier": 0.6816907456541459,
+      "log_loss": 1.7577124744868542,
+      "n": 2
+    },
+    "lifecycle:warm": {
+      "brier": 0.09492708141973523,
+      "log_loss": 0.3531994841752963,
+      "n": 6
+    },
+    "offer:CORE_BUNDLE": {
+      "brier": 0.17439202255700462,
+      "log_loss": 0.5193989742180745,
+      "n": 4
+    },
+    "offer:PREMIUM": {
+      "brier": 0.2813659260551967,
+      "log_loss": 0.7643041159549144,
+      "n": 8
+    },
+    "offer:SINGLE": {
+      "brier": 0.02883035439447625,
+      "log_loss": 0.18608266461057335,
+      "n": 1
+    },
+    "offer:SMALL_BUNDLE": {
+      "brier": 0.4334812748097272,
+      "log_loss": 1.1941495904099646,
+      "n": 2
+    },
+    "price:HIGH": {
+      "brier": 0.27631108652478625,
+      "log_loss": 0.7624213598173347,
+      "n": 12
+    },
+    "price:MID": {
+      "brier": 0.17618512146202933,
+      "log_loss": 0.5391181173780327,
+      "n": 3
+    }
+  },
+  "calibration": null,
+  "code_revision": "19e18841",
+  "counterfactual": [
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          89469,
+          1,
+          0.17004668277067855
+        ]
+      ],
+      "creator_id": 944651,
+      "deltas": [
+        {
+          "definition_id": 89469,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.17004668277067855,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9032151,
+      "primary_definition": [
+        89469,
+        1
+      ],
+      "primary_prob": 0.17004668277067855,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          61450,
+          1,
+          0.16979503642473254
+        ]
+      ],
+      "creator_id": 944651,
+      "deltas": [
+        {
+          "definition_id": 61450,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.16979503642473254,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9081755,
+      "primary_definition": [
+        61450,
+        1
+      ],
+      "primary_prob": 0.16979503642473254,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    },
+    {
+      "abstain": false,
+      "candidate_scores": [
+        [
+          50262,
+          1,
+          0.5204465687212166
+        ]
+      ],
+      "creator_id": 944651,
+      "deltas": [
+        {
+          "definition_id": 50262,
+          "delta_vs_primary": 0.0,
+          "is_primary": true,
+          "prob": 0.5204465687212166,
+          "version": 1
+        }
+      ],
+      "is_extrapolative": true,
+      "opportunity_id": 9642260,
+      "primary_definition": [
+        50262,
+        1
+      ],
+      "primary_prob": 0.5204465687212166,
+      "warning": "EXTRAPOLATIVE/OFF-POLICY ADVISORY: alternatives were not exposed; scores for unexposed candidates are NOT validated conversion probabilities and MUST NOT be interpreted as causal or ranking claims."
+    }
+  ],
+  "dataset_hash": "50bb2fa674941db1",
+  "metrics": {
+    "accuracy": 0.6,
+    "brier": 0.25628589351223485,
+    "calibration_gap": 0.0755093565142062,
+    "coverage": 1.0,
+    "log_loss": 0.7177607113294743,
+    "mean_predicted": 0.3244906434857938,
+    "n": 15,
+    "observed_rate": 0.4,
+    "precision": 0.5,
+    "recall": 0.16666666666666666
+  },
+  "optimizer_version": "p356.offline.proto.v1",
+  "scenario_id": "premium_mix",
+  "scenario_version": "v1",
+  "seed": 11,
+  "simulation_id": "813d185b-22dc-4824-afc6-12adbd4b47de",
+  "strategy_id": "premium_mix",
+  "stress": {
+    "60": {
+      "brier": 0.25628589351223485,
+      "dataset_hash": "50bb2fa6",
+      "log_loss": 0.7177607113294743
+    },
+    "90": {
+      "brier": 0.25628589351223485,
+      "dataset_hash": "50bb2fa674941db1",
+      "log_loss": 0.7177607113294743
+    }
+  },
+  "test_n": 15,
+  "train_n": 60,
+  "valid_n": 15
+}

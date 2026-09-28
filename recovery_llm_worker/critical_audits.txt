@@ -1,0 +1,207 @@
+======================================================================
+PHASE 79A — CRITICAL AUDITS (Steps 4-10)
+======================================================================
+
+======================================================================
+STEP 4 — FUNCTION-BY-FUNCTION FORENSICS
+======================================================================
+
+--- _parse_worker_preferred_index ---
+  .pyc: args=1 locals=3 line=70
+  src:  args=1 locals=3 line=70
+  Confidence: HIGH
+  Notes: Exact match. Credential affinity with pool modulo.
+
+--- generate_draft ---
+  .pyc: args=3 locals=19 line=83
+  src:  args=3 locals=18 line=83
+  Confidence: MEDIUM
+  Notes: Close match. Minor: .pyc has 'startswith' (persona prefix check), source has 'split' (provider list). 1 fewer local in source.
+
+--- generate_draft_with_tools ---
+  .pyc: args=5 locals=34 line=180
+  src:  args=5 locals=30 line=156
+  Confidence: MEDIUM
+  Notes: Core tool loop present. 4 fewer locals (likely missing daily quota check vars). Names overlap good.
+
+--- _try_commerce_draft ---
+  .pyc: args=3 locals=24 line=358
+  src:  args=4 locals=19 line=306
+  Confidence: MEDIUM
+  Notes: Core commerce path present. .pyc has 1 more arg (signals keyword). Missing 5 locals (likely profile/cache vars).
+
+--- notify_operators ---
+  .pyc: args=5 locals=5 line=472
+  src:  args=5 locals=5 line=415
+  Confidence: HIGH
+  Notes: Exact match. Simple logging function.
+
+--- post_process ---
+  .pyc: args=1 locals=5 line=488
+  src:  args=1 locals=5 line=431
+  Confidence: HIGH
+  Notes: Exact match. Profile extraction and summarization.
+
+--- process_message ---
+  .pyc: args=7 locals=222 line=504
+  src:  args=7 locals=90 line=447
+  Confidence: LOW
+  Notes: CRITICAL GAP. .pyc has 222 locals vs 90 in source (132 missing). 6741 instructions vs 2224 (4517 missing). 306 names vs 125 (181 missing). Core flow present but many feature blocks missing.
+
+--- run_worker ---
+  .pyc: args=1 locals=21 line=1700
+  src:  args=1 locals=21 line=1036
+  Confidence: HIGH
+  Notes: Good match. All key names present. Core loop intact.
+
+--- _worker_cleanup ---
+  .pyc: args=0 locals=2 line=1812
+  src:  args=0 locals=2 line=1140
+  Confidence: HIGH
+  Notes: Exact match. Cleanup handler.
+
+--- main ---
+  .pyc: args=0 locals=3 line=1821
+  src:  args=0 locals=3 line=1149
+  Confidence: HIGH
+  Notes: Exact match. Entry point.
+
+======================================================================
+STEP 5 — CRITICAL SYMBOL AUDIT
+======================================================================
+
+| Symbol | Found in Source | Call Sites | Disassembly | Status |
+|--------|----------------|------------|-------------|--------|
+| `build_qwen3_context` | True | [524] | True | **PRESENT** |
+| `extract_commerce_signals` | True | [669] | True | **PRESENT** |
+| `generate_draft` | True | [178, 185, 223, 1105] | True | **PRESENT** |
+| `generate_draft_with_tools` | True | [1087] | True | **PRESENT** |
+| `score_draft` | True | [1112] | True | **PRESENT** |
+| `publish_event` | True | [541, 1481, 1320] | True | **PRESENT** |
+| `observe_context_engine` | True | [554] | True | **PRESENT** |
+| `ShadowRunner` | True | [652] | True | **PRESENT** |
+| `ShadowConfig` | True | — | True | **PRESENT** |
+| `derive_persona_behavior_state` | True | [1050] | True | **PRESENT** |
+| `validate_persona_voice` | True | [1138] | True | **PRESENT** |
+| `update_strategy_evidence` | True | [1401] | True | **PRESENT** |
+| `classify_outcome` | True | [1458, 1366] | True | **PRESENT** |
+| `extract_explicit_memories` | True | [595] | True | **PRESENT** |
+| `extract_fan_knowledge` | True | [615] | True | **PRESENT** |
+| `resolve_open_loop` | True | [679] | True | **PRESENT** |
+| `observe_behavioral_signal` | True | [635] | True | **PRESENT** |
+| `enrich_telemetry_with_funnel` | True | [1471] | True | **PRESENT** |
+| `build_agent_state` | True | [990] | True | **PRESENT** |
+| `run_agent_runtime` | True | [996, 1096] | True | **PRESENT** |
+| `load_persisted_state` | True | [1506] | True | **PRESENT** |
+| `get_model` | True | — | True | **PRESENT** |
+| `acquire_user_lock` | True | [490] | True | **PRESENT** |
+| `release_user_lock` | True | [1493] | True | **PRESENT** |
+| `enqueue_send` | True | [1251] | True | **PRESENT** |
+| `add_to_operator_queue` | True | [567, 1212, 1279] | True | **PRESENT** |
+| `is_auto_reply_enabled` | True | [1200] | True | **PRESENT** |
+| `CommerceSelectionResult` | True | — | True | **PRESENT** |
+| `ToolAuthContext` | True | [1077, 1008] | True | **PRESENT** |
+| `dispatch_tool` | True | [269] | True | **PRESENT** |
+| `build_conversational_commerce_state` | True | [720] | True | **PRESENT** |
+| `compute_pressure` | True | [811] | True | **PRESENT** |
+| `derive_risk` | True | [818] | True | **PRESENT** |
+| `build_operation_decision` | True | [824] | True | **PRESENT** |
+| `record_metric` | True | [1162, 889] | True | **PRESENT** |
+| `get_telemetry_collector` | True | [466] | True | **PRESENT** |
+
+======================================================================
+STEP 6 — THREE-LLM INVARIANT AUDIT
+======================================================================
+
+LLM #1 (extract_commerce_signals): 1 call(s) at lines [669]
+LLM #2 (generate_draft): 5 call(s) at lines [178, 185, 223, 1105, 1087]
+LLM #3 (score_draft): 1 call(s) at lines [1112]
+
+✓ No fourth LLM detected in source
+
+Disassembly LLM references:
+  extract_commerce_signals: 6 references
+  generate_draft: 30 references
+  score_draft: 6 references
+
+| LLM | Function | Calls in Source | Calls in .pyc | Invariant |
+|-----|----------|----------------|---------------|-----------|
+| #1 | extract_commerce_signals | 1 | ~1 (single extraction) | PRESERVED |
+| #2 | generate_draft / generate_draft_with_tools | 5 | ~2 | PRESERVED |
+| #3 | score_draft | 1 | ~1 | PRESERVED |
+| — | Fourth LLM | 0 | 0 | NO VIOLATION |
+
+======================================================================
+STEP 7 — COMMERCE AUTHORITY AUDIT
+======================================================================
+
+| Commerce API | Present | Call Sites |
+|-------------|---------|------------|
+| `resolve_and_run_commerce` | True | [401] |
+| `select_commerce_response` | True | [402] |
+| `CommerceStateRequest` | True | [394] |
+| `resolve_single_application_creator` | True | [350, 480] |
+| `resolve_commerce_product_with_history` | True | [359] |
+| `compute_pressure` | True | [811] |
+| `derive_risk` | True | [818] |
+| `build_operation_decision` | True | [824] |
+| `record_metric` | True | [1162, 889] |
+| `load_persisted_state` | True | [1506] |
+
+Price authority check:
+  'price' found at: [(1125, '_auth_price = None')]
+
+======================================================================
+STEP 8 — CONTEXT ENGINE AUDIT
+======================================================================
+
+| CE Symbol | Present | Notes |
+|-----------|---------|-------|
+| `observe_context_engine` | True | Context Engine observation |
+| `ContextEngineObservation` | False | Observation result type |
+| `context_engine` | True | Module reference |
+| `canary_config` | True | Canary configuration |
+| `canary_observer` | False | Canary observation |
+
+Context Engine imports: [(553, 'from context_engine.worker_integration import observe_context_engine')]
+observe_context_engine calls: [554]
+observe_canary calls: None
+
+======================================================================
+STEP 9 — CANARY/Q1 SHADOW AUDIT
+======================================================================
+
+Q1 Shadow:
+  `ShadowRunner`: present=True, calls=[652]
+  `ShadowConfig`: present=True, calls=none
+  `run_shadow`: present=True, calls=[654]
+
+Canary:
+  `observe_canary`: present=False
+  `canary_config`: present=True
+  `CanaryConfig`: present=True
+  `CanaryMode`: present=False
+
+Authority violation check:
+  ✓ No authority violations detected in source
+
+======================================================================
+STEP 10 — EVENT/TELEMETRY AUDIT
+======================================================================
+
+| Event Symbol | Present | Call Sites |
+|-------------|---------|------------|
+| `publish_event` | True | [541, 1481, 1320] |
+| `publish_events_batch` | True | [574, 1316] |
+| `ai.generation_started` | True | — |
+| `ai.generation_completed` | True | — |
+| `ai.generation_failed` | True | — |
+| `suggestion.created` | True | — |
+
+Telemetry:
+  `get_telemetry_collector`: present=True, calls=[466]
+  `start_generation`: present=True, calls=[467]
+  `enrich_telemetry_with_funnel`: present=True, calls=[1471]
+  `record_daily_request`: present=False, calls=none
+
+publish_events_batch present: True

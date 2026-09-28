@@ -1,0 +1,16 @@
+{
+  "model": "qwen3:4b",
+  "created_at": "2026-09-09T12:38:40.054803621Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\n  \"reply\": \"Hey! Thanks for reaching out — I'm doing great and so am the little sparkle in my inbox today. Hope your day’s bright too!\",\n  \"commerce_signals\": {\n    \"purchase_intent\": 0.1,\n    \"content_interest\": 0.4,\n    \"relationship_engagement\": 0.6,\n    \"price_interest\": 0.0,\n    \"explicit_purchase_request\": false,\n    \"explicit_content_request\": false,\n    \"requested_price\": null,\n    \"declined_recent_offer\": false,\n    \"asks_for_free_content\": false,\n    \"negative_sentiment\": 0.0,\n    \"confidence\": 0.8,\n    \"primary_intent\": \"greeting\",\n    \"intent_tags\": [\n      \"warm_welcome\",\n      \"relationship_building\",\n      \"casual_chat\"\n    ],\n    \"negative_intent_tags\": [],\n    \"fan_asks_question\": false\n  },\n  \"confidence\": 0.8,\n  \"needs_handoff\": false\n}"
+  },
+  "done": true,
+  "done_reason": "stop",
+  "total_duration": 57726532564,
+  "load_duration": 4642603,
+  "prompt_eval_count": 879,
+  "prompt_eval_duration": 306849000,
+  "eval_count": 214,
+  "eval_duration": 57404344000
+}

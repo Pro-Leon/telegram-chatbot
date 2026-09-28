@@ -1,0 +1,255 @@
+Code object inventory for llm_worker.cpython-314.pyc
+Total top-level names: 92
+Top-level names: ['__conditional_annotations__', 'argparse', 'asyncio', 'hashlib', 'logging', 'time', '_time', 'uuid', 'datetime', 'timezone', 'typing', 'Any', 'google.genai', 'types', 'gtypes', 'commerce.integration', 'resolve_and_run_commerce', 'commerce.pipeline', 'PIPELINE_MAX_MESSAGES', 'commerce.product_selection', 'resolve_commerce_product_with_history', 'commerce.selection', 'CommerceSelectionResult', 'CommerceSelectionStatus', 'select_commerce_response', 'commerce.single_creator', 'SingleCreatorStatus', 'resolve_single_application_creator', 'commerce.state', 'CommerceStateRequest', 'core.config', 'get_settings', 'core.gemini_client', 'check_rate_limit', 'get_credential', 'get_pool', 'record_request', 'core.llm_provider', 'get_llm_provider', 'core.llm_tools', 'TOOL_AUTHORITY_PROMPT', 'ToolAuthContext', 'dispatch_tool', 'get_gemini_function_declarations', 'core.logging_config', 'setup_logging', 'core.scoring', 'score_draft', 'core.shutdown', 'is_shutting_down', 'setup_signal_handlers', 'core.worker_heartbeat', 'write_heartbeat', 'db.postgres', 'add_to_operator_queue', 'get_recent_messages', 'init_pool', 'is_user_auto_reply_excluded', 'upsert_user', 'db.redis', 'ack_inbound', 'acquire_user_lock', 'enqueue_send', 'ensure_consumer_group', 'is_auto_reply_enabled', 'move_to_dlq', 'read_inbound', 'release_user_lock', 'requeue_stalled_messages', 'memory.context', 'build_qwen3_context', 'memory.profile', 'extract_and_update_profile', 'memory.summarizer', 'maybe_summarize', 'getLogger', 'logger', '_settings', '_worker_preferred_index', '_parse_worker_preferred_index', 'model_name', 'generate_draft', 'generate_draft_with_tools', '_try_commerce_draft', 'notify_operators', 'post_process', 'process_message', 'run_worker', '_worker_cleanup', 'main', '__name__', '__annotate__']
+
+Code object: <module>
+  Filename: E:\chatbot\tests\..\workers\llm_worker.py
+  First line: 1
+  Args: 0 posonly=0 kwonly=0
+  Locals: ()
+  Names: ('__conditional_annotations__', 'argparse', 'asyncio', 'hashlib', 'logging', 'time', '_time', 'uuid', 'datetime', 'timezone', 'typing', 'Any', 'google.genai', 'types', 'gtypes', 'commerce.integration', 'resolve_and_run_commerce', 'commerce.pipeline', 'PIPELINE_MAX_MESSAGES', 'commerce.product_selection', 'resolve_commerce_product_with_history', 'commerce.selection', 'CommerceSelectionResult', 'CommerceSelectionStatus', 'select_commerce_response', 'commerce.single_creator', 'SingleCreatorStatus', 'resolve_single_application_creator', 'commerce.state', 'CommerceStateRequest')
+  Constants (first 10): ['0', 'None', "('datetime', 'timezone')", "('Any',)", "('types',)", "('resolve_and_run_commerce',)", "('PIPELINE_MAX_MESSAGES',)", "('resolve_commerce_product_with_history',)", "('CommerceSelectionResult', 'CommerceSelectionStatus', 'select_commerce_response", "('SingleCreatorStatus', 'resolve_single_application_creator')"]
+  Flags: 0x0
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 70
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('str', 'int')
+    Constants (first 10): ['2', 'worker_id', 'return']
+    Flags: 0x3
+
+  Code object: _parse_worker_preferred_index
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 70
+    Args: 1 posonly=0 kwonly=0
+    Locals: ('worker_id', 'num', 'pool')
+    Names: ('int', 'rsplit', 'get_pool', 'size', 'ValueError', 'IndexError', 'RuntimeError')
+    Constants (first 10): ["Extract a numeric suffix from worker_id for credential affinity.\n\n'worker_1' -> ", '_', '-1']
+    Flags: 0x4000003
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 83
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('list', 'dict', 'str')
+    Constants (first 10): ['2', 'context_messages', 'user_message', 'model', 'return']
+    Flags: 0x3
+
+  Code object: generate_draft
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 83
+    Args: 3 posonly=0 kwonly=0
+    Locals: ('context_messages', 'user_message', 'model', 'system_parts', 'messages', 'm', 'role', 'text', 'merged_system', 'provider', 'last_error', 'providers_to_try', 'provider_name', 'OllamaProvider', 'response_text', 'record_daily_request', 'e', '_is_quota_error', 'mark_quota_exhausted')
+    Names: ('get', 'append', 'startswith', 'strip', 'join', '_settings', 'llm_provider', 'get_llm_provider', 'generate_with_history', 'max_tokens', 'temperature', 'Exception', 'logger', 'exception', 'gemini_fallback_enabled', 'core.llm_provider_ollama', 'OllamaProvider', 'warning', 'core.daily_quota', 'record_daily_request', 'info', '_is_quota_error', 'mark_quota_exhausted', 'type', '__name__')
+    Constants (first 10): ['role', 'content', '', 'system', 'user', '__', '\n\n', '<code object <genexpr> at 0x000001E0AD7DA010, file "E:\\chatbot\\tests\\..\\workers\\', 'ollama', '0.95']
+    Flags: 0x83
+
+    Code object: <genexpr>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 107
+      Args: 1 posonly=0 kwonly=0
+      Locals: ('.0', 'p')
+      Names: ()
+      Constants (first 10): ['None']
+      Flags: 0x33
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 180
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('list', 'dict', 'str', 'ToolAuthContext', 'int')
+    Constants (first 10): ['2', 'context_messages', 'user_message', 'auth', 'model', 'max_tool_calls', 'None', 'return']
+    Flags: 0x3
+
+  Code object: generate_draft_with_tools
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 180
+    Args: 5 posonly=0 kwonly=0
+    Locals: ('context_messages', 'user_message', 'auth', 'model', 'max_tool_calls', 'tool_declarations', 'provider', 'system_parts', 'conversation_parts', 'm', 'role', 'text', 'merged_system', 'tool_config', 'tools', 'check_daily_quota', 'daily_limit', 'credential', 'client', '_gemini_tool_error')
+    Names: ('_settings', 'llm_max_tool_calls', 'get_gemini_function_declarations', 'generate_draft', 'get_llm_provider', 'supports_tool_calling', 'logger', 'info', 'provider_name', 'get', 'append', 'gtypes', 'Content', 'Part', 'join', 'TOOL_AUTHORITY_PROMPT', 'ToolConfig', 'FunctionCallingConfig', 'Tool', 'gemini_fallback_enabled', 'llm_provider', 'core.daily_quota', 'check_daily_quota', 'getattr', 'warning', 'Exception', 'get_credential', '_worker_preferred_index', 'get_client', 'range')
+    Constants (first 10): ['Generate a draft with bounded tool calling.\n\nWhen the model returns a function c', 'None', 'Provider %s does not support tool calling, falling back to plain text', 'role', 'content', '', 'system', 'user', 'model', "('text',)"]
+    Flags: 0x4000083
+
+    Code object: <genexpr>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 230
+      Args: 1 posonly=0 kwonly=0
+      Locals: ('.0', 'p')
+      Names: ()
+      Constants (first 10): ['None']
+      Flags: 0x33
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 358
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('int', 'list', 'dict', 'str', 'Any', 'CommerceSelectionResult')
+    Constants (first 10): ['2', 'user_id', 'context', 'persona', 'signals', 'None', 'return']
+    Flags: 0x3
+
+  Code object: _try_commerce_draft
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 358
+    Args: 3 posonly=0 kwonly=1
+    Locals: ('user_id', 'context', 'persona', 'signals', 'creator', 'product_id', '_cur_topic', '_open_threads', '_prefs', 'derive_conversation_state', '_get_user_for_product', '_get_cached_profile', '_hist_for_product', 'm', 'role', 'content', '_user_for_product', '_conv_state_for_product', '_profile_for_product', '_get_profile_fallback')
+    Names: ('_settings', 'autonomy_enabled', 'logger', 'info', 'resolve_single_application_creator', 'status', 'SingleCreatorStatus', 'READY', 'value', 'creator_id', 'core.conversation_state', 'derive_conversation_state', 'db.postgres', 'get_user', 'memory.context', 'get_last_profile', 'get', 'append', 'getattr', 'tuple', 'get_user_profile', 'isinstance', 'str', 'Exception', 'resolve_commerce_product_with_history', 'len', 'PIPELINE_MAX_MESSAGES', 'CommerceStateRequest', 'resolve_and_run_commerce', 'select_commerce_response')
+    Constants (first 10): ['Attempt the commerce draft-generation path at most once per message.\n\nWorker-loc', 'autonomy_disabled: commerce attempt skipped for user=%s (autonomy_enabled=false)', 'None', 'Single-creator resolution %s for user %s (standard draft path)', "('derive_conversation_state',)", "('get_user',)", "('get_last_profile',)", 'role', 'content', '']
+    Flags: 0x4000083
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 472
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('int', 'str', 'float', 'list')
+    Constants (first 10): ['2', 'queue_id', 'user_id', 'draft', 'score', 'flags', 'return', 'None']
+    Flags: 0x3
+
+  Code object: notify_operators
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 472
+    Args: 5 posonly=0 kwonly=0
+    Locals: ('queue_id', 'user_id', 'draft', 'score', 'flags')
+    Names: ('logger', 'info')
+    Constants (first 10): ['Operator queue item %s created for user %s (score=%.2f, flags=%s)', 'None']
+    Flags: 0x83
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 488
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('int',)
+    Constants (first 10): ['2', 'user_id', 'return', 'None']
+    Flags: 0x3
+
+  Code object: post_process
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 488
+    Args: 1 posonly=0 kwonly=0
+    Locals: ('user_id', 'recent', '_get_user_for_count', 'user', 'message_count')
+    Names: ('get_recent_messages', 'db.postgres', 'get_user', 'get', 'len', 'extract_and_update_profile', 'maybe_summarize', 'Exception', 'logger', 'exception')
+    Constants (first 10): ['20', "('limit',)", 'None', "('get_user',)", 'message_count', 'post_process failed for user %s']
+    Flags: 0x83
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 504
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('int', 'str')
+    Constants (first 10): ['2', 'user_id', 'user_message', 'telegram_message_id', 'username', 'first_name', 'persona', 'generation_id', 'None', 'return']
+    Flags: 0x3
+
+  Code object: process_message
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 504
+    Args: 7 posonly=0 kwonly=0
+    Locals: ('user_id', 'user_message', 'telegram_message_id', 'username', 'first_name', 'persona', 'generation_id', 'publish_event', 'get_telemetry_collector', '_telemetry', '_telemetry_data', '_creator_id', '_creator_sales_enabled', 'SingleCreatorStatus', 'resolve_single_application_creator', '_creator_ctx', 'locked', '_persona_snapshot', '_persona_snapshot_version', 'get_structured_persona_async')
+    Names: ('core.event_bus', 'publish_event', 'hashlib', 'md5', 'encode', 'hexdigest', 'str', 'core.telemetry', 'get_telemetry_collector', 'start_generation', 'commerce.single_creator', 'SingleCreatorStatus', 'resolve_single_application_creator', 'status', 'READY', 'creator_id', 'Exception', 'logger', 'debug', 'acquire_user_lock', '_settings', 'user_lock_ttl', 'info', 'complete', 'routing_decision', 'record', 'upsert_user', 'is_user_auto_reply_excluded', 'release_user_lock', 'memory.creator_persona')
+    Constants (first 10): ['0', "('publish_event',)", 'None', ':', "('get_telemetry_collector',)", 'legacy', "('user_id', 'creator_id', 'runtime_mode', 'generation_id')", 'False', "('SingleCreatorStatus', 'resolve_single_application_creator')", 'True']
+    Flags: 0x83
+
+    Code object: <genexpr>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 596
+      Args: 1 posonly=0 kwonly=0
+      Locals: ('.0', 'm')
+      Names: ('get',)
+      Constants (first 10): ['role', 'system', 'CREATOR PERSONA', 'content', '', 'None']
+      Flags: 0x33
+
+    Code object: <genexpr>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 597
+      Args: 1 posonly=0 kwonly=0
+      Locals: ('.0', 'm')
+      Names: ('get', 'len')
+      Constants (first 10): ['role', 'system', 'content', '', 'None']
+      Flags: 0x33
+
+    Code object: <genexpr>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 599
+      Args: 1 posonly=0 kwonly=0
+      Locals: ('.0', 'm')
+      Names: ('get', 'len')
+      Constants (first 10): ['role', 'system', 'content', '', 'None']
+      Flags: 0x33
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1700
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('str',)
+    Constants (first 10): ['2', 'worker_id', 'return', 'None']
+    Flags: 0x3
+
+  Code object: run_worker
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1700
+    Args: 1 posonly=0 kwonly=0
+    Locals: ('worker_id', 'load_persisted_state', '_loaded', 'get_model', '_ensure_reference_cache', '_t_warm', '_t0', '_model_warm', 'loop', 'sync_from_redis', 'get_daily_count', 'redis_count', '_heartbeat_task', 'stale_count', 'stale_ids', 'messages', 'stream', 'stream_messages', 'msg_id', 'data')
+    Names: ('_parse_worker_preferred_index', '_worker_preferred_index', 'init_pool', 'ensure_consumer_group', 'commerce.production_control', 'load_persisted_state', 'logger', 'info', 'Exception', 'debug', 'commerce.embedding_model', 'get_model', 'commerce.unified_intelligence', '_ensure_reference_cache', 'time', 'monotonic', 'asyncio', 'get_running_loop', 'Event', 'setup_signal_handlers', '_worker_cleanup', '_settings', 'gemini_fallback_enabled', 'gemini_daily_quota', 'core.daily_quota', 'sync_from_redis', 'get_daily_count', 'create_task', 'write_heartbeat', 'worker_heartbeat_interval')
+    Constants (first 10): ['None', "('consumer_name',)", "('load_persisted_state',)", 'production_control: loaded persisted state %s', 'production_control: load persisted state failed', 'True', "('exc_info',)", "('get_model',)", "('_ensure_reference_cache',)", 'Local intelligence warmup: model loaded in %.2fs']
+    Flags: 0x83
+
+    Code object: <lambda>
+      Filename: E:\chatbot\tests\..\workers\llm_worker.py
+      First line: 1731
+      Args: 0 posonly=0 kwonly=0
+      Locals: ()
+      Names: ('set',)
+      Constants (first 10): ['None']
+      Flags: 0x13
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1812
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ()
+    Constants (first 10): ['2', 'return', 'None']
+    Flags: 0x3
+
+  Code object: _worker_cleanup
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1812
+    Args: 0 posonly=0 kwonly=0
+    Locals: ('close_pool', 'close_redis')
+    Names: ('db.postgres', 'close_pool', 'db.redis', 'close_redis', 'logger', 'info')
+    Constants (first 10): ['0', "('close_pool',)", "('close_redis',)", 'LLM worker shutting down...', 'None']
+    Flags: 0x83
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1821
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ()
+    Constants (first 10): ['2', 'return', 'None']
+    Flags: 0x3
+
+  Code object: main
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1821
+    Args: 0 posonly=0 kwonly=0
+    Locals: ('parser', 'args', '_settings_local')
+    Names: ('argparse', 'ArgumentParser', 'add_argument', 'parse_args', 'get_settings', 'setup_logging', 'structured_logging', 'asyncio', 'run', 'run_worker', 'worker_id')
+    Constants (first 10): ['LLM Worker', "('description',)", '--worker-id', 'True', 'Unique worker ID', "('required', 'help')", "('structured',)", 'None']
+    Flags: 0x3
+
+  Code object: __annotate__
+    Filename: E:\chatbot\tests\..\workers\llm_worker.py
+    First line: 1
+    Args: 1 posonly=1 kwonly=0
+    Locals: ('format',)
+    Names: ('__conditional_annotations__', 'int')
+    Constants (first 10): ['2', '_worker_preferred_index']
+    Flags: 0x3

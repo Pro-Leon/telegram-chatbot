@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+        body { background:#F8F8F5; color:#111827; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+        .chat-header {
+            height:56px; background:#FFFFFF; border-bottom:1px solid #E5E7EB;
+            padding:0 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+        }
+        .chat-header-left { display:flex; align-items:center; gap:10px; }
+        .chat-avatar {
+            width:32px; height:32px; border-radius:50%;
+            background:linear-gradient(135deg,#6C63FF,#8B85FF);
+            display:flex; align-items:center; justify-content:center;
+            font-size:13px; font-weight:600; color:#fff; flex-shrink:0;
+        }
+        .chat-name { font-size:14px; font-weight:600; color:#111827; }
+        .chat-header-right { display:flex; align-items:center; gap:6px; }
+        .hdr-btn {
+            padding:5px 10px; border-radius:6px; font-size:12px; font-weight:500;
+            cursor:pointer; transition:all 0.15s; display:inline-flex; align-items:center; gap:5px;
+            background:transparent; border:1px solid #E5E7EB; color:#6B7280; text-decoration:none;
+        }
+        .hdr-btn:hover { border-color:#6C63FF; color:#111827; }
+        .hdr-btn.ai { background:rgba(108,99,255,0.08); border-color:rgba(108,99,255,0.25); color:#6C63FF; font-weight:600; }
+        .hdr-btn.ai:hover { background:rgba(108,99,255,0.15); }
+        .auto-tgl { display:flex; align-items:center; gap:6px; }
+        .auto-tgl-label { font-size:11px; color:#6B7280; font-weight:500; }
+        .auto-tgl-track {
+            position:relative; width:32px; height:18px; border-radius:9px;
+            background:#D1D5DB; cursor:pointer; transition:background 0.25s;
+        }
+        .auto-tgl-track.on { background:#6C63FF; }
+        .auto-tgl-thumb {
+            position:absolute; top:2px; left:2px; width:14px; height:14px;
+            border-radius:50%; background:#fff; transition:transform 0.25s; box-shadow:0 1px 3px rgba(0,0,0,0.15);
+        }
+        .auto-tgl-track.on .auto-tgl-thumb { transform:translateX(14px); }
+
+        .chat-messages {
+            flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:4px;
+        }
+        .chat-messages::-webkit-scrollbar { width:4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background:#E5E7EB; border-radius:4px; }
+        .msg-row { display:flex; flex-direction:column; max-width:100%; }
+        .msg-row.incoming { align-items:flex-start; }
+        .msg-row.outgoing { align-items:flex-end; }
+        .msg-bubble {
+            max-width:80%; padding:8px 14px; font-size:13px; line-height:1.45;
+            white-space:pre-wrap; word-break:break-word;
+        }
+        .msg-bubble.incoming { background:#FFF; border:1px solid #E5E7EB; color:#111827; border-radius:4px 16px 16px 16px; }
+        .msg-bubble.outgoing { background:#6C63FF; color:#FFF; border-radius:16px 4px 16px 16px; }
+        .msg-time { font-size:11px; color:#9CA3AF; margin-top:4px; padding:0 4px; }
+        .msg-time.outgoing { text-align:right; }
+
+        .chat-input-bar {
+            background:#FFF; border-top:1px solid #E5E7EB; padding:10px 12px; flex-shrink:0;
+        }
+        .chat-input-row { display:flex; align-items:center; gap:8px; }
+        .chat-icon-btn {
+            width:32px; height:32px; min-width:32px; background:transparent; border:none;
+            color:#9CA3AF; border-radius:6px; cursor:pointer; display:flex;
+            align-items:center; justify-content:center; font-size:14px;
+        }
+        .chat-icon-btn:hover { background:rgba(0,0,0,0.04); color:#111827; }
+        .chat-text-input {
+            flex:1; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:8px;
+            padding:8px 12px; font-size:13px; color:#111827; outline:none;
+        }
+        .chat-text-input:focus { border-color:#6C63FF; }
+        .chat-send-btn {
+            width:32px; height:32px; min-width:32px; background:#6C63FF; border:none;
+            border-radius:50%; color:#FFF; display:flex; align-items:center;
+            justify-content:center; cursor:pointer; font-size:14px;
+        }
+        .chat-send-btn:hover { background:#8B85FF; }
+        .vault-overlay {
+            position:absolute; inset:0; background:rgba(17,24,39,0.5); display:none;
+            align-items:center; justify-content:center; z-index:20; padding:16px;
+        }
+        .vault-overlay.open { display:flex; }
+        .vault-modal {
+            background:#FFF; border-radius:12px; width:100%; max-width:420px; max-height:90%;
+            display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.2);
+        }
+        .vault-header {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 16px; border-bottom:1px solid #E5E7EB;
+        }
+        .vault-header h3 { font-size:14px; font-weight:600; color:#111827; }
+        .vault-close { background:transparent; border:none; cursor:pointer; color:#9CA3AF; font-size:14px; padding:4px; }
+        .vault-close:hover { color:#111827; }
+        .vault-body { padding:12px 16px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+        .vault-field label { display:block; font-size:11px; font-weight:600; color:#6B7280; margin-bottom:4px; }
+        .vault-field input, .vault-field textarea {
+            width:100%; padding:8px 10px; border:1px solid #E5E7EB; border-radius:8px;
+            font-size:13px; color:#111827; outline:none; box-sizing:border-box; font-family:inherit;
+        }
+        .vault-field input:focus, .vault-field textarea:focus { border-color:#6C63FF; }
+        .vault-field textarea { resize:vertical; min-height:48px; }
+        .vault-items {
+            display:flex; flex-wrap:wrap; gap:6px; max-height:160px; overflow-y:auto;
+            padding:8px; border:1px solid #E5E7EB; border-radius:8px; background:#F9FAFB;
+        }
+        .vault-chip {
+            display:flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px;
+            cursor:pointer; font-size:11px; background:#FFF; color:#6B7280; border:1px solid #E5E7EB;
+            max-width:100%;
+        }
+        .vault-chip.sel { background:rgba(108,99,255,0.12); color:#6C63FF; border-color:rgba(108,99,255,0.4); }
+        .vault-chip span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:140px; }
+        .vault-hint { font-size:11px; color:#9CA3AF; }
+        .vault-footer {
+            display:flex; align-items:center; justify-content:space-between; gap:8px;
+            padding:12px 16px; border-top:1px solid #E5E7EB;
+        }
+        .vault-create-btn {
+            background:#6C63FF; color:#FFF; border:none; border-radius:8px;
+            padding:8px 16px; font-size:13px; font-weight:600; cursor:pointer;
+        }
+        .vault-create-btn:hover { background:#8B85FF; }
+        .vault-create-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .emoji-pop {
+            position:absolute; bottom:60px; right:50px; background:#FFF;
+            border:1px solid #E5E7EB; border-radius:10px; padding:8px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.1); display:none; z-index:10;
+        }
+        .emoji-pop.open { display:block; }
+        .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:2px; }
+        .emoji-btn {
+            width:30px; height:30px; background:transparent; border:none; border-radius:4px;
+            font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+        }
+        .emoji-btn:hover { background:rgba(0,0,0,0.04); }
+        .sug-bar { padding:0 12px 6px; display:flex; flex-wrap:wrap; gap:4px; }
+        .sug-chip {
+            padding:5px 10px; border-radius:6px; font-size:11px; color:#6B7280;
+            background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); cursor:pointer;
+            max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        .sug-chip:hover { background:rgba(108,99,255,0.08); color:#6C63FF; border-color:rgba(108,99,255,0.25); }
+    </style>
+</head>
+<body>
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <div class="chat-avatar">{{ dialog_name[0].upper() }}</div>
+            <div class="chat-name">{{ dialog_name }}</div>
+            {% if unread_count and unread_count > 0 %}
+            <span style="font-size:10px; color:#6C63FF; font-weight:500;">{{ unread_count }} unread</span>
+            {% endif %}
+        </div>
+        <div class="chat-header-right">
+            <button id="ai-btn" class="hdr-btn ai" onclick="genAi()"><i class="fas fa-robot" style="font-size:10px;"></i> AI</button>
+            <div class="auto-tgl">
+                <span class="auto-tgl-label">Auto</span>
+                <div id="auto-track" class="auto-tgl-track on" onclick="togAuto()">
+                    <div class="auto-tgl-thumb"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-messages" id="msgs">
+        {% for m in messages %}
+        <div class="msg-row {% if m.is_outgoing %}outgoing{% else %}incoming{% endif %}">
+                <div class="msg-bubble {% if m.is_outgoing %}outgoing{% else %}incoming{% endif %}">{{ m.text or '(media message)' }}</div>
+                <div class="msg-time {% if m.is_outgoing %}outgoing{% endif %}">
+                    {% if m.date and 'T' in m.date %}{{ m.date.split('T')[1][:5] }}{% endif %}
+                    {% if m.is_outgoing %}
+                    <i class="fas {% if m.sent_at %}fa-check-double{% else %}fa-check{% endif %}" style="margin-left:4px;"></i>
+                    {% endif %}
+                </div>
+        </div>
+        {% endfor %}
+        <div style="height:4px;"></div>
+    </div>
+
+    <div id="sug-bar" class="sug-bar" style="display:none;"></div>
+
+    <div class="chat-input-bar" style="position:relative;">
+        <form id="send-form" class="chat-input-row" onsubmit="return sendMsg(event)">
+            <button type="button" class="chat-icon-btn" onclick="openVault()" title="Open Vault — create drop"><i class="fas fa-paperclip"></i></button>
+            <input type="text" id="msg-in" class="chat-text-input" placeholder="Type a message..." autocomplete="off">
+            <button type="button" class="chat-icon-btn" onclick="togEmoji()" title="Emoji"><i class="far fa-smile"></i></button>
+            <button type="submit" class="chat-send-btn" id="send-btn" title="Send"><i class="fas fa-paper-plane"></i></button>
+        </form>
+        <div id="emoji-pop" class="emoji-pop">
+            <div class="emoji-grid">
+                {% for e in ['👍','❤️','😂','😮','😢','👏','🎉','🤔','🙏','🔥','✅','❌','💪','🤝','💯','👀'] %}
+                <button type="button" class="emoji-btn" onclick="insEmoji('{{ e }}')">{{ e }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="vault-overlay" class="vault-overlay">
+            <div class="vault-modal">
+                <div class="vault-header">
+                    <h3><i class="fas fa-box-open" style="margin-right:6px; color:#6C63FF;"></i>Create Drop from Vault</h3>
+                    <button type="button" class="vault-close" onclick="closeVault()" title="Close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="vault-body">
+                    <div class="vault-field">
+                        <label>Drop name *</label>
+                        <input type="text" id="vault-drop-name" placeholder="My awesome drop" autocomplete="off">
+                    </div>
+                    <div class="vault-field">
+                        <label>Price (USD) * — min $5, max $750</label>
+                        <input type="number" id="vault-drop-price" min="5" max="750" step="0.01" value="9.99">
+                    </div>
+                    <div class="vault-field">
+                        <label>Description (optional)</label>
+                        <textarea id="vault-drop-desc" rows="2" placeholder="Optional description..."></textarea>
+                    </div>
+                    <div class="vault-field">
+                        <label>Vault items * (max 10)</label>
+                        <div id="vault-items" class="vault-items">
+                            <span class="vault-hint">Loading vault...</span>
+                        </div>
+                        <div id="vault-sel-count" class="vault-hint" style="margin-top:4px;">0 item(s) selected</div>
+                    </div>
+                    <div id="vault-status" class="vault-hint"></div>
+                </div>
+                <div class="vault-footer">
+                    <span class="vault-hint">Manual drop — autonomous creation untouched</span>
+                    <button type="button" class="vault-create-btn" id="vault-create-btn" onclick="createVaultDrop()" disabled>Create Drop</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="/static/js/realtime.js"></script>
+<script>
+var DIALOG_ID = {{ dialog_id }};
+var CREATOR_ID = {{ creator_id }};
+var _vaultItems = [];
+var _vaultSelected = [];
+var _vaultLoaded = false;
+var _vaultCreating = false;
+
+function _vaultSelCount() {
+    document.getElementById('vault-sel-count').textContent = _vaultSelected.length + ' item(s) selected';
+    document.getElementById('vault-create-btn').disabled =
+        _vaultCreating || !document.getElementById('vault-drop-name').value.trim() ||
+        !(parseFloat(document.getElementById('vault-drop-price').value) >= 5) ||
+        _vaultSelected.length === 0;
+}
+
+function _renderVaultItems() {
+    var box = document.getElementById('vault-items');
+    box.innerHTML = '';
+    if (!_vaultItems.length) {
+        box.innerHTML = '<span class="vault-hint">No vault items. Upload media from the Vault page first.</span>';
+        return;
+    }
+    _vaultItems.forEach(function(v) {
+        var label = document.createElement('label');
+        label.className = 'vault-chip' + (_vaultSelected.indexOf(v.id) >= 0 ? ' sel' : '');
+        var icon = v.file_type === 'video' ? 'fa-video' : (v.file_type === 'audio' ? 'fa-music' : 'fa-image');
+        var name = v.file_name || String(v.id).slice(-8);
+        label.innerHTML = '<i class="fas ' + icon + '"></i><span></span>';
+        label.querySelector('span').textContent = name;
+        label.title = name;
+        label.onclick = function(e) {
+            e.preventDefault();
+            var i = _vaultSelected.indexOf(v.id);
+            if (i >= 0) { _vaultSelected.splice(i, 1); }
+            else {
+                if (_vaultSelected.length >= 10) return;
+                _vaultSelected.push(v.id);
+            }
+            _renderVaultItems();
+            _vaultSelCount();
+        };
+        box.appendChild(label);
+    });
+}
+
+async function openVault() {
+    document.getElementById('vault-overlay').classList.add('open');
+    document.getElementById('vault-status').textContent = '';
+    if (_vaultLoaded) { _vaultSelCount(); return; }
+    try {
+        var r = await fetch('/api/fangate/creators/' + CREATOR_ID + '/dropfans-vault?limit=100');
+        var d = await r.json();
+        _vaultItems = d.items || [];
+        _vaultLoaded = true;
+        _renderVaultItems();
+    } catch (e) {
+        document.getElementById('vault-items').innerHTML = '<span class="vault-hint">Failed to load vault.</span>';
+    }
+    _vaultSelCount();
+}
+
+function closeVault() {
+    if (_vaultCreating) return;
+    document.getElementById('vault-overlay').classList.remove('open');
+}
+
+async function createVaultDrop() {
+    if (_vaultCreating) return;
+    var name = document.getElementById('vault-drop-name').value.trim();
+    var price = parseFloat(document.getElementById('vault-drop-price').value);
+    var desc = document.getElementById('vault-drop-desc').value.trim();
+    var status = document.getElementById('vault-status');
+    if (!name || !(price >= 5) || !_vaultSelected.length) return;
+    _vaultCreating = true;
+    _vaultSelCount();
+    status.textContent = 'Creating drop...';
+    try {
+        var r = await fetch('/api/fangate/creators/' + CREATOR_ID + '/dropfans-drops', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                price: price,
+                vault_item_ids: _vaultSelected.slice(0, 10),
+                description: desc || undefined
+            })
+        });
+        var d = await r.json();
+        if (!r.ok) throw new Error((d && (d.message || d.error)) || ('HTTP ' + r.status));
+        status.textContent = 'Drop created!' + (d.buy_url ? ' Buy URL copied.' : '');
+        if (d.buy_url && navigator.clipboard) {
+            navigator.clipboard.writeText(d.buy_url).catch(function(){});
+        }
+        _vaultSelected = [];
+        _renderVaultItems();
+        document.getElementById('vault-drop-name').value = '';
+    } catch (e) {
+        status.textContent = 'Failed: ' + e.message;
+    } finally {
+        _vaultCreating = false;
+        _vaultSelCount();
+    }
+}
+
+document.getElementById('vault-drop-name').addEventListener('input', _vaultSelCount);
+document.getElementById('vault-drop-price').addEventListener('input', _vaultSelCount);
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeVault(); });
+document.getElementById('vault-overlay').addEventListener('click', function(e){ if (e.target === this) closeVault(); });
+var autoOn = true;
+var rt = new RealtimeClient();
+var _activeGenerationId = null;
+var _aiBtnCheckTimeout = null;
+
+function appendMsg(text, isOutgoing, timeStr) {
+    var container = document.getElementById('msgs');
+    var existing = container.querySelectorAll('.msg-row');
+    for (var i = 0; i < existing.length; i++) {
+        var bubble = existing[i].querySelector('.msg-bubble');
+        if (bubble && bubble.textContent === text) return;
+    }
+    var row = document.createElement('div');
+    row.className = 'msg-row ' + (isOutgoing ? 'outgoing' : 'incoming');
+    row.innerHTML = '<div class="msg-bubble ' + (isOutgoing ? 'outgoing' : 'incoming') + '">' + text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div><div class="msg-time ' + (isOutgoing ? 'outgoing' : '') + '">' + timeStr + (isOutgoing ? ' <i class="fas fa-check" style="margin-left:4px;"></i>' : '') + '</div>';
+    container.appendChild(row);
+    container.scrollTop = container.scrollHeight;
+}
+
+rt.on('message.created', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    var d = evt.data;
+    var time = '';
+    if (evt.timestamp_ms) {
+        var dt = new Date(evt.timestamp_ms);
+        time = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    }
+    appendMsg(d.content, d.direction === 'outbound', time);
+});
+
+rt.on('message.sent', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    var d = evt.data;
+    var time = '';
+    if (evt.timestamp_ms) {
+        var dt = new Date(evt.timestamp_ms);
+        time = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    }
+    appendMsg(d.content, true, time + ' <i class="fas fa-check-double" style="margin-left:4px;"></i>');
+});
+
+rt.on('ai.generation_started', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    _activeGenerationId = evt.generation_id;
+    var btn = document.getElementById('ai-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+});
+
+rt.on('ai.generation_completed', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    if (evt.generation_id !== _activeGenerationId) return;
+    _activeGenerationId = null;
+    var btn = document.getElementById('ai-btn');
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    if (_aiBtnCheckTimeout) clearTimeout(_aiBtnCheckTimeout);
+    _aiBtnCheckTimeout = setTimeout(function() { btn.innerHTML = '<i class="fas fa-robot" style="font-size:10px;"></i> AI'; btn.disabled = false; }, 1200);
+    loadSug();
+});
+
+rt.on('ai.generation_failed', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    if (evt.generation_id !== _activeGenerationId) return;
+    _activeGenerationId = null;
+    var btn = document.getElementById('ai-btn');
+    btn.innerHTML = '<i class="fas fa-robot" style="font-size:10px;"></i> AI';
+    btn.disabled = false;
+});
+
+rt.on('suggestion.created', function(evt) {
+    if (evt.dialog_id !== DIALOG_ID) return;
+    loadSug();
+});
+
+document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+
+async function loadAutoState() {
+    try {
+        var r = await fetch('/api/user/' + DIALOG_ID + '/auto-reply');
+        var d = await r.json();
+        autoOn = !d.do_not_auto_reply;
+        var t = document.getElementById('auto-track');
+        autoOn ? t.classList.add('on') : t.classList.remove('on');
+    } catch(e) {}
+}
+loadAutoState();
+
+async function genAi() {
+    var btn = document.getElementById('ai-btn');
+    var orig = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+        var r = await fetch('/api/dialogs/'+DIALOG_ID+'/ai-reply', {method:'POST'});
+        var d = await r.json();
+        if (d.ok) { if (rt.isConnected()) return; btn.innerHTML = '<i class="fas fa-check"></i>'; setTimeout(function(){ btn.innerHTML=orig; btn.disabled=false; loadSug(); }, 1200); }
+        else { btn.innerHTML=orig; btn.disabled=false; }
+    } catch(e) { btn.innerHTML=orig; btn.disabled=false; }
+}
+
+function togAuto() {
+    autoOn = !autoOn;
+    var t = document.getElementById('auto-track');
+    autoOn ? t.classList.add('on') : t.classList.remove('on');
+    var fd = new FormData(); fd.append('enabled', autoOn ? '0' : '1');
+    fetch('/api/user/' + DIALOG_ID + '/auto-reply', {method:'POST', body:fd}).catch(function(){ autoOn=!autoOn; autoOn?t.classList.add('on'):t.classList.remove('on'); });
+}
+
+function sendMsg(e) {
+    e.preventDefault();
+    var input = document.getElementById('msg-in');
+    var text = input.value.trim();
+    if (!text) return false;
+    var btn = document.getElementById('send-btn');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    var fd = new FormData(); fd.append('content', text);
+    fetch('/api/dialogs/'+DIALOG_ID+'/send', {method:'POST', body:fd})
+        .then(function(r){return r.json();}).then(function(d){
+            if (d.ok) {
+                input.value = '';
+                var row = document.createElement('div');
+                row.className = 'msg-row outgoing';
+                var now = new Date();
+                var ts = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+                row.innerHTML = '<div><div class="msg-bubble outgoing">'+text.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div class="msg-time outgoing">'+ts+' <i class="fas fa-check" style="margin-left:4px;"></i></div></div>';
+                document.getElementById('msgs').appendChild(row);
+                document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+            }
+        }).catch(function(){})
+        .finally(function(){ btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane"></i>'; input.focus(); });
+    return false;
+}
+
+function togEmoji() { document.getElementById('emoji-pop').classList.toggle('open'); }
+function insEmoji(e) {
+    document.getElementById('msg-in').value += e;
+    document.getElementById('msg-in').focus();
+    document.getElementById('emoji-pop').classList.remove('open');
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.getElementById('emoji-pop').classList.remove('open'); });
+
+async function loadSug() {
+    try {
+        var r = await fetch('/api/dialogs/'+DIALOG_ID+'/suggestions');
+        var d = await r.json();
+        var c = document.getElementById('sug-bar');
+        if (d.length>0) { c.style.display='flex'; c.innerHTML=''; d.forEach(function(i){
+            var b = document.createElement('button'); b.type='button'; b.className='sug-chip';
+            b.textContent = i.draft_content;
+            b.onclick = function(){ document.getElementById('msg-in').value=i.draft_content; c.innerHTML=''; c.style.display='none'; };
+            c.appendChild(b);
+        }); }
+    } catch(e) {}
+}
+loadSug(); setInterval(function() { if (rt.isPollingActive()) loadSug(); }, 10000);
+</script>
+</body>
+</html>

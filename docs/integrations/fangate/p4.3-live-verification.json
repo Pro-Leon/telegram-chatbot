@@ -1,0 +1,173 @@
+{
+  "phase": "P4.3",
+  "title": "Live Fangate API Conformance Verification",
+  "date": "2026-08-23",
+  "status": "COMPLETE_WITH_LIMITATION",
+  "limitation": "No FANGATE_API_KEY in environment — live probes could not execute",
+  "endpoint_count_discrepancy": {
+    "system_reminder_said": 7,
+    "individual_operations": 8,
+    "resolution": "8 individual operations counted; system reminder grouped offers as single feature",
+    "note": "The 8 operations are: GET /analytics, POST /webhooks/test, POST /offers, POST /offers/{oid}/send, PATCH /offers/{oid}, DELETE /offers/{oid}, POST /media/blur, POST /epoch"
+  },
+  "unverified_endpoints": [
+    {
+      "method": "GET",
+      "path": "/products/{id}/analytics",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:500-505",
+      "has_callers_in_codebase": false,
+      "risk_level": "low"
+    },
+    {
+      "method": "POST",
+      "path": "/webhooks/test",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:567-572",
+      "has_callers_in_codebase": false,
+      "risk_level": "medium"
+    },
+    {
+      "method": "POST",
+      "path": "/products/{id}/offers",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:516-530",
+      "has_callers_in_codebase": false,
+      "risk_level": "high"
+    },
+    {
+      "method": "POST",
+      "path": "/products/{id}/offers/{oid}/send",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:532-541",
+      "has_callers_in_codebase": false,
+      "risk_level": "high"
+    },
+    {
+      "method": "PATCH",
+      "path": "/products/{id}/offers/{oid}",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:543-559",
+      "has_callers_in_codebase": false,
+      "risk_level": "medium"
+    },
+    {
+      "method": "DELETE",
+      "path": "/products/{id}/offers/{oid}",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:561-563",
+      "has_callers_in_codebase": false,
+      "risk_level": "medium"
+    },
+    {
+      "method": "POST",
+      "path": "/products/{id}/media/blur",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:490-498",
+      "has_callers_in_codebase": false,
+      "risk_level": "medium"
+    },
+    {
+      "method": "POST",
+      "path": "/products/{id}/epoch",
+      "documented_in_official_docs": false,
+      "documented_in_openapi": false,
+      "documented_in_changelog": false,
+      "has_live_probe": false,
+      "expected_status": "404_or_401",
+      "route_exists": "INCONCLUSIVE",
+      "conformance": "UNVERIFIED",
+      "repo_file": "integrations/fangate/client.py:507-512",
+      "has_callers_in_codebase": false,
+      "risk_level": "medium"
+    }
+  ],
+  "confirmed_findings": {
+    "media_attach_partial_conformance": {
+      "endpoint": "POST /products/{id}/media",
+      "official_docs": "JSON {\"media_ids\": [...]} for n:m library linking",
+      "repo_approach": "multipart/form-data with file bytes (legacy)",
+      "docs_compatibility": "Legacy direct uploads supported per docs/guides/media-storage.html",
+      "status": "PARTIAL",
+      "recommendation": "Migrate to documented JSON approach"
+    },
+    "offers_zero_documentation": {
+      "endpoints": ["POST /offers", "POST /offers/{oid}/send", "PATCH /offers/{oid}", "DELETE /offers/{oid}"],
+      "official_docs": "ZERO mentions in any official Fangate source",
+      "status": "UNVERIFIED",
+      "risk": "May not exist on live API"
+    },
+    "undocumented_endpoints": {
+      "endpoints": ["GET /analytics", "POST /media/blur", "POST /epoch", "POST /webhooks/test"],
+      "official_docs": "ZERO mentions in any official Fangate source",
+      "status": "UNVERIFIED",
+      "risk": "May not exist on live API"
+    },
+    "dead_code": {
+      "note": "All 8 unverified endpoints have implementations in client.py and service.py but NO callers in the repository",
+      "risk": "Dead code paths that may not match live API behavior"
+    },
+    "openapi_lag": {
+      "note": "Changelog confirms 'Regenerate OpenAPI after deploy' — spec may lag behind live backend",
+      "implication": "Some undocumented endpoints may actually exist on the live API but are not yet documented"
+    }
+  },
+  "probe_script": "scripts/probe_fangate_live.py",
+  "probe_usage": "FANGATE_API_KEY=xxx python scripts/probe_fangate_live.py",
+  "pending_verification": [
+    "Live probe execution (requires Fangate API key)",
+    "Offer endpoint existence on live API",
+    "Analytics endpoint existence on live API",
+    "Blur endpoint existence on live API",
+    "Epoch endpoint existence on live API",
+    "test_webhook endpoint existence on live API"
+  ],
+  "next_phase": "P4.4 — Live endpoint verification (requires Fangate API key)",
+  "files_created": [
+    "scripts/probe_fangate_live.py",
+    "docs/integrations/fangate/p4.3-live-verification.md",
+    "docs/integrations/fangate/p4.3-live-verification.json"
+  ]
+}

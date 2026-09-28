@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTProto Dashboard{% block title %} - {{ title | default("Dashboard") }}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.x.x/dist/chart.umd.min.js"></script>
+    <script src="/static/js/realtime.js"></script>
+    <script src="/static/js/notifications.js"></script>
+    {% block extra_head %}{% endblock %}
+    <style>
+        :root {
+            --bg-primary: #F8F8F5;
+            --bg-secondary: #FFFFFF;
+            --bg-card: #FFFFFF;
+            --accent-purple: #6C63FF;
+            --accent-purple-light: #8B85FF;
+            --accent-green: #22C55E;
+            --accent-red: #EF4444;
+            --accent-orange: #F97316;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-tertiary: #9CA3AF;
+            --border-color: #E5E7EB;
+        }
+
+        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: var(--bg-primary); color: var(--text-primary); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+        /* Sidebar */
+        .app-sidebar {
+            width: 240px;
+            background: var(--bg-secondary);
+            border-right: 1px solid rgba(0,0,0,0.06);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 30;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.25s ease;
+        }
+        .app-sidebar.collapsed {
+            width: 64px;
+        }
+        .sidebar-logo {
+            padding: 24px 24px 32px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .app-sidebar.collapsed .sidebar-logo {
+            padding: 24px 14px 32px 14px;
+            justify-content: center;
+        }
+        .sidebar-logo-icon {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            background: var(--accent-purple);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sidebar-logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            transition: opacity 0.2s ease, width 0.2s ease;
+        }
+        .app-sidebar.collapsed .sidebar-logo-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+        .nav-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 0 24px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            transition: opacity 0.2s ease, height 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+        }
+        .app-sidebar.collapsed .nav-section-label {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 24px;
+            margin: 2px 12px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            position: relative;
+            white-space: nowrap;
+        }
+        .app-sidebar.collapsed .nav-item {
+            justify-content: center;
+            padding: 10px 0;
+            margin: 2px 8px;
+        }
+        .nav-item:hover {
+            background: rgba(0,0,0,0.04);
+            color: var(--text-primary);
+        }
+        .nav-item.active {
+            background: rgba(108, 99, 255, 0.15);
+            color: var(--accent-purple);
+            border-left: 3px solid var(--accent-purple);
+            margin-left: 9px;
+            padding-left: 15px;
+        }
+        .app-sidebar.collapsed .nav-item.active {
+            margin-left: 8px;
+            padding-left: 0;
+        }
+        .nav-item .nav-badge {
+            position: absolute;
+            right: 12px;
+            background: var(--accent-purple);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        .nav-label {
+            transition: opacity 0.2s ease, width 0.2s ease;
+        }
+        .app-sidebar.collapsed .nav-label {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+        .app-sidebar.collapsed .nav-item .nav-badge {
+            display: none;
+        }
+        .nav-item[data-tooltip] {
+            position: relative;
+        }
+        .app-sidebar.collapsed .nav-item[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 68px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 24px;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+        .app-sidebar.collapsed .sidebar-footer {
+            padding: 16px 14px;
+            justify-content: center;
+        }
+        .sidebar-collapse-btn {
+            width: 100%;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(0,0,0,0.06);
+            cursor: pointer;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+            color: var(--text-tertiary);
+            transition: color 0.15s;
+        }
+        .sidebar-collapse-btn:hover { color: var(--text-primary); }
+        .app-sidebar.collapsed .sidebar-collapse-btn { justify-content: center; padding: 12px 8px; }
+        .collapse-icon {
+            transition: transform 0.25s ease;
+        }
+        .app-sidebar.collapsed .collapse-icon {
+            transform: rotate(180deg);
+        }
+        .sidebar-user-text {
+            flex: 1;
+            min-width: 0;
+            transition: opacity 0.2s ease, width 0.2s ease;
+        }
+        .app-sidebar.collapsed .sidebar-user-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+        .sidebar-user-icon {
+            color: var(--text-tertiary);
+            transition: opacity 0.2s ease;
+        }
+        .app-sidebar.collapsed .sidebar-user-icon {
+            display: none;
+        }
+
+        /* Cards */
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .app-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transition: 0.2s ease;
+        }
+
+        /* Inputs */
+        .app-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .app-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.3);
+        }
+        .app-input::placeholder { color: var(--text-tertiary); }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--accent-purple);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary:hover { background: var(--accent-purple-light); }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+        .btn-danger {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--accent-red);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-danger:hover { background: rgba(248, 113, 113, 0.25); }
+
+        /* Status badges */
+        .badge-won { background: rgba(74, 222, 128, 0.15); color: var(--accent-green); }
+        .badge-lost { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+        .badge-pending { background: rgba(251, 146, 60, 0.15); color: var(--accent-orange); }
+        .badge-new { background: rgba(108, 99, 255, 0.15); color: var(--accent-purple); }
+
+        /* Tables */
+        .app-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .app-table th {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 16px;
+            text-align: left;
+        }
+        .app-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(42,45,62,0.6);
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .app-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        /* Focus */
+        *:focus { outline: none; }
+        *:focus-visible { box-shadow: 0 0 0 2px rgba(108,99,255,0.5); outline: 2px solid transparent; }
+
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body x-data="dashboardApp()" x-init="init()">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="app-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-icon">
+                    <i class="fas fa-paper-plane text-white text-sm"></i>
+                </div>
+                <span class="sidebar-logo-text">MTProto</span>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto;">
+                <p class="nav-section-label">Main</p>
+                <nav>
+                    <a href="/dashboard/overview" class="nav-item {% block nav_overview %}{% endblock %}" data-tooltip="Overview">
+                        <i class="fas fa-chart-pie" style="width: 18px;"></i>
+                        <span class="nav-label">Overview</span>
+                        <span class="nav-badge" x-show="statsUpdate > 0" x-text="statsUpdate"></span>
+                    </a>
+                    <a href="/dashboard/queue" class="nav-item {% block nav_queue %}{% endblock %}" data-tooltip="Operator Queue">
+                        <i class="fas fa-clipboard-list" style="width: 18px;"></i>
+                        <span class="nav-label">Operator Queue</span>
+                        <span class="nav-badge" x-show="queueCount > 0" x-text="queueCount"></span>
+                    </a>
+                    <a href="/dashboard/chats" class="nav-item {% block nav_chats %}{% endblock %}" data-tooltip="Chats">
+                        <i class="fas fa-comments" style="width: 18px;"></i>
+                        <span class="nav-label">Chats</span>
+                        <span class="nav-badge" x-show="unreadTotal > 0" x-text="unreadTotal"></span>
+                    </a>
+
+                    <p class="nav-section-label" style="margin-top: 24px;">Management</p>
+                    <a href="/dashboard/analytics" class="nav-item {% block nav_analytics %}{% endblock %}" data-tooltip="Analytics">
+                        <i class="fas fa-chart-line" style="width: 18px;"></i>
+                        <span class="nav-label">Analytics</span>
+                    </a>
+                    <a href="/dashboard/users" class="nav-item {% block nav_users %}{% endblock %}" data-tooltip="Users">
+                        <i class="fas fa-users" style="width: 18px;"></i>
+                        <span class="nav-label">Users</span>
+                    </a>
+                    <a href="/dashboard/personas" class="nav-item {% block nav_personas %}{% endblock %}" data-tooltip="Personas">
+                        <i class="fas fa-user-tag" style="width: 18px;"></i>
+                        <span class="nav-label">Personas</span>
+                    </a>
+                    <a href="/dashboard/settings" class="nav-item {% block nav_settings %}{% endblock %}" data-tooltip="Settings">
+                        <i class="fas fa-cog" style="width: 18px;"></i>
+                        <span class="nav-label">Settings</span>
+                    </a>
+                    <a href="/dashboard/dropfans" class="nav-item {% block nav_dropfans %}{% endblock %}" data-tooltip="DropFans">
+                        <i class="fas fa-store" style="width: 18px;"></i>
+                        <span class="nav-label">DropFans</span>
+                    </a>
+                    <a href="/dashboard/drops" class="nav-item {% block nav_drops %}{% endblock %}" data-tooltip="Drops">
+                        <i class="fas fa-box" style="width: 18px;"></i>
+                        <span class="nav-label">Drops</span>
+                    </a>
+                    <a href="/dashboard/posts" class="nav-item {% block nav_posts %}{% endblock %}" data-tooltip="Posts">
+                        <i class="fas fa-file-alt" style="width: 18px;"></i>
+                        <span class="nav-label">Posts</span>
+                    </a>
+                    <a href="/dashboard/earnings" class="nav-item {% block nav_earnings %}{% endblock %}" data-tooltip="Earnings">
+                        <i class="fas fa-dollar-sign" style="width: 18px;"></i>
+                        <span class="nav-label">Earnings</span>
+                    </a>
+                    <a href="/dashboard/links" class="nav-item {% block nav_links %}{% endblock %}" data-tooltip="Links">
+                        <i class="fas fa-link" style="width: 18px;"></i>
+                        <span class="nav-label">Links</span>
+                    </a>
+                    <a href="/dashboard/vault" class="nav-item {% block nav_vault %}{% endblock %}" data-tooltip="Vault">
+                        <i class="fas fa-lock" style="width: 18px;"></i>
+                        <span class="nav-label">Vault</span>
+                    </a>
+                    <a href="/dashboard/notifications" class="nav-item {% block nav_notifications %}{% endblock %}" data-tooltip="Notifications">
+                        <i class="fas fa-bell" style="width: 18px;"></i>
+                        <span class="nav-label">Notifications</span>
+                    </a>
+                    <a href="/dashboard/segments" class="nav-item {% block nav_segments %}{% endblock %}" data-tooltip="Segments">
+                        <i class="fas fa-layer-group" style="width: 18px;"></i>
+                        <span class="nav-label">Segments</span>
+                    </a>
+                    <a href="/dashboard/followups" class="nav-item {% block nav_followups %}{% endblock %}" data-tooltip="Follow-Ups">
+                        <i class="fas fa-clock" style="width: 18px;"></i>
+                        <span class="nav-label">Follow-Ups</span>
+                    </a>
+                    <a href="/dashboard/creators" class="nav-item {% block nav_creators %}{% endblock %}" data-tooltip="Creators">
+                        <i class="fas fa-users" style="width: 18px;"></i>
+                        <span class="nav-label">Creators</span>
+                    </a>
+                    <a href="/dashboard/crm" class="nav-item {% block nav_crm %}{% endblock %}" data-tooltip="CRM">
+                        <i class="fas fa-heart" style="width: 18px;"></i>
+                        <span class="nav-label">CRM</span>
+                    </a>
+                    <a href="/dlq" class="nav-item {% block nav_dlq %}{% endblock %}" data-tooltip="Dead Letter Queue">
+                        <i class="fas fa-exclamation-triangle" style="width: 18px;"></i>
+                        <span class="nav-label">DLQ</span>
+                    </a>
+
+                    <p class="nav-section-label" style="margin-top: 24px;">Account</p>
+                    <a href="/logout" class="nav-item" style="color: var(--accent-red);" data-tooltip="Logout">
+                        <i class="fas fa-sign-out-alt" style="width: 18px;"></i>
+                        <span class="nav-label">Logout</span>
+                    </a>
+                </nav>
+            </div>
+
+            <button class="sidebar-collapse-btn" @click="toggleSidebar()">
+                <i class="fas fa-chevron-left collapse-icon" style="font-size:12px;"></i>
+            </button>
+
+            <div class="sidebar-footer">
+                <div style="width: 32px; height: 32px; min-width:32px; border-radius: 50%; background: var(--accent-purple); display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-user-shield text-white" style="font-size: 12px;"></i>
+                </div>
+                <div class="sidebar-user-text">
+                    <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">Operator</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Admin</div>
+                </div>
+                <i class="fas fa-cog sidebar-user-icon" style="cursor: pointer;"></i>
+            </div>
+        </aside>
+
+        <!-- Mobile sidebar overlay -->
+        <div x-show="sidebarOpen" @click="sidebarOpen = false"
+             class="fixed inset-0 bg-black opacity-50 z-20 lg:hidden"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden" :style="sidebarCollapsed ? 'margin-left: 64px' : 'margin-left: 240px'" style="transition: margin-left 0.25s ease;">
+            <!-- Header -->
+            <header style="height:56px; background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid rgba(0,0,0,0.06); padding:0 24px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; position:sticky; top:0; z-index:20;">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <button @click="toggleSidebar()" style="color:var(--text-secondary); cursor:pointer; background:none; border:none; display:flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:6px; transition:all 0.15s;"
+                            onmouseover="this.style.background='rgba(0,0,0,0.04)'; this.style.color='var(--text-primary)'"
+                            onmouseout="this.style.background='none'; this.style.color='var(--text-secondary)'">
+                        <i class="fas fa-bars" style="font-size:16px;"></i>
+                    </button>
+                    <h1 style="font-size:17px; font-weight:600; color:var(--text-primary); letter-spacing:-0.2px;">
+                        {% block page_title %}Dashboard{% endblock %}
+                    </h1>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="position:relative;">
+                        <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-tertiary); font-size:13px;"></i>
+                        <input type="text" placeholder="Search..." x-model="searchQuery"
+                               style="padding:8px 12px 8px 34px; width:200px; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:8px; color:var(--text-primary); font-size:13px; transition:all 0.15s;"
+                               onfocus="this.style.borderColor='rgba(108,99,255,0.4)'; this.style.width='260px';"
+                               onblur="this.style.borderColor='rgba(0,0,0,0.08)'; this.style.width='200px';">
+                    </div>
+                    <button style="position:relative; width:36px; height:36px; background:rgba(0,0,0,0.03); border:1px solid rgba(0,0,0,0.08); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-secondary); transition:all 0.15s;"
+                         @click="showNotifications = !showNotifications"
+                         onmouseover="this.style.background='rgba(0,0,0,0.06)'; this.style.color='#111827';"
+                         onmouseout="this.style.background='rgba(0,0,0,0.03)'; this.style.color='var(--text-secondary)';">
+                        <i class="fas fa-bell" style="font-size:14px;"></i>
+                        <span x-show="notificationCount > 0"
+                              style="position:absolute; top:-2px; right:-2px; width:17px; height:17px; background:var(--accent-purple); color:white; font-size:10px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600;"
+                              x-text="notificationCount"></span>
+                    </button>
+                    <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#6C63FF,#8B85FF); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(108,99,255,0.2);">
+                        <i class="fas fa-user" style="color:white; font-size:13px;"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Notification Dropdown -->
+            <div x-show="showNotifications" @click="showNotifications = false"
+                 class="fixed inset-0 z-40" style="display: none;">
+                <div @click.stop style="position: absolute; top: 64px; right: 24px; width: 320px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+                    <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">Notifications</h3>
+                    <div id="notification-list">
+                        <p style="font-size: 13px; color: var(--text-secondary);">No new notifications</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Operation Panel (creator-scoped) -->
+            <div id="live-panel" style="padding: 12px 24px; background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 16px; align-items: center; font-size: 13px; color: var(--text-secondary);" x-data="{ live: null }" x-init="window.addEventListener('live-overview', e => live = e.detail); fetch('/api/live/overview').then(r=>r.json()).then(d=>live=d).catch(()=>{})">
+                <template x-if="live">
+                    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                        <span><i class="fas fa-users" style="margin-right:6px;"></i>Active <b x-text="live.active"></b></span>
+                        <span><i class="fas fa-cogs" style="margin-right:6px;"></i>Generating <b x-text="live.generating"></b></span>
+                        <span><i class="fas fa-box" style="margin-right:6px;"></i>PPV Pending <b x-text="live.offers_pending"></b></span>
+                        <span><i class="fas fa-dollar-sign" style="margin-right:6px;"></i>Sales <b x-text="live.sales"></b> <span x-text="live.revenue_display"></span></span>
+                        <span><i class="fas fa-heart" style="margin-right:6px;"></i>Aftercare <b x-text="live.aftercare"></b></span>
+                        <span x-show="live.failures>0" style="color: var(--accent-red);"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>Failures <b x-text="live.failures"></b></span>
+                    </div>
+                </template>
+                <template x-if="!live">
+                    <span style="color: var(--text-tertiary);">Loading live overview...</span>
+                </template>
+            </div>
+
+            <!-- Page Content -->
+            <div id="page-content" class="flex-1" {% block page_content_attrs %}style="padding: 24px; overflow-y: auto;"{% endblock %}>
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+    function dashboardApp() {
+        return {
+            sidebarOpen: false,
+            sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
+            searchQuery: '',
+            showNotifications: false,
+            notificationCount: 0,
+            queueCount: 0,
+            unreadTotal: 0,
+            statsUpdate: 0,
+
+            init() {
+                this.loadCounts();
+                window.rt = new RealtimeClient();
+                // Live operation panel polling (creator-scoped)
+                this.loadLiveOverview();
+                setInterval(() => {
+                    if (window.rt && window.rt.isPollingActive && window.rt.isPollingActive()) {
+                        this.loadLiveOverview();
+                    } else if (!window.rt || !window.rt.isConnected || !window.rt.isConnected()) {
+                        this.loadLiveOverview();
+                    }
+                }, 15000);
+                // Also update on commerce events
+                if (window.rt) {
+                    window.rt.on("commerce.offer_created", () => this.loadLiveOverview());
+                    window.rt.on("commerce.sale_recorded", () => this.loadLiveOverview());
+                    window.rt.on("commerce.aftercare", () => this.loadLiveOverview());
+                }
+            },
+            async loadLiveOverview() {
+                try {
+                    const resp = await fetch("/api/live/overview");
+                    if (!resp.ok) return;
+                    const data = await resp.json();
+                    // Store for live panel if present
+                    this.liveOverview = data;
+                    // Dispatch event for live panel component
+                    window.dispatchEvent(new CustomEvent("live-overview", {detail: data}));
+                } catch (e) { console.debug("live overview failed", e); }
+            },
+
+            toggleSidebar() {
+                this.sidebarCollapsed = !this.sidebarCollapsed;
+                localStorage.setItem('sidebarCollapsed', String(this.sidebarCollapsed));
+            },
+
+            async loadCounts() {
+                try {
+                    const resp = await fetch('/api/stats');
+                    const data = await resp.json();
+                    this.queueCount = data.pending_queue || 0;
+                    this.notificationCount = data.pending_queue || 0;
+                    this.statsUpdate = data.pending_queue || 0;
+                } catch (e) {
+                    console.error('Failed to load stats:', e);
+                }
+            },
+
+            refreshPage() {
+                this.loadCounts();
+                location.reload();
+            }
+        }
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+{
+  "fan_id": 999999,
+  "creator_id": 1,
+  "started_at": "2026-09-20T18:53:45.020208+00:00",
+  "ended_at": "2026-09-20T18:53:46.776257+00:00",
+  "stopped_reason": "completed: offer would be sent -> fan would purchase (end of deterministic path)",
+  "breakage_count": 0,
+  "turns": [
+    {
+      "turn": 1,
+      "fan_message": "hi",
+      "system_stage": "llm+commerce",
+      "system_response": "Here you go! Let me know what you think ",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: hi",
+        "commerce_status": "no_offer: hi is RELATIONSHIP_BUILDING (deterministic v1)",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.690155+00:00"
+    },
+    {
+      "turn": 2,
+      "fan_message": "hey there",
+      "system_stage": "llm+commerce",
+      "system_response": "Hey there! I'm good, how are you? (turn 2)",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: hey there",
+        "commerce_status": "no_offer",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.710344+00:00"
+    },
+    {
+      "turn": 3,
+      "fan_message": "how are you?",
+      "system_stage": "llm+commerce",
+      "system_response": "It's $5 - Mirror selfie 24/06/2026, sales_url via DropFans. Want the link?",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: how are you?",
+        "commerce_status": "no_offer",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.729274+00:00"
+    },
+    {
+      "turn": 4,
+      "fan_message": "what do you offer?",
+      "system_stage": "llm+commerce",
+      "system_response": "I have some exclusive drops - want to see?",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: what do you offer?",
+        "commerce_status": "no_offer",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.741135+00:00"
+    },
+    {
+      "turn": 5,
+      "fan_message": "how much is it?",
+      "system_stage": "llm+commerce",
+      "system_response": "I have some exclusive drops - want to see?",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: how much is it?",
+        "commerce_status": "no_offer",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.757505+00:00"
+    },
+    {
+      "turn": 6,
+      "fan_message": "okay send it",
+      "system_stage": "llm+commerce",
+      "system_response": "Hey there! I'm good, how are you? (turn 6) would_offer: $5 Mirror selfie (sealing-> would verify DropFans)",
+      "breakage": null,
+      "details": {
+        "context_preview": "system: creator 1 persona\nuser: okay send it",
+        "commerce_status": "would_offer: $5 Mirror selfie (sealing-> would verify DropFans)",
+        "avail": {
+          "db_pool": "ok",
+          "redis": "ok",
+          "llm": "ok",
+          "commerce": "ok"
+        }
+      },
+      "ts": "2026-09-20T18:53:46.776067+00:00"
+    }
+  ]
+}

@@ -1,0 +1,584 @@
+{% extends "dashboard.html" %}
+{% block nav_drops %}active{% endblock %}
+{% block page_title %}DropFans Drops{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { margin-bottom: 24px; }
+    .page-header h2 { font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+    .page-header p { font-size: 13px; color: var(--text-secondary); }
+
+    .vault-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 1024px) { .vault-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .vault-grid { grid-template-columns: 1fr; } }
+
+    .stat-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; position: relative; overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .stat-card::after {
+        content: ''; position: absolute; top: -20px; right: -20px;
+        width: 80px; height: 80px; border-radius: 50%;
+        filter: blur(32px); opacity: 0.18; pointer-events: none;
+    }
+    .stat-card.purple::after { background: var(--accent-purple); }
+    .stat-card.green::after  { background: var(--accent-green); }
+    .stat-card.orange::after { background: var(--accent-orange); }
+    .stat-card.blue::after   { background: #3B82F6; }
+    .stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .stat-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-secondary); }
+    .stat-icon {
+        width: 36px; height: 36px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .stat-icon.purple { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+    .stat-icon.green  { background: rgba(74,222,128,0.15);  color: var(--accent-green); }
+    .stat-icon.orange { background: rgba(251,146,60,0.15);  color: var(--accent-orange); }
+    .stat-icon.blue   { background: rgba(59,130,246,0.15);  color: #3B82F6; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+    .stat-sub { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+    .section-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; padding: 20px; overflow: hidden; margin-bottom: 20px;
+    }
+    .section-header {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+    }
+    .section-header h2 { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+
+    .status-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .status-badge.active { background: rgba(74,222,128,0.15); color: var(--accent-green); }
+    .status-badge.error { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+    .status-badge.pending { background: rgba(251,146,60,0.15); color: var(--accent-orange); }
+    .status-badge.review { background: rgba(108,99,255,0.15); color: var(--accent-purple); }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-tertiary); }
+    .empty-state i { font-size: 32px; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 14px; }
+    .empty-state .empty-sub { font-size: 12px; margin-top: 4px; color: var(--text-tertiary); }
+
+    .loading-text { font-size: 14px; color: var(--text-tertiary); padding: 24px 0; text-align: center; }
+    .error-state {
+        background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2);
+        color: var(--accent-red); padding: 12px 16px; border-radius: 8px;
+        font-size: 13px; margin-bottom: 16px;
+    }
+
+    .btn-sync {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        cursor: pointer; border: 1px solid var(--border-color);
+        background: var(--bg-card); color: var(--text-primary); transition: all 0.15s;
+    }
+    .btn-sync:hover { background: rgba(0,0,0,0.04); }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-action {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+        cursor: pointer; border: none; transition: all 0.15s;
+    }
+    .btn-action.primary { background: var(--accent-purple); color: white; }
+    .btn-action.primary:hover { background: var(--accent-purple-light); }
+    .btn-action.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-action.secondary { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+    .btn-action.secondary:hover { background: rgba(0,0,0,0.04); }
+    .btn-action.danger { background: rgba(239,68,68,0.1); color: var(--accent-red); }
+    .btn-action.danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-action.sm { padding: 4px 8px; font-size: 11px; }
+
+    .toast {
+        position: fixed; bottom: 24px; right: 24px; z-index: 1100;
+        padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15); transition: all 0.3s;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .toast.success { background: var(--accent-green); color: #fff; }
+    .toast.error { background: var(--accent-red); color: #fff; }
+    .toast.info { background: var(--accent-purple); color: #fff; }
+
+    /* Drop cards */
+    .drops-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    .drop-card {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 12px; overflow: hidden; transition: all 0.15s;
+    }
+    .drop-card:hover { border-color: var(--accent-purple); transform: translateY(-1px); }
+    .drop-card-header {
+        padding: 16px; border-bottom: 1px solid var(--border-color);
+        display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .drop-card-body { padding: 16px; }
+    .drop-card-footer {
+        padding: 12px 16px; border-top: 1px solid var(--border-color);
+        display: flex; justify-content: space-between; align-items: center;
+        background: rgba(0,0,0,0.02);
+    }
+    .drop-price {
+        font-size: 20px; font-weight: 700; color: var(--accent-green);
+    }
+    .drop-meta { font-size: 12px; color: var(--text-tertiary); }
+    .drop-stats { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); }
+    .drop-stat { display: flex; align-items: center; gap: 4px; }
+    .drop-stat i { font-size: 10px; }
+
+    /* Media chips */
+    .media-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .media-chip {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500;
+        background: rgba(108,99,255,0.08); color: var(--accent-purple);
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+        z-index: 50; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-content {
+        background: var(--bg-card); border: 1px solid var(--border-color);
+        border-radius: 16px; padding: 24px; width: 90%; max-width: 560px;
+        max-height: 80vh; overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="dropsApp()" x-init="init()" data-creator-id="{{ creator_id }}">
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+            <h2>DropFans Drops</h2>
+            <p>Create and manage your paid drops.</p>
+        </div>
+        <button @click="openCreateModal()" class="btn-action primary" style="padding:8px 16px;">
+            <i class="fas fa-plus"></i> Create Drop
+        </button>
+    </div>
+
+    <div x-show="error" class="error-state" x-text="error"></div>
+
+    <div x-show="!loading && creatorId === 0" class="empty-state">
+        <i class="fas fa-box"></i>
+        <p style="font-size: 16px; font-weight: 500; margin-bottom: 4px;">No creator configured</p>
+        <p class="empty-sub">Create a creator on the <a href="/dashboard/fangate" style="color:var(--accent-purple);">DropFans page</a> first.</p>
+    </div>
+
+    <template x-if="creatorId > 0">
+        <div>
+            <!-- Connection check banner -->
+            <div x-show="!loading && !dropsConnected" class="section-card" style="margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:8px;background:rgba(251,146,60,0.15);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-plug" style="color:var(--accent-orange);"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-size:14px;font-weight:600;color:var(--text-primary);">DropFans not connected</div>
+                        <div style="font-size:12px;color:var(--text-tertiary);">Connect your DropFans API key to create and manage drops.</div>
+                    </div>
+                    <a href="/dashboard/fangate" class="btn-action primary"><i class="fas fa-plug"></i> Connect DropFans</a>
+                </div>
+            </div>
+            <!-- KPI Cards -->
+            <div class="vault-grid" style="margin-bottom: 20px;">
+                <div class="stat-card purple">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Drops</span>
+                        <div class="stat-icon purple"><i class="fas fa-box"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="drops.length"></div>
+                    <div class="stat-sub">All drops</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-top">
+                        <span class="stat-label">Active</span>
+                        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="drops.filter(d => d.status === 'active').length"></div>
+                    <div class="stat-sub">Live drops</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Revenue</span>
+                        <div class="stat-icon orange"><i class="fas fa-dollar-sign"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="'$' + totalRevenue().toFixed(2)"></div>
+                    <div class="stat-sub">Across all drops</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-top">
+                        <span class="stat-label">Total Media</span>
+                        <div class="stat-icon blue"><i class="fas fa-photo-video"></i></div>
+                    </div>
+                    <div class="stat-value" x-text="drops.reduce((s, d) => s + (d.media_count || 0), 0)"></div>
+                    <div class="stat-sub">Items in drops</div>
+                </div>
+            </div>
+
+            <!-- Drops Grid -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-box" style="color:var(--accent-purple);margin-right:8px;"></i>Your Drops</h2>
+                    <button @click="loadDrops()" class="btn-sync" :disabled="dropsLoading">
+                        <i class="fas" :class="dropsLoading ? 'fa-spinner fa-spin' : 'fa-sync'"></i> Refresh
+                    </button>
+                </div>
+
+                <div x-show="dropsLoading" class="loading-text">
+                    <i class="fas fa-spinner fa-spin"></i> Loading drops...
+                </div>
+
+                <div x-show="!dropsLoading && drops.length === 0" class="empty-state" style="padding:32px;">
+                    <i class="fas fa-box" style="font-size:24px;"></i>
+                    <p>No drops yet</p>
+                    <p class="empty-sub">Create your first drop from vault items.</p>
+                </div>
+
+                <div x-show="!dropsLoading && drops.length > 0" class="drops-grid">
+                    <template x-for="drop in drops" :key="drop.id">
+                        <div class="drop-card" @click="openDetail(drop)">
+                            <div class="drop-card-header">
+                                <div>
+                                    <div style="font-size:15px;font-weight:600;color:var(--text-primary);" x-text="drop.name || 'Untitled Drop'"></div>
+                                    <div class="drop-meta" x-text="'ID: ' + (drop.id || '').slice(0, 12) + '...'"></div>
+                                </div>
+                                <span class="status-badge" :class="statusClass(drop.status)" x-text="drop.status || 'active'"></span>
+                            </div>
+                            <div class="drop-card-body">
+                                <div class="drop-price" x-text="'$' + (drop.price || 0).toFixed(2)"></div>
+                                <div class="drop-stats" style="margin-top:8px;">
+                                    <span class="drop-stat"><i class="fas fa-photo-video"></i> <span x-text="drop.media_count || 0"></span> media</span>
+                                    <span class="drop-stat"><i class="fas fa-download"></i> <span x-text="drop.allow_download ? 'Yes' : 'No'"></span></span>
+                                </div>
+                                <div class="media-chips" x-show="drop.vault_item_ids?.length > 0">
+                                    <template x-for="(vid, idx) in (drop.vault_item_ids || []).slice(0, 5)" :key="idx">
+                                        <span class="media-chip" x-text="'#' + vid.slice(-6)"></span>
+                                    </template>
+                                    <span class="media-chip" x-show="(drop.vault_item_ids || []).length > 5"
+                                          x-text="'+' + ((drop.vault_item_ids || []).length - 5) + ' more'"></span>
+                                </div>
+                            </div>
+                            <div class="drop-card-footer">
+                                <span class="drop-meta" x-text="formatDate(drop.created_at)"></span>
+                                <div style="display:flex;gap:4px;" @click.stop>
+                                    <a :href="drop.buy_url" target="_blank" class="btn-action secondary sm" x-show="drop.buy_url">
+                                        <i class="fas fa-external-link-alt"></i> View
+                                    </a>
+                                    <button @click.stop="openCheckout(drop)" class="btn-action secondary sm" title="Copy checkout URL">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Create Drop Modal -->
+            <div x-show="showCreateModal" @click="showCreateModal = false" class="modal-overlay" style="display:none;">
+                <div @click.stop class="modal-content">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="font-size:16px;font-weight:600;color:var(--text-primary);">
+                            <i class="fas fa-box" style="color:var(--accent-purple);margin-right:6px;"></i>
+                            Create Drop
+                        </h3>
+                        <button @click="showCreateModal = false" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:18px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div style="display:grid;gap:12px;">
+                        <div>
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Drop Name *</label>
+                            <input x-model="createForm.name" type="text" placeholder="My awesome drop"
+                                   style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Price (USD) *</label>
+                            <input x-model.number="createForm.price" type="number" min="5" max="750" step="0.01" placeholder="9.99"
+                                   style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);">
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Min $5, Max $750</div>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Description</label>
+                            <textarea x-model="createForm.description" placeholder="Optional description..."
+                                      rows="2"
+                                      style="width:100%;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;background:var(--bg-primary);color:var(--text-primary);resize:vertical;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Vault Items *</label>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:6px;">Select items from your vault to include (max 10)</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto;padding:8px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-primary);">
+                                <template x-for="v in vaultItems" :key="v.id">
+                                    <label style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:12px;"
+                                           :style="createForm.vault_item_ids.includes(v.id) ? 'background:rgba(108,99,255,0.15);color:var(--accent-purple)' : 'background:var(--bg-card);color:var(--text-secondary)'">
+                                        <input type="checkbox" :value="v.id" x-model="createForm.vault_item_ids" style="display:none;">
+                                        <i class="fas" :class="v.file_type === 'video' ? 'fa-video' : v.file_type === 'audio' ? 'fa-music' : 'fa-image'" style="font-size:10px;"></i>
+                                        <span x-text="v.file_name || v.id.slice(-8)"></span>
+                                    </label>
+                                </template>
+                                <div x-show="vaultItems.length === 0" style="font-size:12px;color:var(--text-tertiary);padding:8px;text-align:center;width:100%;">
+                                    No vault items. <a href="/dashboard/vault" style="color:var(--accent-purple);">Upload media first</a>.
+                                </div>
+                            </div>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;" x-text="createForm.vault_item_ids.length + ' item(s) selected (max 10)'"></div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="checkbox" x-model="createForm.allow_download" id="allowDownload" style="accent-color:var(--accent-purple);">
+                            <label for="allowDownload" style="font-size:13px;color:var(--text-secondary);">Allow download</label>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+                        <button @click="showCreateModal = false" class="btn-action secondary">Cancel</button>
+                        <button @click="createDrop()" class="btn-action primary" :disabled="creating || !createForm.name || createForm.price < 5 || createForm.vault_item_ids.length === 0">
+                            <i class="fas" :class="creating ? 'fa-spinner fa-spin' : 'fa-plus'"></i>
+                            <span x-text="creating ? 'Creating...' : 'Create Drop'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail Modal -->
+            <div x-show="showDetailModal" @click="showDetailModal = false" class="modal-overlay" style="display:none;">
+                <div @click.stop class="modal-content" style="max-width:600px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <h3 style="font-size:16px;font-weight:600;color:var(--text-primary);">
+                            <i class="fas fa-box" style="color:var(--accent-purple);margin-right:6px;"></i>
+                            <span x-text="detailDrop?.name || 'Drop Details'"></span>
+                        </h3>
+                        <button @click="showDetailModal = false" style="background:none;border:none;cursor:pointer;color:var(--text-tertiary);font-size:18px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div x-show="detailDrop" style="display:grid;gap:12px;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
+                            <div><span style="color:var(--text-tertiary);">Status:</span>
+                                <span class="status-badge" :class="statusClass(detailDrop?.status)" x-text="detailDrop?.status"></span>
+                            </div>
+                            <div><span style="color:var(--text-tertiary);">Price:</span>
+                                <span style="font-weight:600;color:var(--accent-green);" x-text="'$' + (detailDrop?.price || 0).toFixed(2)"></span>
+                            </div>
+                            <div><span style="color:var(--text-tertiary);">Media:</span> <span x-text="(detailDrop?.media_count || 0) + ' items'"></span></div>
+                            <div><span style="color:var(--text-tertiary);">Download:</span> <span x-text="detailDrop?.allow_download ? 'Allowed' : 'Disabled'"></span></div>
+                            <div style="grid-column:span 2;"><span style="color:var(--text-tertiary);">ID:</span> <span style="font-family:monospace;font-size:12px;" x-text="detailDrop?.id"></span></div>
+                        </div>
+
+                        <div x-show="detailDrop?.media?.length > 0">
+                            <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">Media Items</div>
+                            <div style="max-height:200px;overflow-y:auto;">
+                                <template x-for="m in (detailDrop?.media || [])" :key="m.vault_item_id">
+                                    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-color);font-size:12px;">
+                                        <i class="fas" :class="m.file_type === 'video' ? 'fa-video' : m.file_type === 'audio' ? 'fa-music' : 'fa-image'" style="color:var(--text-tertiary);"></i>
+                                        <span style="flex:1;" x-text="m.vault_item_id"></span>
+                                        <span style="color:var(--text-tertiary);" x-text="'#' + (m.order || 0)"></span>
+                                        <span class="status-badge sm" :class="m.moderation_status === 'approved' ? 'active' : 'pending'" x-text="m.moderation_status || 'pending'" style="font-size:10px;"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div x-show="detailDrop?.moderation_reason" style="padding:8px 12px;background:rgba(239,68,68,0.08);border-radius:6px;font-size:12px;color:var(--accent-red);">
+                            <i class="fas fa-exclamation-triangle" style="margin-right:4px;"></i>
+                            <span x-text="detailDrop?.moderation_reason"></span>
+                        </div>
+
+                        <div style="display:flex;gap:8px;margin-top:8px;">
+                            <a :href="detailDrop?.buy_url" target="_blank" class="btn-action primary" x-show="detailDrop?.buy_url">
+                                <i class="fas fa-external-link-alt"></i> Open Checkout
+                            </a>
+                            <button @click="copyCheckoutUrl(detailDrop)" class="btn-action secondary">
+                                <i class="fas fa-link"></i> Copy Checkout URL
+                            </button>
+                            <button @click="showDetailModal = false" class="btn-action secondary">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </template>
+</div>
+
+<script>
+function dropsApp() {
+    return {
+        creatorId: {{ creator_id }},
+        loading: true,
+        error: null,
+
+        drops: [],
+        dropsLoading: false,
+        dropsConnected: false,
+
+        // Create modal
+        showCreateModal: false,
+        creating: false,
+        createForm: { name: '', price: 9.99, description: '', vault_item_ids: [], allow_download: true },
+        vaultItems: [],
+
+        // Detail modal
+        showDetailModal: false,
+        detailDrop: null,
+
+        async init() {
+            if (this.creatorId === 0) { this.loading = false; return; }
+            await this.checkStatus();
+            await this.loadDrops();
+            this.loading = false;
+        },
+
+        async checkStatus() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-status`);
+                this.dropsConnected = !!(data.status && data.status.dropfans_creator_id);
+            } catch (e) {
+                this.dropsConnected = false;
+            }
+        },
+
+        async api(path, opts = {}) {
+            const resp = await fetch(path, opts);
+            if (!resp.ok) {
+                const body = await resp.json().catch(() => ({}));
+                throw new Error(body.message || body.error || `HTTP ${resp.status}`);
+            }
+            return resp.json();
+        },
+
+        showToast(msg, type) {
+            const t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast ' + (type || 'info');
+            t.style.display = 'flex';
+            clearTimeout(this._toastTimer);
+            this._toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+        },
+
+        // ── Drops ──────────────────────────────────────────────────────
+
+        async loadDrops() {
+            this.dropsLoading = true;
+            this.error = null;
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-drops`);
+                this.drops = data.drops || [];
+            } catch (e) {
+                this.error = 'Failed to load drops: ' + e.message;
+            } finally {
+                this.dropsLoading = false;
+            }
+        },
+
+        totalRevenue() {
+            return this.drops.reduce((s, d) => s + ((d.price || 0) * (d.sales_count || 0)), 0);
+        },
+
+        statusClass(status) {
+            if (status === 'active') return 'active';
+            if (status === 'error' || status === 'rejected') return 'error';
+            if (status === 'pending' || status === 'review') return 'pending';
+            return 'review';
+        },
+
+        formatDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return d.toLocaleDateString();
+        },
+
+        // ── Create ─────────────────────────────────────────────────────
+
+        async openCreateModal() {
+            this.createForm = { name: '', price: 9.99, description: '', vault_item_ids: [], allow_download: true };
+            this.showCreateModal = true;
+            await this.loadVaultItems();
+        },
+
+        async loadVaultItems() {
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-vault?limit=100`);
+                this.vaultItems = data.items || [];
+            } catch (e) {
+                this.vaultItems = [];
+            }
+        },
+
+        async createDrop() {
+            if (this.creating) return;
+            this.creating = true;
+            this.error = null;
+            try {
+                const result = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-drops`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: this.createForm.name,
+                        price: this.createForm.price,
+                        vault_item_ids: this.createForm.vault_item_ids,
+                        allow_download: this.createForm.allow_download,
+                        description: this.createForm.description || undefined,
+                    }),
+                });
+                this.showCreateModal = false;
+                this.showToast('Drop created! Buy URL: ' + (result.buy_url || ''), 'success');
+                await this.loadDrops();
+            } catch (e) {
+                this.error = 'Failed to create drop: ' + e.message;
+            } finally {
+                this.creating = false;
+            }
+        },
+
+        // ── Detail ─────────────────────────────────────────────────────
+
+        async openDetail(drop) {
+            this.detailDrop = drop;
+            this.showDetailModal = true;
+            // Try to get fresh details
+            try {
+                const data = await this.api(`/api/fangate/creators/${this.creatorId}/dropfans-drops/${drop.id}`);
+                this.detailDrop = { ...drop, ...data };
+            } catch (e) {
+                // Use cached
+            }
+        },
+
+        // ── Checkout ───────────────────────────────────────────────────
+
+        openCheckout(drop) {
+            if (drop.buy_url) {
+                navigator.clipboard.writeText(drop.buy_url).then(() => {
+                    this.showToast('Checkout URL copied!', 'success');
+                }).catch(() => {
+                    this.showToast('Failed to copy URL', 'error');
+                });
+            }
+        },
+
+        copyCheckoutUrl(drop) {
+            if (drop?.buy_url) {
+                navigator.clipboard.writeText(drop.buy_url).then(() => {
+                    this.showToast('Checkout URL copied!', 'success');
+                }).catch(() => {
+                    this.showToast('Failed to copy', 'error');
+                });
+            }
+        },
+    };
+}
+</script>
+{% endblock %}
