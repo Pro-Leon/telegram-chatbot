@@ -466,4 +466,7 @@ class TestBoundary:
         assert [p.name for p in migs] == [
             "20260917000000_p33_content_families.sql",
             "20260917010000_p33_offer_definitions.sql",
+            "20260917020000_p33_vault_deliveries.sql",
+            "20260917030000_p33_segments.sql",
+            "20260917040000_p33_automation.sql",
         ]

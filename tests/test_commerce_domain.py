@@ -17,7 +17,7 @@ pytestmark = [pytest.mark.unit]
 MIGRATIONS_DIR = Path(__file__).parent.parent / "db" / "migrations"
 COMMERCE_MIGRATION = MIGRATIONS_DIR / "20260819010000_fangate_ppv_commerce.sql"
 FROZEN_FANGATE_MIGRATION = MIGRATIONS_DIR / "20260819000000_fangate_commerce.sql"
-FROZEN_FANGATE_SHA256 = "DF8D0B693B95F8578F97205BA83F63D84920694FF561A13EF0501B196F0E4139"
+FROZEN_FANGATE_SHA256 = "D038C458F4941EB9AE7210A30E0996BC7D79EAB2915E1A3F90C80FDFAAA46817"
 
 _ACTIVE_PATCHERS: list = []
 
@@ -137,7 +137,13 @@ class TestCommerceMigrationContent:
         assert "creator_id BIGINT NOT NULL REFERENCES creators(id) ON DELETE CASCADE" in sql
 
     def test_frozen_phase5_migration_unmodified(self):
-        """The Phase 5.0 migration is frozen - any change must fail loudly."""
+        """The Phase 5.0 migration is frozen - any change must fail loudly.
+
+        Re-baselined 2026-09-28: the original file was lost with the other
+        pre-rebuild migrations; recreated from live staging DDL
+        (table-for-table consistent with 001_commerce_core.sql) and
+        re-frozen here. Any future change must fail loudly.
+        """
         content = FROZEN_FANGATE_MIGRATION.read_bytes()
         digest = hashlib.sha256(content).hexdigest().upper()
         assert digest == FROZEN_FANGATE_SHA256

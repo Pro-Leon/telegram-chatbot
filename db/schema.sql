@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     message_count INTEGER DEFAULT 0,
     funnel_stage TEXT DEFAULT 'new',
     is_blocked BOOLEAN DEFAULT FALSE,
+    do_not_auto_reply BOOLEAN DEFAULT FALSE,
     notes TEXT
 );
 
@@ -101,4 +102,19 @@ CREATE TABLE IF NOT EXISTS dlq_messages (
     failure_reason TEXT,
     enqueued_at TIMESTAMPTZ DEFAULT NOW(),
     attempts INTEGER DEFAULT 1
+);
+
+-- Conversation tags (no color column by contract)
+CREATE TABLE IF NOT EXISTS conversation_tags (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS conversation_tag_assignments (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    tag_id BIGINT NOT NULL REFERENCES conversation_tags(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id, tag_id)
 );

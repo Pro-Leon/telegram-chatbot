@@ -146,3 +146,82 @@ Reads decode jsonb `rules` str→dict (no global asyncpg codec; precedent
 db/postgres.py). Callers: dashboard routes (users/search/dialogs/bulk_ops/
 analytics/segments), segments/evaluator.py, context_engine/gatherer.py,
 commerce/state.py, memory/context_assembler.py.
+
+## Phase 3d (implemented 2026-09-28): db/automation.py (12 functions)
+
+State-machine ledger over `automation_operations` (DDL re-declared in
+`db/migrations/20260917040000_p33_automation.sql`; live table verified:
+19 columns incl. partial `UNIQUE(creator_id, idempotency_key)
+WHERE idempotency_key <> ''`, scheduler index on (status,
+next_attempt_at)). Lifecycle pending → running → succeeded | failed |
+retrying | unknown; pending/retrying → cancelled; kill-switch cancel also
+from running; terminal states never transition.
+
+`create_operation(cid, action, target?=None, params?={},
+idempotency_key?="", correlation_id?=None, max_attempts?=3)->row|None`
+(SELECT-first on non-empty key; INSERT … ON CONFLICT DO NOTHING +
+re-SELECT wins races; empty key inserts directly; INSERT param order
+$1..$7 = creator/action/target/params/key/correlation/max_attempts;
+DB errors propagate) / `get_operation(op_id, cid)->row|None` /
+`get_operation_by_idempotency_key(cid, key)->row|None` (empty key → None,
+no I/O) / `claim_operation(op_id, cid)->row|None` (pending|retrying →
+running + attempt_count+1 + started_at, RETURNING; losers get None) /
+`mark_succeeded(op, cid, provider_result?)->bool` (+finished_at, result
+as ::jsonb) / `mark_failed|mark_retrying(op, cid, class, msg)->bool` /
+`mark_unknown(op, cid, class?="unknown", msg?="")->bool` /
+`mark_cancelled(op, cid)->bool` (pending|retrying|running) /
+`transition_operation(op, cid, target, …)->bool` (unknown target → False,
+no I/O) / `cancel_operation(op, cid)->bool` (pending|retrying only) /
+`list_operations(cid, status?=, action?=, limit?=50, offset?=0)->[rows]`.
+Id-keyed fns take operation_id first (pinned by persistence tests —
+exempt from creator-first). No provider/credential references in module
+(forensic pins). Caller: automation/service.py (sole write authority).
+
+## Phase 3e (implemented 2026-09-28): db/families.py (7 functions)
+
+Non-commercial grouping over `commerce_content_families` +
+`commerce_content_family_members` (DDL already in
+`db/migrations/20260917000000_p33_content_families.sql`; no new migration).
+
+`create_content_family(cid, slug, label?="")->row` (collisions raise
+UNIQUE, never swallowed) / `get_content_family(cid, fid)->row|None` /
+`list_content_families(cid)->[rows]` / `add_content_family_member(cid,
+fid, vault_item_id)->row` (ownership check first → ValueError "not found
+for creator"; dup membership raises) / `remove_content_family_member(cid,
+fid, vault_item_id)->bool` (ownership-gated; family row untouched) /
+`list_family_members(cid, fid)->[rows]` / `get_families_for_vault_item(cid,
+vault_item_id)->[family rows]` (multi-family JOIN). No single-membership
+flags or inference (TestFoundationContracts).
+
+## Phase 3f (implemented 2026-09-28): db/migrate.py runner + lost files
+
+Engine: `discover_migrations()` (lexicographic, {version,name,path}) /
+`get_pending_migrations(applied)` (sync) / `_ensure_version_table` /
+`get_current_version` / `get_applied_versions` /
+`_split_sql_statements` (strips `--` comments, keeps `DO $$` blocks and
+`'...'` literals whole, drops empties, strips trailing `;`) /
+`apply_migration(conn, m, dry_run?=False)->bool` (records version;
+empty→skip-True; error→False unrecorded; dry_run→ROLLBACK unrecorded) /
+`get_status(conn?=None)->{current_version, applied, applied_count,
+pending, pending_count, up_to_date}` / `upgrade(conn?=None)->[versions]`
+(stops at first failure) / `baseline_existing_schema(conn,
+version?="00000000000000")->bool` (empty DB → False; idempotent) /
+`main()` CLI (status|upgrade|baseline). `VERSION_TABLE` =
+"schema_migrations". `run_all.py` auto-applies via get_status/upgrade.
+
+Lost files recreated from test pins + live DDL (all IF NOT EXISTS,
+data-free): 00000000000000_baseline (14 tables, 15 indexes, personas
+seed, uuid-ossp + pg_trgm), 20260819000000 (creators/integrations/
+products; SHA re-baselined in test after byte-loss — content verified
+against live), 20260819010000 (commerce_offers + txn fan attribution),
+20260819100000 (ppv decisions + analytics), 20260822020000 (scheduled
+jobs), 20260912000000 (free-photo ledger + pool), 20260913000000
+(telemetry columns), 20260914000000 (first-sale columns + ambiguity
+table), 20260918000000 (opportunity ledger), 20260919000000 (exposure
+columns). 20260916000000 restored to full 18-statement/4-DO shape
+(snapshots, creator-scoped uniqueness swaps, MIN(id) dedups, intents
+table; dup-column bug fixed). Still unrestored (no test pins, contents
+unrecoverable): 20260822010000/22030000/22040000/23020000/23030000/
+24010000/26010000/28040000/31000000-02/09010000/09100000/20260911/
+20260920-24 file bodies — versions recorded live, tables verified
+present; fresh-DB upstairs replay would need them.

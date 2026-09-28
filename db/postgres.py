@@ -349,3 +349,96 @@ async def get_user_profile_with_embedding(user_id: int) -> dict[str, Any] | None
                 )
             return result
         return None
+
+
+# ── Schema verification (migration health) ─────────────────────────────
+
+
+async def _missing_tables(conn: Any, tables: list[str]) -> list[str]:
+    rows = await conn.fetch(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema = 'public' AND table_name = ANY($1)",
+        list(tables),
+    )
+    present = {str(r["table_name"]) for r in rows}
+    return [t for t in tables if t not in present]
+
+
+async def verify_schema() -> dict[str, Any]:
+    """Check core + commerce tables exist (incl. scheduled_messages,
+    dropfans_drop_intents). Fail-open: never raises; reports missing."""
+    import logging
+
+    expected = [
+        "users",
+        "messages",
+        "conversation_summaries",
+        "user_profiles",
+        "operator_queue",
+        "scheduled_messages",
+        "creators",
+        "creator_integrations",
+        "fangate_products",
+        "fangate_transactions",
+        "commerce_offers",
+        "vault_media_deliveries",
+        "fan_segments",
+        "automation_operations",
+        "dropfans_drop_intents",
+        "commerce_content_families",
+        "commerce_offer_definitions",
+    ]
+    try:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            missing = await _missing_tables(conn, expected)
+    except Exception as exc:  # noqa: BLE001 — verification is best-effort
+        logging.getLogger("db.postgres").warning(
+            "verify_schema failed (%s)", exc.__class__.__name__
+        )
+        return {"ok": False, "missing": list(expected), "unknown": True}
+    return {"ok": not missing, "missing": missing, "unknown": False}
+
+
+async def verify_commerce_safety_schema() -> dict[str, Any]:
+    """Check the P3.2 commerce safety schema is present.
+
+    Returns {"present": bool, "missing": [...], "unknown": bool}.
+    Connectivity failures yield unknown (never healthy).
+    """
+    import logging
+
+    expected = ["commerce_offers", "dropfans_drop_intents"]
+    try:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            missing = await _missing_tables(conn, expected)
+    except Exception as exc:  # noqa: BLE001 — verification is best-effort
+        logging.getLogger("db.postgres").warning(
+            "verify_commerce_safety_schema failed (%s)", exc.__class__.__name__
+        )
+        return {"present": False, "missing": list(expected), "unknown": True}
+    return {"present": not missing, "missing": missing, "unknown": False}
+
+
+async def check_migrations_pending() -> dict[str, Any]:
+    """Report migration status via the migrate engine (fail-closed unknown)."""
+    import logging
+
+    try:
+        from db.migrate import get_status
+
+        return await get_status()
+    except Exception as exc:  # noqa: BLE001 — never break callers
+        logging.getLogger("db.postgres").warning(
+            "check_migrations_pending failed (%s)", exc.__class__.__name__
+        )
+        return {
+            "current_version": None,
+            "applied": [],
+            "applied_count": 0,
+            "pending": [],
+            "pending_count": 0,
+            "up_to_date": False,
+            "unknown": True,
+        }
