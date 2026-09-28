@@ -81,3 +81,39 @@ fail-closed None (callers map to 404/UNAVAILABLE, never raise);
 idempotency substrings verbatim (see spec §8 of extraction);
 returns: get→row|None, list→[rows], count→int, upserts→bool|None as above;
 no secrets in returns or logs (allowlisted status shape only).
+
+## Phase 3b (implemented 2026-09-28): db/vault.py (20 functions)
+
+Delivery ledger over `vault_media_deliveries` (DDL re-declared in
+`db/migrations/20260917020000_p33_vault_deliveries.sql`; live table verified:
+BIGSERIAL id PK, creator INTEGER, user BIGINT FK→users, fangate_media_id INT,
+product_id INT, telegram_message_id BIGINT, sent_at/created_at TIMESTAMPTZ
+DEFAULT NOW(), status TEXT DEFAULT 'sent', dropfans_media_id/_vault_item_id
+TEXT, UNIQUE(creator,user,fangate_media_id), partial UNIQUE on
+dropfans_vault_item_id WHERE IS NOT NULL).
+
+Lifecycle: `reserve_delivery(cid, uid, media, product?=None)->int|None`
+(INSERT pending, ON CONFLICT DO NOTHING RETURNING id) /
+`finalize_delivery(rid, telegram_message_id?=None, creator_id?=None)->bool`
+(UPDATE pending→sent; SQL contains `creator_id = $3`; id-only legacy path
+warns) / `release_delivery(rid, creator_id?=None)->bool` (DELETE
+pending-only; SQL contains `creator_id = $2`) /
+`release_stale_reservations(max_age_minutes=5, batch_size=50,
+skip_ids=())->[rows]` (global reaper; `CAST($1 AS numeric) *
+INTERVAL '1 minute'`, `NOT (id = ANY($3))` skip shield, no make_interval).
+
+Reads: `record_delivery(…, status sent)->bool` / `get_delivery` /
+`get_delivered_media_map->{media_id: row}` / `has_user_received_media`
+(sent-only) / `get_unseen_media_ids` / `list/count_deliveries` /
+`get_delivery_stats->{total,unique_fans,unique_media,sent,pending}`
+(None→zeros) / `get_recent_deliveries` + `get_top_fans` (LEFT JOIN users) /
+`get_product_delivery_counts` + `get_media_delivery_counts->{id: cnt}` /
+`get_fan_delivery_history` / `get_fan_delivery_count`.
+
+DropFans-keyed: `finalize_dropfans_delivery(cid, uid, vault_item_id,
+telegram_message_id?=None)->bool` /
+`release_dropfans_delivery(cid, uid, vault_item_id)->bool` (both
+pending-guarded). DropFans reserve/check SQL stays inline at
+commerce/post_purchase.py + chatbotv2/main.py gateway (pinned by
+test_p32_safety_foundation + deliver_product_media assertions — do not
+migrate without updating those pins).
