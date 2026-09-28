@@ -147,9 +147,14 @@ def test_scope_fail_closed() -> None:
 
 
 def test_deterministic() -> None:
+    async def _boom(c, u):
+        raise ConnectionError("commerce down")
+
     kw = {"now": datetime(2026, 9, 27, tzinfo=UTC)}
-    a = _run(assemble_turn_context(1, 2, "gen-d", **_ports(), **kw))
-    b = _run(assemble_turn_context(1, 2, "gen-d", **_ports(), **kw))
+    boom = {"eligibility_port": _boom, "opportunity_port": _boom,
+            "purchase_port": _boom}
+    a = _run(assemble_turn_context(1, 2, "gen-d", **_ports(), **boom, **kw))
+    b = _run(assemble_turn_context(1, 2, "gen-d", **_ports(), **boom, **kw))
     assert a.assembled.total_chars == b.assembled.total_chars
     assert [s.lines for s in a.assembled.sections] == [s.lines for s in b.assembled.sections]
 
