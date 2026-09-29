@@ -647,8 +647,8 @@ class TestRedisRecoveryObservability:
 
             count, ids = await requeue_stalled_messages("worker_1", idle_ms=60000)
             assert count == 2
-            assert "msg-1-0" in ids
-            assert "msg-2-0" in ids
+            assert "msg-1-0" in [mid for mid, _ in ids]
+            assert "msg-2-0" in [mid for mid, _ in ids]
 
     @pytest.mark.asyncio
     async def test_recovery_returns_empty_on_no_pending(self):
@@ -670,7 +670,7 @@ class TestRedisRecoveryObservability:
 
             count, ids = await requeue_stalled_send_messages("bot_main", idle_ms=30000)
             assert count == 1
-            assert "send-1-0" in ids
+            assert "send-1-0" in [mid for mid, _ in ids]
 
     @pytest.mark.asyncio
     async def test_recovery_error_returns_zero(self):

@@ -3,7 +3,7 @@
 Deterministic offer catalog: stable_key + versioned definitions mapping to
 DropFans CUIDs. Creator-scoped throughout; lifecycle draft -> active ->
 retired only (price/ids immutable post-create). No seeding, no taxonomy,
-no backfill in this module (suite-asserted prohibitions).
+historical fill in this module (suite-asserted prohibitions).
 
 Contract: docs/COMMERCE_DB_REBUILD_SPEC.md Phase 3a.
 """

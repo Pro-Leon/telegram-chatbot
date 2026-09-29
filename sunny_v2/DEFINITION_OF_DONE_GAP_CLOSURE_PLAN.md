@@ -291,3 +291,33 @@ behavior — no production DB, streams, or traffic has touched V2.
 - **F7 scoped**: `sunny_v2/LIVE_PROOF_MATRIX.md` — all live proofs
   (L1–L7, G1, A–G, commerce gate) specified with method, criteria, and
   execution record. Status SCOPED/NOT RUN; blocks cutover until green.
+
+## Post-Part-4 F7-rest closure (2026-09-29, live staging)
+
+- **F7 L7/L3/L5/G1 proven live** (`tests/test_f7_*_live.py`, 10 tests
+  green on real PG + Redis, residue cleaned): XAUTOCLAIM reclaim →
+  APPLIED → DUPLICATE with payload preserved and no auto-ACK;
+  crash-between-persist-and-mark converges to one mutation + one mark;
+  PG-down intake raises without writing; commerce-down turns assemble
+  degraded and deterministic; injection/poisoning turns stored verbatim
+  with zero messages/queue/scheduled/offers side effects; vault gate
+  reserve→None→finalize; double-delivered send entry → one Telegram
+  send with confirmed dedup and flat DLQ.
+- **Transport restored to make the proofs possible**: `db/redis.py`
+  stream/lease/debounce/DLQ/persona surface rebuilt (~50 fns, all
+  test-pinned); `db/postgres.py` persona/sessions/scheduled/queue/
+  durable/summary/telemetry fns; `db/dropfans.py` pool-direct +
+  creator-scoped upserts (incl. `commerce.sale_recorded` privacy-shaped
+  event); `db/fangate.py` blind-overwrite upsert replaced with scoped
+  fallback; `chatbotv2.main` + `workers.*` import again.
+- **Two real duplicate-send holes closed** (found by the live L3 proof):
+  skip-branch ACK failure falling through to a send; unbounded
+  `get_send_rate_limit_wait` stalling every repeat send 60s (now
+  over-limit only); post-send failure routing aligned to the H4 delivery
+  truth (ACK-then-persist, DLQ + repair, never send_failed).
+- **Still open (explicit, out of F7 scope)**: V1-frozen worker/handler
+  semantics (8 tests expect pre-cutover behavior); legacy
+  dashboard-analytics postgres surface (37 names: notes/tags/analytics/
+  telemetry-expansion); 3 media tests targeting dead inline code in
+  `main.py`; unrecoverable migration bodies (documented in commerce
+  spec Phase 3f).

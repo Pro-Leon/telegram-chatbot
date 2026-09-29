@@ -233,62 +233,85 @@ async def upsert_fangate_product(creator_id: int, product: Any) -> None:
         json.dumps(folder) if folder is not None and not isinstance(folder, str) else folder
     )
     pool = await _pool()
-    async with pool.acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO fangate_products
-                (id, creator_id, product_type, title, preview, preview_blurred,
-                 price_minor, in_collection, link, sales_url, link_clicks,
-                 unlocks, total_earnings, folder_id, folder, media,
-                 is_adult_content, is_verif_age, is_epoch_enabled,
-                 is_should_consent, is_downloadable, is_accessible,
-                 private_description, public_description, raw, synced_at)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,
-                    $17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,NOW())
-            ON CONFLICT (id) DO UPDATE SET
-                creator_id = EXCLUDED.creator_id,
-                product_type = EXCLUDED.product_type,
-                title = EXCLUDED.title,
-                preview = EXCLUDED.preview,
-                preview_blurred = EXCLUDED.preview_blurred,
-                price_minor = EXCLUDED.price_minor,
-                in_collection = EXCLUDED.in_collection,
-                link = EXCLUDED.link,
-                sales_url = EXCLUDED.sales_url,
-                folder_id = EXCLUDED.folder_id,
-                folder = EXCLUDED.folder,
-                media = EXCLUDED.media,
-                is_accessible = EXCLUDED.is_accessible,
-                is_downloadable = EXCLUDED.is_downloadable,
-                raw = EXCLUDED.raw,
-                synced_at = NOW()
-            """,
-            int(get("id")),
-            creator_id,
-            get("product_type") or get("type"),
-            get("title"),
-            get("preview"),
-            get("preview_blurred"),
-            get("price_minor"),
-            bool(get("in_collection", False)),
-            get("link"),
-            get("sales_url") or get("link"),
-            get("link_clicks"),
-            get("unlocks"),
-            get("total_earnings"),
-            get("folder_id"),
-            folder_json,
-            media_json,
-            bool(get("is_adult_content", False)),
-            bool(get("is_verif_age", False)),
-            bool(get("is_epoch_enabled", False)),
-            bool(get("is_should_consent", False)),
-            bool(get("is_downloadable", False)),
-            bool(get("is_accessible", False)),
-            get("private_description"),
-            get("public_description"),
-            raw_json,
-        )
+    await pool.execute(
+        """
+        INSERT INTO fangate_products
+            (id, creator_id, product_type, title, preview, preview_blurred,
+             price_minor, in_collection, link, sales_url, link_clicks,
+             unlocks, total_earnings, folder_id, folder, media,
+             is_adult_content, is_verif_age, is_epoch_enabled,
+             is_should_consent, is_downloadable, is_accessible,
+             private_description, public_description, raw, synced_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb,$16::jsonb,
+                $17,$18,$19,$20,$21,$22,$23,$24,$25::jsonb,NOW())
+        ON CONFLICT (id) DO NOTHING
+        """,
+        int(get("id")),
+        creator_id,
+        get("product_type") or get("type"),
+        get("title"),
+        get("preview"),
+        get("preview_blurred"),
+        get("price_minor"),
+        bool(get("in_collection", False)),
+        get("link"),
+        get("sales_url") or get("link"),
+        get("link_clicks"),
+        get("unlocks"),
+        get("total_earnings"),
+        get("folder_id"),
+        folder_json,
+        media_json,
+        bool(get("is_adult_content", False)),
+        bool(get("is_verif_age", False)),
+        bool(get("is_epoch_enabled", False)),
+        bool(get("is_should_consent", False)),
+        bool(get("is_downloadable", False)),
+        bool(get("is_accessible", False)),
+        get("private_description"),
+        get("public_description"),
+        raw_json,
+    )
+    # Pre-migration fallback: refresh is id-targeted AND creator-scoped so a
+    # legacy creator-blind upsert can never silently overwrite another
+    # creator's row sharing the global id space.
+    await pool.execute(
+        """
+        UPDATE fangate_products SET
+            product_type = $3,
+            title = $4,
+            preview = $5,
+            preview_blurred = $6,
+            price_minor = $7,
+            in_collection = $8,
+            link = $9,
+            sales_url = $10,
+            folder_id = $11,
+            folder = $12::jsonb,
+            media = $13::jsonb,
+            is_accessible = $14,
+            is_downloadable = $15,
+            raw = $16::jsonb,
+            synced_at = NOW()
+        WHERE fangate_products.creator_id = $2 AND id = $1
+        """,
+        int(get("id")),
+        creator_id,
+        get("product_type") or get("type"),
+        get("title"),
+        get("preview"),
+        get("preview_blurred"),
+        get("price_minor"),
+        bool(get("in_collection", False)),
+        get("link"),
+        get("sales_url") or get("link"),
+        get("folder_id"),
+        folder_json,
+        media_json,
+        bool(get("is_accessible", False)),
+        bool(get("is_downloadable", False)),
+        raw_json,
+    )
 
 
 async def delete_fangate_product(creator_id: int, product_id: int | str) -> None:

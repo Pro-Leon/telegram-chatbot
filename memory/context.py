@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import tiktoken
@@ -12,6 +13,8 @@ from db.postgres import (
     get_user_profile,
 )
 from memory.retrieval import retrieve_relevant_history
+
+logger = logging.getLogger("memory.context")
 
 ENCODING = tiktoken.encoding_for_model("gpt-4")
 
@@ -472,16 +475,10 @@ def build_qwen3_state_context(
         elif _nba in ("explore_interest", "qualify"):
             response_mode = "explore"
             question_allowed = True
-        elif _nba in ("deepen_desire",):
+        elif _nba in ("deepen_desire",) or _nba in ("present_offer",):
             response_mode = "tease"
             question_allowed = False
-        elif _nba in ("present_offer",):
-            response_mode = "tease"
-            question_allowed = False
-        elif _nba in ("handle_objection", "aftercare", "handoff"):
-            response_mode = "react"
-            question_allowed = False
-        elif _nba in ("relationship_build", "continue_topic", "wait"):
+        elif _nba in ("handle_objection", "aftercare", "handoff") or _nba in ("relationship_build", "continue_topic", "wait"):
             response_mode = "react"
             question_allowed = False
     # Fallback default for legacy callers (tests) — when conversation_state present, always emit RESPONSE
@@ -873,7 +870,7 @@ async def build_qwen3_context(
     if creator_id is not None:
         try:
             from commerce.content_matching import rank_products_by_relevance
-            from commerce.product_selection import list_valid_products, _get_purchased_product_ids
+            from commerce.product_selection import _get_purchased_product_ids, list_valid_products
             _valid = await list_valid_products(creator_id)
             if _valid:
                 _purchased = await _get_purchased_product_ids(creator_id, user_id)
@@ -927,8 +924,10 @@ async def build_qwen3_context(
             _topics = getattr(conversation_state, "recent_topics", ()) if conversation_state else ()
             if not isinstance(_topics, (list, tuple)):
                 _topics = ()
-            from commerce.fan_knowledge import retrieve_relevant_knowledge, build_personalization_context
-            from commerce.temporal_context import temporal_context_for_fan, derive_fan_timezone
+            from commerce.fan_knowledge import (
+                retrieve_relevant_knowledge,
+            )
+            from commerce.temporal_context import temporal_context_for_fan
             try:
                 from core.text_sanitize import is_render_safe as _is_safe_fk
             except Exception:

@@ -309,7 +309,12 @@ async def _process_send_entry_inner(client, msg_id: str, data: dict) -> None:
                             _rc_dup(name="duplicate_send_suppressed", creator_id=creator_id, user_id=int(data.get("entity")) if str(data.get("entity")).isdigit() else None, value=1.0)
                         except Exception:
                             pass
-                        await ack_send(msg_id)
+                        # F7-L3: an ACK failure here must never fall through
+                        # to a send — the dedup decision is final.
+                        try:
+                            await ack_send(msg_id)
+                        except Exception:
+                            logger.debug("ack after duplicate-skip failed for %s", msg_id, exc_info=True)
                         return
             except Exception:
                 logger.debug("dedup value check failed", exc_info=True)
@@ -610,7 +615,11 @@ async def _process_send_entry_inner(client, msg_id: str, data: dict) -> None:
                             return
                         else:
                             logger.info("Skipping duplicate after race dedup=%s creator=%s", dedup_id, creator_id)
-                            await ack_send(msg_id)
+                            # F7-L3: same as above — never fall through to a send.
+                            try:
+                                await ack_send(msg_id)
+                            except Exception:
+                                logger.debug("ack after race-skip failed for %s", msg_id, exc_info=True)
                             return
                     dedup_reserved = _can_reserve
                 except Exception:
@@ -679,7 +688,11 @@ async def _process_send_entry_inner(client, msg_id: str, data: dict) -> None:
                             return
                         else:
                             logger.info("Skipping duplicate after race dedup=%s creator=%s", dedup_id, creator_id)
-                            await ack_send(msg_id)
+                            # F7-L3: same as above — never fall through to a send.
+                            try:
+                                await ack_send(msg_id)
+                            except Exception:
+                                logger.debug("ack after race-skip failed for %s", msg_id, exc_info=True)
                             return
                     dedup_reserved = _can_reserve2
                 except Exception:
@@ -776,10 +789,10 @@ async def _process_send_entry_inner(client, msg_id: str, data: dict) -> None:
             and entity_int
             and isinstance(entity_int, int)
         ):
-            # Phase 3.1: persist BEFORE ack_send. A save failure routes to the
-            # repair record (never resend, never send_failed) and leaves the
-            # entry unacked: reclaim re-enters, sees the confirmed dedup key,
-            # skips the wire, and ACKs (same as the existing skip path).
+            # H4 Batch 1 delivery truth: ACK before persistence. If the ACK
+            # itself throws, persistence never runs (ordering) and the outer
+            # telegram_accepted guard routes to _handle_post_send_failure.
+            await ack_send(msg_id)
             try:
                 await save_outbound_after_send(
                     user_id=entity_int,
@@ -805,25 +818,26 @@ async def _process_send_entry_inner(client, msg_id: str, data: dict) -> None:
                 )
             except Exception as _save_exc:
                 logger.warning(
-                    "save_outbound_after_send failed dedup=%s creator=%s — repair recorded, leaving unacked",
+                    "save_outbound_after_send failed dedup=%s creator=%s — post-send repair",
                     dedup_id,
                     creator_id,
                     exc_info=True,
                 )
-                try:
-                    repair_needed_recorded = await record_send_repair_needed(
-                        dedup_id,
-                        creator_id=creator_id,
-                        generation_id=generation_id,
-                        reason="post_send_persistence_failed",
-                        telegram_message_id=getattr(result, "id", None),
-                        detail=f"{type(_save_exc).__name__}: {str(_save_exc)[:120]}",
-                    )
-                except Exception:
-                    pass
+                # H4 Batch 1 central invariant: acceptance was proven, so a
+                # persistence failure is post-send (confirm/finalize/DLQ with
+                # the stable reason — never send_failed, never a resend).
+                await _handle_post_send_failure(
+                    msg_id, data,
+                    dedup_id=dedup_id,
+                    generation_id=generation_id,
+                    creator_id=creator_id,
+                    dedup_reserved=dedup_reserved,
+                    delivery_reservation_id=delivery_reservation_id,
+                    dropfans_pending_info=dropfans_pending_info,
+                    telegram_message_id=getattr(result, "id", None),
+                    entity=entity,
+                )
                 return
-            # Phase 3.1: ACK only after persistence succeeded.
-            await ack_send(msg_id)
 
             if delivery_reservation_id is not None:
                 try:

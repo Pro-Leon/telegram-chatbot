@@ -94,6 +94,19 @@ CREATE TABLE IF NOT EXISTS operators (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Personas (conversational identities, creator-scoped)
+CREATE TABLE IF NOT EXISTS personas (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    instructions TEXT NOT NULL DEFAULT '',
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    creator_id BIGINT REFERENCES creators(id) ON DELETE CASCADE,
+    metadata JSONB NOT NULL DEFAULT '{}',
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Dead letter queue for failed messages
 CREATE TABLE IF NOT EXISTS dlq_messages (
     id BIGSERIAL PRIMARY KEY,

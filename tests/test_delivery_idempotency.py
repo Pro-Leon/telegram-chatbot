@@ -206,16 +206,21 @@ def _send_harness(monkeypatch_send=None, save_side_effect=None, dedup_value=None
 
 
 @pytest.mark.asyncio
-async def test_crash_accept_to_save_unacked_repair():
+async def test_crash_accept_to_save_acked_repair():
+    # H4 Batch 1 delivery truth supersedes the Phase 3.1 save-before-ack
+    # order: ACK precedes persistence; a save failure routes to the
+    # post-send repair path (confirm/finalize/DLQ), never send_failed.
     import chatbotv2.main as _m
 
     client, calls, stop = _send_harness(save_side_effect=RuntimeError("db down"))
     with patch("core.entity_blacklist.is_blacklisted", new=AsyncMock(return_value=False)):
-        await _m._process_send_entry_inner(client, "8-0", _send_data())
+        with patch.object(_m, "move_send_to_dlq", new=AsyncMock(return_value=True)) as mock_dlq:
+            await _m._process_send_entry_inner(client, "8-0", _send_data())
     await stop()
     assert len(calls["save"]) == 1
-    assert calls["ack"] == [], "must stay unacked for reclaim"
-    assert calls["repair"] and calls["repair"][0][1].get("reason") == "post_send_persistence_failed"
+    assert len(calls["ack"]) == 1
+    mock_dlq.assert_called_once()
+    assert mock_dlq.call_args[0][1] == "post_send_persistence_failed"
 
 
 @pytest.mark.asyncio
@@ -233,10 +238,17 @@ async def test_reclaim_same_dedup_no_double_wire():
 
 @pytest.mark.asyncio
 async def test_save_failure_never_send_failed():
+    # H4 Batch 1: save failure after proven acceptance is post-send —
+    # DLQ with the stable reason, never send_failed, never a resend.
     import chatbotv2.main as _m
 
     client, calls, stop = _send_harness(save_side_effect=RuntimeError("db down"))
     with patch("core.entity_blacklist.is_blacklisted", new=AsyncMock(return_value=False)):
-        await _m._process_send_entry_inner(client, "8-1", _send_data())
+        with patch.object(_m, "move_send_to_dlq", new=AsyncMock(return_value=True)) as mock_dlq:
+            with patch.object(_m, "publish_event", new=AsyncMock()) as mock_pub:
+                await _m._process_send_entry_inner(client, "8-1", _send_data())
     await stop()
-    assert calls["repair"] and calls["repair"][0][1].get("reason") != "send_error"
+    mock_dlq.assert_called_once()
+    assert mock_dlq.call_args[0][1] == "post_send_persistence_failed"
+    for call in mock_pub.call_args_list:
+        assert call[0][0] != "message.send_failed"

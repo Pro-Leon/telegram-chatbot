@@ -30,6 +30,62 @@ def test_player_name() -> str:
 def test_character_name() -> str:
     return CHARACTER_NAME
 
+
+@pytest.fixture(autouse=True)
+def _reset_db_clients_between_tests():
+    """Drop cached PG pool / Redis client between tests.
+
+    The module-global clients bind the creating event loop; pytest-asyncio
+    uses a fresh loop per test, so a carried-over client fails with
+    'another operation is in progress'. Pools re-init lazily on next use.
+    """
+    import db.postgres as _pg
+    import db.redis as _rd
+
+    _pg._pool = None
+    _rd._client = None
+    yield
+    _pg._pool = None
+    _rd._client = None
+
+
+try:
+    import pytest_asyncio
+
+    @pytest_asyncio.fixture
+    async def f7_pools():
+        """Per-test PG/Redis client reset for F7 live-proof files."""
+        import db.postgres as _f7pg
+        import db.redis as _f7rd
+
+        for _mod, _attr, _close in (
+            (_f7pg, "_pool", "close_pool"),
+            (_f7rd, "_client", "close_redis"),
+        ):
+            try:
+                await getattr(_mod, _close)()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                setattr(_mod, _attr, None)
+            except Exception:  # noqa: BLE001
+                pass
+        yield
+        for _mod, _attr, _close in (
+            (_f7pg, "_pool", "close_pool"),
+            (_f7rd, "_client", "close_redis"),
+        ):
+            try:
+                await getattr(_mod, _close)()
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                setattr(_mod, _attr, None)
+            except Exception:  # noqa: BLE001
+                pass
+except ImportError:  # pragma: no cover - pytest-asyncio is a dev dependency
+    pass
+
 # ---------------------------------------------------------------------------
 # Settings
 # ---------------------------------------------------------------------------

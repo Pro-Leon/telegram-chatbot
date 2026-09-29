@@ -70,6 +70,9 @@ def _send_stream_patches(**overrides):
         "release_stale_reservations": AsyncMock(return_value=[]),
         # H4 Batch 2/3 hermeticity: never touch live Redis from these tests.
         "get_or_create_send_random_id": AsyncMock(return_value=b"0123456789abcdef"),
+        "try_reserve_send_dedup": AsyncMock(return_value="reserved:test-tok"),
+        "confirm_send_dedup": AsyncMock(return_value=True),
+        "get_send_dedup_value": AsyncMock(return_value=None),
         "record_unknown_send_attempt": AsyncMock(return_value=True),
         "record_send_repair_needed": AsyncMock(return_value=True),
         "clear_unknown_send_attempt": AsyncMock(return_value=True),

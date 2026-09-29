@@ -168,11 +168,11 @@ async def test_1b_save_throws_with_reservation_finalizes_not_releases():
     finalize_calls = []
     release_calls = []
 
-    async def _fin(reservation_id, telegram_message_id=None):
+    async def _fin(reservation_id, telegram_message_id=None, creator_id=None):
         finalize_calls.append((reservation_id, telegram_message_id))
         return True
 
-    async def _rel(reservation_id):
+    async def _rel(reservation_id, creator_id=None):
         release_calls.append(reservation_id)
         return True
 
@@ -283,11 +283,11 @@ async def test_4b_save_throws_with_media_reservation_finalizes_not_releases():
     finalize_calls = []
     release_calls = []
 
-    async def _fin(reservation_id, telegram_message_id=None):
+    async def _fin(reservation_id, telegram_message_id=None, creator_id=None):
         finalize_calls.append((reservation_id, telegram_message_id))
         return True
 
-    async def _rel(reservation_id):
+    async def _rel(reservation_id, creator_id=None):
         release_calls.append(reservation_id)
         return True
 

@@ -334,6 +334,7 @@ class TestInboundReplay:
             "user_id": "123",
             "content": "hello",
             "telegram_message_id": "456",
+            "creator_id": "1",
         }
 
         # get_dlq_entry returns entry with payload
